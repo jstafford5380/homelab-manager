@@ -1,0 +1,3 @@
+- [Project scope and roles](project-scope-and-roles.md) — proactive homelab health app; Claude=UI/UX in src/Web, Codex=API
+- [UI stack and constraints](ui-stack-and-constraints.md) — React/Vite/shadcn stack; a11y+mobile review; truthful, read-only UX
+- [Web verification workflow](web-verification-workflow.md) — e2e serves wwwroot; build API to scratch dir; mock-data screenshots

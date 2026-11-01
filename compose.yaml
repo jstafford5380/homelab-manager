@@ -1,6 +1,8 @@
 services:
   homelab:
-    build: .
+    build:
+      context: .
+      dockerfile: src/Api/Homelab.Api/Dockerfile
     user: "${HOMELAB_UID:?Run scripts/prepare-local-deployment.py}:${HOMELAB_GID:?Run scripts/prepare-local-deployment.py}"
     ports:
       - "127.0.0.1:${HOMELAB_HTTPS_PORT:-8443}:8443"

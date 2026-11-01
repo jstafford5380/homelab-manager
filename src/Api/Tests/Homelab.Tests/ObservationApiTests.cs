@@ -63,7 +63,7 @@ public sealed class ObservationApiTests
 #else
             const string configuration = "Release";
 #endif
-            var binary = Path.Combine(root, "src", "Homelab.Api", "bin", configuration, "net10.0", "Homelab.Api.dll");
+            var binary = Path.Combine(root, "Homelab.Api", "bin", configuration, "net10.0", "Homelab.Api.dll");
             Assert.True(File.Exists(binary), "Build the API project before running its process-level tests.");
             var start = new ProcessStartInfo("dotnet") { WorkingDirectory = Path.GetDirectoryName(binary)!, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
             start.ArgumentList.Add(binary); start.ArgumentList.Add("--urls"); start.ArgumentList.Add(address.ToString());

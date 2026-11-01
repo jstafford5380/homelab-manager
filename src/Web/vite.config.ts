@@ -5,5 +5,5 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": "/src" } },
   server: { proxy: { "/api": process.env.API_URL || "http://localhost:5080" } },
-  build: { outDir: "../Homelab.Api/wwwroot", emptyOutDir: true },
+  build: { outDir: "dist", emptyOutDir: true },
 });

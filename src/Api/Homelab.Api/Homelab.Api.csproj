@@ -20,4 +20,13 @@
     <ProjectReference Include="..\Homelab.ServiceDefaults\Homelab.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyWebAssets" BeforeTargets="PrepareForBuild" Condition="Exists('../../Web/dist')">
+    <ItemGroup>
+      <Content Remove="wwwroot/**" />
+      <WebAsset Include="../../Web/dist/**/*" />
+    </ItemGroup>
+    <RemoveDir Directories="wwwroot" />
+    <Copy SourceFiles="@(WebAsset)" DestinationFiles="@(WebAsset->'wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <ItemGroup><Content Include="wwwroot/**/*" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  </Target>
 </Project>

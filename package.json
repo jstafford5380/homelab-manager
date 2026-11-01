@@ -1,0 +1,15 @@
+{
+  "name": "homelab-control",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev:aspire",
+    "dev:aspire": "dotnet run --project src/Api/Homelab.AppHost --launch-profile https",
+    "dev:web": "npm --prefix src/Web run dev",
+    "install:web": "npm --prefix src/Web ci",
+    "build:web": "npm --prefix src/Web run build",
+    "build": "npm run build:web && dotnet build src/Api/Homelab.sln",
+    "test": "dotnet test src/Api/Homelab.sln",
+    "test:web": "cd src/Web && npx playwright test",
+    "lint": "npm --prefix src/Web run lint"
+  }
+}

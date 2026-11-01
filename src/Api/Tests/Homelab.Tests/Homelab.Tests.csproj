@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Homelab.Api\Homelab.Api.csproj" />
+    <ProjectReference Include="..\..\Homelab.Api\Homelab.Api.csproj" />
   </ItemGroup>
 
 </Project>

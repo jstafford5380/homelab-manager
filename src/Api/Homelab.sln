@@ -1,19 +1,19 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.Api", "src\Homelab.Api\Homelab.Api.csproj", "{0042225B-1834-4055-951B-96CE0E51F4D3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.Api", "Homelab.Api\Homelab.Api.csproj", "{0042225B-1834-4055-951B-96CE0E51F4D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.AppHost", "src\Homelab.AppHost\Homelab.AppHost.csproj", "{A7D703D2-2C3C-4565-B032-0DAF53F3EDE9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.AppHost", "Homelab.AppHost\Homelab.AppHost.csproj", "{A7D703D2-2C3C-4565-B032-0DAF53F3EDE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.ServiceDefaults", "src\Homelab.ServiceDefaults\Homelab.ServiceDefaults.csproj", "{D0E2B5A3-9A1B-48B3-86E5-7D764C21A654}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.ServiceDefaults", "Homelab.ServiceDefaults\Homelab.ServiceDefaults.csproj", "{D0E2B5A3-9A1B-48B3-86E5-7D764C21A654}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.Tests", "tests\Homelab.Tests\Homelab.Tests.csproj", "{7E425E82-353B-456B-9BBD-B9C5EAE0AB5B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homelab.Tests", "Tests\Homelab.Tests\Homelab.Tests.csproj", "{7E425E82-353B-456B-9BBD-B9C5EAE0AB5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

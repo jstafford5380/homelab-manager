@@ -27,7 +27,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await page.getByLabel('Password', { exact: true }).fill('fixture-password-long');
  await page.getByLabel('Server setup token').fill('browser-test-setup-only');
  await page.getByRole('button', { name: 'Create account' }).click();
- await expect(page.getByRole('heading', { name: 'Your storage, at a glance.' })).toBeVisible();
+ await expect(page.getByRole('heading', { name: 'Your homelab, at a glance.' })).toBeVisible();
  await page.getByRole('link', { name: 'Skip to main content' }).focus();
  await page.keyboard.press('Enter');
  await expect(page.getByRole('main')).toBeFocused();
@@ -291,7 +291,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  const utcTime = await page.evaluate(() => new Date('2026-01-01T12:00:00Z').toLocaleString(undefined,{timeZone:'UTC',timeZoneName:'short'}));
  await expect(backupRow.getByRole('heading')).toHaveText(utcTime);
  await page.getByRole('link', { name: 'Overview', exact: true }).click();
- await expect(page.getByText('1 recovery gap(s)')).toBeVisible();
+ await expect(page.getByRole('list', { name: 'Condition summary' }).getByText('1 gap', { exact: true })).toBeVisible();
  await page.screenshot({ path: 'test-results/overview-desktop.png', fullPage: true });
  await page.setViewportSize({ width: 390, height: 844 });
  const navigationLinks = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link');
@@ -1017,7 +1017,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await expect(page.getByRole('button', { name: 'Retry connection', exact: true })).toBeVisible();
  sessionUnavailable = false;
  await page.getByRole('button', { name: 'Retry connection', exact: true }).click();
- await expect(page.getByRole('heading', { name: 'Your storage, at a glance.', exact: true })).toBeVisible();
+ await expect(page.getByRole('heading', { name: 'Your homelab, at a glance.', exact: true })).toBeVisible();
  const identityConnection = { id: connectionId, configurationRevision:'00000000-0000-0000-0000-000000000001', name: 'Identity fixture NAS', apiUri: 'wss://nas.fixture/websocket', connectHost: null, connectPort: null, pollSeconds: 60, enabled: false, trustedCaPem: null, certificateSha256: null, status: 'System identity changed or missing — collection paused', systemSerial: 'NAS-A', observedSystemSerial: 'NAS-B', systemIdentityState: 'changed', systemIdentityCheckedUtc: '2026-10-31T12:00:00Z' };
  await page.route('**/api/v1/connections', route => route.fulfill({ json: [identityConnection] }));
  let acceptedIdentity: Record<string, unknown> | null = null;

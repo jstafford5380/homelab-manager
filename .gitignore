@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 # The backend's web root is generated from the React project.
-/src/Homelab.Api/wwwroot/
+/src/Api/Homelab.Api/wwwroot/
 
 # Browser tests
 **/test-results/

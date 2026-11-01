@@ -1,10 +1,8 @@
 import { ActivityHistory } from "./ActivityHistory";
-import { ScanOverview, validScanReports, type ScanReport } from "./ScanOverview";
-import {
-  DisplayPreferencesContext,
-  type DisplayPreferences,
-} from "./displayPreferences";
-import { PlanEditor, type Plan } from "./PlanEditor";
+import { validScanReports } from "./ScanOverview";
+import { OverviewView, type Snapshot } from "./OverviewView";
+import { DisplayPreferencesContext } from "./displayPreferences";
+import { PlanEditor } from "./PlanEditor";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { FindingDetail } from "./FindingDetail";
 import { useEffect, useRef, useState } from "react";
@@ -13,7 +11,6 @@ import {
   ArrowUpRight,
   Bell,
   Boxes,
-  Check,
   ChevronRight,
   Database,
   HardDrive,
@@ -47,66 +44,6 @@ import { OperationsSettings } from "./OperationsSettings";
 import { PlanningReview } from "./PlanningReview";
 import { StorageView } from "./StorageView";
 
-type Connection = {
-  id: string;
-  name: string;
-  status: string;
-  lastSuccessUtc: string | null;
-  pollSeconds: number;
-};
-type Disk = {
-  id: string;
-  connectionId: string;
-  lastSeenUtc: string;
-  serial: string;
-  model: string;
-  alias: string;
-  wwn: string | null;
-  mappingConfidence: string;
-  bay: string | null;
-  bayVerified: boolean;
-  bayEvidence: string | null;
-  present: boolean;
-  purchasedUtc: string | null;
-  warrantyEndUtc: string | null;
-  notes: string;
-  lifecycle: string;
-  purchaseDateConfidence: string;
-};
-type Finding = {
-  id: string;
-  title: string;
-  evidence: string;
-  nextStep: string;
-  severity: string;
-  state: string;
-  snoozedUntilUtc: string | null;
-  reviewUtc: string | null;
-};
-type Recovery = {
-  id: string;
-  asset: string;
-  destination: string;
-  mechanism: string;
-  rpoHours: number;
-  recoveryPointUtc: string | null;
-  restoreResult: string;
-};
-type Snapshot = {
-  scanReports?: ScanReport[];
-  recoveryAssessments: {
-    policyId: string;
-    assessment: { protection: string };
-  }[];
-  capabilities: { connectionId: string; name: string; status: string }[];
-  settings: DisplayPreferences;
-  connections: Connection[];
-  disks: Disk[];
-  findings: Finding[];
-  plans: Plan[];
-  recovery: Recovery[];
-  activity: { id: number; action: string; detail: string; atUtc: string }[];
-};
 const empty: Snapshot = {
   recoveryAssessments: [],
   capabilities: [],
@@ -325,16 +262,7 @@ export default function App() {
       setBusy(false);
     }
   }
-  const recoveryGaps = snapshot.recoveryAssessments.filter(
-    (r) => r.assessment.protection !== "scoped recovery demonstrated",
-  ).length;
   const issues = snapshot.findings.filter((x) => x.state !== "resolved");
-  const coverageGaps = snapshot.capabilities.filter(
-    (x) => x.status !== "supported",
-  );
-  const unchecked = snapshot.connections.filter(
-    (x) => !snapshot.capabilities.some((c) => c.connectionId === x.id),
-  );
   if (!session)
     return (
       <div className="login">
@@ -506,14 +434,14 @@ export default function App() {
                   {findingId
                     ? "Finding evidence"
                     : page === "Overview"
-                      ? "Your storage, at a glance."
+                      ? "Your homelab, at a glance."
                       : page}
                 </h1>
                 <p className="muted">
                   {findingId
                     ? "Recorded evidence, source details, and review history."
                     : page === "Overview"
-                      ? "Know what needs attention today. Prepare for what comes next."
+                      ? "What needs attention today, and what’s coming up."
                       : page === "Planning"
                         ? "Turn observations into a practical replacement plan."
                         : "Evidence, history, and the details that matter."}
@@ -558,211 +486,15 @@ export default function App() {
               </Card>
             )}
             {page === "Overview" && !findingId && lastRefresh !== null && (
-              <>
-                <div className="stats">
-                  <Card>
-                    <span className="stat-label">
-                      OBSERVED CONDITION <Activity size={16} />
-                    </span>
-                    <strong>
-                      {issues.length
-                        ? `${issues.length} to review`
-                        : "No findings yet"}
-                    </strong>
-                    <small>
-                      {snapshot.connections.length
-                        ? "Based on collected evidence"
-                        : "Enroll a NAS to begin monitoring"}
-                    </small>
-                  </Card>
-                  <Card>
-                    <span className="stat-label">
-                      TELEMETRY COVERAGE <RefreshCw size={16} />
-                    </span>
-                    <strong>
-                      {snapshot.connections.length === 0
-                        ? "Not connected"
-                        : coverageGaps.length || unchecked.length
-                          ? "Incomplete"
-                          : "Current"}
-                    </strong>
-                    <small>
-                      {coverageGaps.length || unchecked.length
-                        ? `${coverageGaps.length + unchecked.length} coverage gap(s) to review`
-                        : "Freshness is assessed independently"}
-                    </small>
-                  </Card>
-                  <Card>
-                    <span className="stat-label">
-                      RECOVERY READINESS <ShieldCheck size={16} />
-                    </span>
-                    <strong>
-                      {snapshot.recovery.length
-                        ? recoveryGaps
-                          ? `${recoveryGaps} recovery gap(s)`
-                          : "Scoped evidence recorded"
-                        : "Unverified"}
-                    </strong>
-                    <small>Successful copies do not prove recoverability</small>
-                  </Card>
-                  <Card>
-                    <span className="stat-label">
-                      REPLACEMENT PLANS <ShoppingBag size={16} />
-                    </span>
-                    <strong>
-                      {
-                        snapshot.plans.filter((x) => x.status !== "complete")
-                          .length
-                      }{" "}
-                      planned
-                    </strong>
-                    <small>Evidence-led, budget-aware decisions</small>
-                  </Card>
-                </div>
-                <ScanOverview reports={snapshot.scanReports} />
-                <div className="overview-grid">
-                  <section>
-                    <div className="section-title">
-                      <h2>
-                        Needs your attention{" "}
-                        <Badge variant="secondary">{issues.length}</Badge>
-                      </h2>
-                      <span className="muted">Prioritized review</span>
-                    </div>
-                    {issues.length ? (
-                      issues.map((item) => (
-                        <Card className="finding" key={item.id}>
-                          <Badge variant="outline">
-                            {item.severity} · {item.state}
-                          </Badge>
-                          {item.snoozedUntilUtc && (
-                            <p className="muted">
-                              Delivery snoozed until{" "}
-                              {date(
-                                item.snoozedUntilUtc,
-                                snapshot.settings.timezone,
-                              )}
-                              ; condition remains open.
-                            </p>
-                          )}
-                          <h3>
-                            <Link to={`/?finding=${item.id}`}>
-                              {item.title}
-                            </Link>
-                          </h3>
-                          <p>{item.evidence}</p>
-                          <p className="muted">{item.nextStep}</p>
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              void action(() =>
-                                request(`/findings/${item.id}/acknowledge`, {}),
-                              )
-                            }
-                          >
-                            <Check size={15} /> Acknowledge for 7 days
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              void action(() =>
-                                request(
-                                  `/findings/${item.id}/${item.snoozedUntilUtc ? "unsnooze" : "snooze"}`,
-                                  item.snoozedUntilUtc
-                                    ? {}
-                                    : {
-                                        untilUtc: new Date(
-                                          Date.now() + 86400000,
-                                        ).toISOString(),
-                                      },
-                                ),
-                              )
-                            }
-                          >
-                            {item.snoozedUntilUtc
-                              ? "Resume deliveries"
-                              : "Snooze deliveries for 24 hours"}
-                          </Button>
-                          <small>
-                            Critical findings bypass delivery snoozes.
-                            Acknowledgment never changes NAS alerts.
-                          </small>
-                        </Card>
-                      ))
-                    ) : (
-                      <Card className="empty">
-                        <ShieldCheck size={32} />
-                        <h3>
-                          {snapshot.connections.length
-                            ? "Waiting for evidence"
-                            : "Meet your NAS"}
-                        </h3>
-                        <p>
-                          Connect your NAS to see storage topology, disk
-                          identity, and collection coverage. Missing data will
-                          stay visibly unknown.
-                        </p>
-                        <Button onClick={() => setPage("Settings")}>
-                          <Plus size={16} /> Connect a NAS
-                        </Button>
-                      </Card>
-                    )}
-                  </section>
-                  <section>
-                    <div className="section-title">
-                      <h2>Plan ahead</h2>
-                      <ShoppingBag size={18} />
-                    </div>
-                    <Card className="planning-prompt">
-                      <span className="eyebrow">
-                        A LITTLE PREPARATION GOES A LONG WAY
-                      </span>
-                      <h2>Your next drive shouldn’t be a surprise.</h2>
-                      <p>
-                        Keep spare stock, warranty dates, and replacement
-                        budgets together. Use observed changes to decide what
-                        deserves a closer look.
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={() => setPage("Planning")}
-                      >
-                        Open your plan <ArrowUpRight size={16} />
-                      </Button>
-                      <div className="note">
-                        Drive age is context, not a failure prediction.
-                      </div>
-                    </Card>
-                  </section>
-                </div>
-                <div className="section-title">
-                  <h2>Connected systems</h2>
-                  <span className="muted">
-                    {snapshot.connections.length} enrolled
-                  </span>
-                </div>
-                <Card className="list-card">
-                  {snapshot.connections.length ? (
-                    snapshot.connections.map((c) => (
-                      <div className="row" key={c.id}>
-                        <Database />
-                        <div>
-                          <h3>{c.name}</h3>
-                          <small>
-                            Last successful collection:{" "}
-                            {date(c.lastSuccessUtc, snapshot.settings.timezone)}
-                          </small>
-                        </div>
-                        <Badge variant="outline">{c.status}</Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="muted">
-                      No systems enrolled. Your control service is ready.
-                    </p>
-                  )}
-                </Card>
-              </>
+              <OverviewView
+                snapshot={snapshot}
+                refreshRevision={lastRefresh}
+                busy={busy}
+                onFindingAction={(path, body) =>
+                  void action(() => request(path, body))
+                }
+                onConnect={() => setPage("Settings")}
+              />
             )}
             {page === "Storage" && (
               <StorageView

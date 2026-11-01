@@ -4,16 +4,16 @@ React + TypeScript + shadcn/ui, hosted by ASP.NET Core 10 and orchestrated with 
 
 ## Development
 
-Requires .NET 10 and Node.js 24 or later. Install frontend dependencies with `npm ci` in `src/homelab-web`.
+Requires .NET 10 and Node.js 24 or later. Install frontend dependencies with `npm ci` in `src/Web`.
 Set `Homelab__SetupToken` to a strong temporary secret in your environment, then run:
 
 ```sh
-dotnet run --project src/Homelab.AppHost
+npm run dev:aspire
 ```
 
 Open the web resource from the Aspire dashboard. Create the owner account using the setup token; remove the token after setup. You can instead set `Homelab__SetupTokenFile` to an absolute path containing a strong temporary token; restrict that file to your user. The default profile uses an HTTPS dashboard. The optional `--launch-profile http` profile explicitly permits unsecured Aspire transport for local development only; production HTTPS requirements remain unchanged. Aspire supplies the backend endpoint to Vite. The API persists local state under its `data` directory. Do not commit data or keys.
 
-For standalone hosting, build the frontend with `npm run build` in `src/homelab-web`, then publish `src/Homelab.Api`. Frontend output is written into the backend's `wwwroot`.
+For standalone hosting, build the frontend with `npm run build` in `src/Web`, then publish `src/Api/Homelab.Api`. Frontend output is written to `src/Web/dist`; the API build copies it into its generated `wwwroot`.
 
 ## Connections
 
@@ -24,8 +24,8 @@ Only TrueNAS 24.10 is currently targeted. The installed patch must be checked ag
 ## Verification
 
 ```sh
-dotnet test Homelab.sln
-cd src/homelab-web
+dotnet test src/Api/Homelab.sln
+cd src/Web
 npm run build
 npm run lint
 ```
@@ -43,7 +43,7 @@ Stop all application instances before offline database maintenance. New database
 For databases created by the initial development build (before migrations):
 
 ```sh
-python3 scripts/baseline-legacy.py src/Homelab.Api/data/homelab.db --service-stopped
+python3 scripts/baseline-legacy.py src/Api/Homelab.Api/data/homelab.db --service-stopped
 ```
 
 The command verifies the complete table/column/index/foreign-key shape against the original schema, creates a consistent backup, and records the baseline migration without altering inventory or owner records. It refuses unknown schemas and already-managed databases. Restart the application afterward. Never run the service against the same database from two processes.
@@ -109,7 +109,7 @@ Configure your independent monitoring service to execute it every 60 seconds, al
 
 ## Browser checks
 
-After frontend and backend builds, run `npx playwright install chromium` and `npx playwright test` from `src/homelab-web`. The suite starts a disposable local Development instance and never contacts a real NAS or notifier.
+After frontend and backend builds, run `npx playwright install chromium` and `npx playwright test` from `src/Web`. The suite starts a disposable local Development instance and never contacts a real NAS or notifier.
 
 ## Finding lifecycle
 
@@ -228,7 +228,7 @@ Capacity field semantics and topology roles follow the pinned [TrueNAS 24.10.2 p
 
 ### UI accessibility checks
 
-The browser owner workflow includes 18 axe scans using WCAG 2/2.1 A and AA tags across setup, overview, planning, inventory, recovery, settings, mobile storage and expanded editing/import dialogs. Full scan results are attached to the Playwright run, including items that require manual review. The workflow also checks keyboard skip navigation, disclosures, serial-confirmation gating, mobile navigation visibility and horizontal overflow. Run the normal frontend build and then `npx playwright test` from `src/homelab-web` after building the backend.
+The browser owner workflow includes 18 axe scans using WCAG 2/2.1 A and AA tags across setup, overview, planning, inventory, recovery, settings, mobile storage and expanded editing/import dialogs. Full scan results are attached to the Playwright run, including items that require manual review. The workflow also checks keyboard skip navigation, disclosures, serial-confirmation gating, mobile navigation visibility and horizontal overflow. Run the normal frontend build and then `npx playwright test` from `src/Web` after building the backend.
 
 Secondary text uses a stronger shared sage color, small labels are at least 11px, common input outlines and focus indicators are clearer, and reduced-motion preferences are honored. All seven mobile navigation destinations are visible in a two-row grid. Automated checks follow the [Playwright accessibility-testing guidance](https://playwright.dev/docs/accessibility-testing); they do not establish complete WCAG compliance. Screen-reader/user assessment, comprehensive keyboard coverage, and additional state/theme checks remain.
 
@@ -251,7 +251,7 @@ Settings → Drive evidence review interval controls the existing local freshnes
 With Docker running, build and exercise the production image:
 
 ```sh
-docker build -t homelab-control:mvp-validation .
+docker build -f src/Api/Homelab.Api/Dockerfile -t homelab-control:mvp-validation .
 python3 scripts/validate-container.py
 ```
 
@@ -626,3 +626,18 @@ Summarize one or more retained pilot segments with `python3 scripts/summarize-pi
 On macOS, `sample-nas-traffic.py` can separately observe the API process's existing TCP socket counters for an exact connected NAS IPv4 address and port. It runs `nettop` locally, disables name resolution, opens no network connection, and writes only hashed socket identities and byte counters. Example: `python3 scripts/sample-nas-traffic.py --pid API_PID --nas-address NAS_IPV4 --port 443 --output /path/to/new-traffic.jsonl --samples 2017 --interval-seconds 300`. The output must be new; it is created with mode 0600. For an external tunnel, select its actual TCP destination; do not assume the logical TLS hostname is the network destination.
 
 Counters describe currently observed sockets. A vanished socket is not zero traffic; closed connections between samples can be missed. Treat new socket identities, counter decreases and missing samples as continuity boundaries rather than summing cumulative counters. NAS load is not measured. This optional macOS evidence complements the portable local sampler; it does not on its own prove complete collector traffic or approve a pilot. Four parser/process-identity tests run with `python3 scripts/test-sample-nas-traffic.py`.
+
+## Repository layout
+
+- `src/Web`: React/TypeScript application, browser tests, package manifest and frontend Dockerfile; generated output in `dist`.
+- `src/Api/Homelab.sln`: .NET solution, alongside `Homelab.Api`, `Homelab.AppHost`, `Homelab.ServiceDefaults` and `Tests/Homelab.Tests`.
+- `src/Api/Homelab.Api/Dockerfile`: combined frontend/API deployment image, built from the repository root.
+- Root `scripts`, `docs`, Compose and npm commands support development and deployment.
+
+From the root, run `npm run install:web`, then `npm run dev:aspire`. Use `npm run build`, `npm test`, `npm run test:web` and `npm run lint` for verification. npm scripts are defined in `package.json`.
+
+Build the application image with `docker build -f src/Api/Homelab.Api/Dockerfile -t homelab-control:mvp-validation .`. The frontend Dockerfile can independently export static assets: `docker build -f src/Web/Dockerfile --output type=local,dest=/tmp/homelab-web-assets .`; the combined API image serves the UI and authenticated API together.
+
+### Stable development addresses
+
+`npm run dev:aspire` explicitly selects the HTTPS AppHost profile. Default addresses are UI `http://localhost:26264`, Aspire dashboard `https://localhost:17247` (HTTP listener `http://localhost:15037`), API HTTP `http://localhost:5253` and API HTTPS `https://localhost:7213`. The UI port can be overridden with `Web__Port`. These exposed ports remain fixed across starts; a conflicting listener must be stopped rather than expecting an alternative port. Aspire can assign different internal process ports, and the dashboard login token can change between runs. Use the dashboard URL printed during startup to authenticate.

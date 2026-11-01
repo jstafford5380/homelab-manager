@@ -631,3 +631,9 @@ Implemented scope and evidence:
 - Packaging/backup/restore: image sha256:9a6a99f64fef435f8fc58cd99d92380a01fe33db2f67f3eecc96b2a00bf76c98 passed the disposable production exercise, including exact restored evidence and cleared/disabled integration credentials.
 
 The full backend suite passes 749 cases; the full browser workflow and production Compose exercise pass. Data-dependent performance, retention/outage observations, physical mapping, installed credential-scope review and independent-host checks remain explicitly unverified follow-ups in the release-evidence record. The owner-approved background samplers were not stopped by this scope clarification; they are independent of goal completion.
+
+## Repository organization
+
+Application source now lives in two app directories: `src/Web` and `src/Api`. The .NET solution, API, Aspire host, service defaults and backend tests are all under `src/Api`; React and its browser tests live under `src/Web`, producing `dist`. API builds copy those assets into generated `wwwroot`. Each component has its own Dockerfile; Compose selects the API Dockerfile using the repository root as build context. Root npm commands in `package.json` include `dev:aspire`, `build`, `test`, `test:web` and `lint`. README, ignore files, project references and test-launch paths were updated.
+
+Validation: root build passes without warnings, 749 backend tests pass, full browser workflow passes, both component Dockerfiles build, and the combined image passes the disposable production backup/restore exercise. The app was restarted through the root npm command and is available at the existing localhost:26264 URL; owner/NAS data were preserved and collection resumed. Prior pilot segments were preserved; samplers restarted against the new API PID/path using new segment files. No data-dependent validation was added to the completed application goal.
