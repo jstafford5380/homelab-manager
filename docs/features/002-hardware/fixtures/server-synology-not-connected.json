@@ -1,0 +1,61 @@
+{
+  "_note": "Not connected: ds920 is enrolled but has no working connection, so every metric comes from entered readings and every component value is the owner's. Range 30d.",
+  "server": {
+    "id": "c1a7e0de-0000-4000-8000-000000000004",
+    "name": "ds920",
+    "host": "synology.lan",
+    "platform": "synology",
+    "platformVersion": null,
+    "connection": "not-connected",
+    "freshness": "no-collection",
+    "lastSuccessUtc": null,
+    "lastReadingUtc": "2026-10-29T18:30:00Z",
+    "uptimeSeconds": null
+  },
+  "reviewLevels": { "cpuPercent": 80, "memoryPercent": 80, "temperatureC": 80, "sustainedMinutes": 60 },
+  "metrics": {
+    "range": "30d",
+    "coverage": null,
+    "cpu": {
+      "source": "entered",
+      "readingCount": 4,
+      "averagePercent": 73,
+      "maxPercent": 88,
+      "readingsAboveLevel": 2,
+      "readings": [
+        { "id": "rd-0106", "atUtc": "2026-10-06T19:00:00Z", "value": 63 },
+        { "id": "rd-0107", "atUtc": "2026-10-14T19:00:00Z", "value": 84 },
+        { "id": "rd-0108", "atUtc": "2026-10-22T19:00:00Z", "value": 57 },
+        { "id": "rd-0109", "atUtc": "2026-10-29T18:30:00Z", "value": 88 }
+      ]
+    },
+    "memory": {
+      "source": "entered",
+      "totalBytes": 8589934592,
+      "readingCount": 4,
+      "averageUsedBytes": 3651755212,
+      "maxUsedBytes": 3865470566,
+      "readingsAboveLevel": 0,
+      "readings": [
+        { "id": "rd-0106", "atUtc": "2026-10-06T19:00:00Z", "value": 3328599654 },
+        { "id": "rd-0109", "atUtc": "2026-10-29T18:30:00Z", "value": 3758096384 }
+      ]
+    },
+    "temperature": { "source": "none", "readings": [] },
+    "power": {
+      "source": "entered",
+      "averageWatts": 38,
+      "readings": [
+        { "id": "rd-0107", "atUtc": "2026-10-14T19:00:00Z", "watts": 38 },
+        { "id": "rd-0109", "atUtc": "2026-10-29T18:30:00Z", "watts": 37 }
+      ]
+    }
+  },
+  "components": [
+    { "id": "hw-0101", "group": "compute", "kind": "processor", "name": "Intel Celeron J4125", "spec": "4 cores · 2.0 GHz, up to 2.7 GHz", "source": "entered", "status": "near-limit", "why": "Two of your last 4 readings were above your 80% review level (84% and 88%). Nothing points to a fault: it’s busy for its size. The CPU is soldered to the board, so more headroom means a different unit or moving work elsewhere.", "metric": "cpu" },
+    { "id": "hw-0102", "group": "compute", "kind": "memory", "name": "Onboard 4 GB + Synology 4 GB", "spec": "8 GB · DDR4 non-ECC · 1 of 1 slot", "source": "entered", "status": "healthy", "why": null, "metric": "memory" },
+    { "id": "hw-0103", "group": "power-cooling", "kind": "cooling", "name": "System fans", "spec": "2 × 92 mm", "source": "entered", "status": "not-monitored", "why": null, "metric": null },
+    { "id": "hw-0104", "group": "power-cooling", "kind": "power-supply", "name": "External power adapter", "spec": "100 W", "source": "entered", "status": "not-monitored", "why": null, "metric": null },
+    { "id": "hw-0105", "group": "expansion-chassis", "kind": "nas-unit", "name": "Synology DS920+", "spec": "4 bays · 2 M.2 slots", "source": "entered", "status": "not-monitored", "why": null, "metric": null }
+  ]
+}

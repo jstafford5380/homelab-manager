@@ -64,3 +64,4 @@ Run `npm run gallery` from the repository root, then open http://127.0.0.1:4178/
 | # | Feature | Status | Updated |
 | --- | --- | --- | --- |
 | [001](001-storage-redesign/README.md) | Storage redesign | in progress | 2026-11-01 |
+| [002](002-hardware/README.md) | Hardware | ready | 2026-11-01 |

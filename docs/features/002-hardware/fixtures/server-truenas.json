@@ -1,0 +1,155 @@
+{
+  "_note": "Normal state: media-nas, range 30d, flag hwmetrics on. Series are trimmed to a few points here; the real response returns one point per bucket (see Data needs). With hwmetrics off, cpu/memory/temperature have source \"entered\" or \"none\" and the collected fields are absent.",
+  "server": {
+    "id": "c1a7e0de-0000-4000-8000-000000000001",
+    "name": "media-nas",
+    "host": "truenas.lan",
+    "platform": "truenas",
+    "platformVersion": "TrueNAS SCALE 24.10.2",
+    "connection": "connected",
+    "freshness": "fresh",
+    "lastSuccessUtc": "2026-11-01T21:26:00Z",
+    "uptimeSeconds": 3542400,
+    "bootedUtc": "2026-09-21T09:40:00Z"
+  },
+  "reviewLevels": { "cpuPercent": 80, "memoryPercent": 80, "temperatureC": 80, "sustainedMinutes": 60 },
+  "metrics": {
+    "range": "30d",
+    "coverage": {
+      "intervalSeconds": 300,
+      "expectedSamples": 8640,
+      "samples": 8604,
+      "firstSampleUtc": "2026-10-02T21:25:00Z",
+      "collectionStartedUtc": "2026-05-12T18:00:00Z",
+      "downsampledToSeconds": null,
+      "gaps": [{ "startUtc": "2026-10-19T02:10:00Z", "endUtc": "2026-10-19T05:10:00Z" }]
+    },
+    "cpu": {
+      "source": "collected",
+      "averagePercent": 14,
+      "p95Percent": 41,
+      "previousAveragePercent": 13,
+      "daysAboveLevel": 0,
+      "latestPercent": 9,
+      "series": [
+        { "atUtc": "2026-10-03T00:00:00Z", "value": 12.4 },
+        { "atUtc": "2026-10-03T06:00:00Z", "value": 9.8 },
+        { "atUtc": "2026-10-03T12:00:00Z", "value": 18.1 }
+      ]
+    },
+    "memory": {
+      "source": "collected",
+      "totalBytes": 68719476736,
+      "appsAverageBytes": 19756849971,
+      "appsPeakBytes": 26735991603,
+      "previousAppsAverageBytes": 18790481920,
+      "cacheKind": "zfs-arc",
+      "cacheAverageBytes": 43056439132,
+      "freeAverageBytes": 5906187633,
+      "daysAboveLevel": 0,
+      "series": [
+        { "atUtc": "2026-10-03T00:00:00Z", "value": 19541039513 },
+        { "atUtc": "2026-10-03T06:00:00Z", "value": 19863162060 }
+      ]
+    },
+    "temperature": {
+      "source": "collected",
+      "sensor": "cpu",
+      "averageC": 52,
+      "maxC": 86,
+      "maxAtUtc": "2026-10-28T03:15:00Z",
+      "daysAboveLevel": 3,
+      "series": [
+        { "atUtc": "2026-10-28T03:00:00Z", "value": 81 },
+        { "atUtc": "2026-10-28T03:15:00Z", "value": 86 }
+      ]
+    },
+    "power": { "source": "none", "readings": [] }
+  },
+  "components": [
+    {
+      "id": "hw-0001",
+      "group": "compute",
+      "kind": "processor",
+      "name": "Intel Xeon E-2236",
+      "spec": "6 cores · 12 threads · 3.4 GHz",
+      "source": "detected",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "status": "watch",
+      "why": "It ran above your 80 °C review level on 3 of the last 30 days, hottest 86 °C on Oct 28. Check the cooler and case airflow, especially after cleaning or moving the server.",
+      "metric": "cpu"
+    },
+    {
+      "id": "hw-0002",
+      "group": "compute",
+      "kind": "memory",
+      "name": "Kingston 32 GB ECC × 2",
+      "spec": "64 GB · DDR4-2666 ECC · 2 of 4 slots",
+      "source": "detected+entered",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "status": "healthy",
+      "why": null,
+      "metric": "memory"
+    },
+    {
+      "id": "hw-0003",
+      "group": "compute",
+      "kind": "motherboard",
+      "name": "Supermicro X11SCH-F",
+      "spec": "micro-ATX · BIOS 2.1 · IPMI",
+      "source": "detected",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "status": "not-monitored",
+      "why": null,
+      "metric": null
+    },
+    {
+      "id": "hw-0004",
+      "group": "power-cooling",
+      "kind": "power-supply",
+      "name": "Seasonic Focus GX-650",
+      "spec": "650 W · 80+ Gold",
+      "source": "entered",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "status": "not-monitored",
+      "why": null,
+      "metric": null
+    },
+    {
+      "id": "hw-0005",
+      "group": "power-cooling",
+      "kind": "cooling",
+      "name": "Noctua NH-L9i + 3 case fans",
+      "spec": "Low-profile CPU cooler · 3 × NF-A12",
+      "source": "entered",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "status": "not-monitored",
+      "why": null,
+      "metric": null
+    },
+    {
+      "id": "hw-0006",
+      "group": "expansion-chassis",
+      "kind": "storage-controller",
+      "name": "Broadcom 9300-8i HBA",
+      "spec": "SAS3 · 8 ports · firmware P16",
+      "source": "entered",
+      "installedUtc": "2023-09-02T00:00:00Z",
+      "status": "not-monitored",
+      "why": null,
+      "metric": null
+    },
+    {
+      "id": "hw-0007",
+      "group": "expansion-chassis",
+      "kind": "case",
+      "name": "Fractal Design Node 804",
+      "spec": "8 × 3.5″ bays · micro-ATX",
+      "source": "entered",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "status": "not-monitored",
+      "why": null,
+      "metric": null
+    }
+  ]
+}

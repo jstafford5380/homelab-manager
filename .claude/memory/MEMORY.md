@@ -1,5 +1,6 @@
 - [Project scope and roles](project-scope-and-roles.md) — proactive homelab health app; Claude=design packages+reviews, Codex=all implementation
 - [UI stack and constraints](ui-stack-and-constraints.md) — React/Vite/shadcn stack; a11y+mobile review; truthful, read-only UX
 - [Web verification workflow](web-verification-workflow.md) — e2e serves wwwroot; build API to scratch dir; mock-data screenshots
-- [Feature design handoff](feature-design-handoff.md) — NNN package + NNN.xx feature IDs from exploration start; mock-only until "lock it in"; next free 002
+- [Feature design handoff](feature-design-handoff.md) — NNN package + NNN.xx feature IDs from exploration start; mock-only until "lock it in"; 002 Hardware locked in (ready); next free 003
 - [SMART via SSH decision](smart-ssh-decision.md) — smartctl over locked-down SSH; SMART UI feature-flagged until adapter ships
+- [Backend choices in designs](design-scope-backend-choices.md) — Codex picks access methods; design for capabilities; owner owns unsupported-metric UX

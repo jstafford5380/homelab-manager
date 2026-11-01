@@ -1,0 +1,30 @@
+{
+  "_note": "Out of date: backup-box's last successful collection is older than the freshness window. Values are last known; statuses are prefixed 'Last known'; watch/near-limit counts are null (shown as Unknown).",
+  "server": {
+    "id": "c1a7e0de-0000-4000-8000-000000000002",
+    "name": "backup-box",
+    "host": "backup.lan",
+    "platform": "truenas",
+    "platformVersion": "TrueNAS SCALE 24.10.2",
+    "connection": "connected",
+    "freshness": "stale",
+    "lastSuccessUtc": "2026-10-30T14:05:00Z",
+    "uptimeSeconds": 5443200
+  },
+  "reviewLevels": { "cpuPercent": 80, "memoryPercent": 80, "temperatureC": 80, "sustainedMinutes": 60 },
+  "metrics": {
+    "range": "30d",
+    "coverage": { "intervalSeconds": 300, "expectedSamples": 8640, "samples": 8040, "firstSampleUtc": "2026-10-02T21:25:00Z", "lastSampleUtc": "2026-10-30T14:05:00Z", "downsampledToSeconds": null, "gaps": [] },
+    "cpu": { "source": "collected", "averagePercent": 6, "p95Percent": 18, "previousAveragePercent": 6, "daysAboveLevel": 0, "series": [] },
+    "memory": { "source": "collected", "totalBytes": 17179869184, "appsAverageBytes": 3328599654, "appsPeakBytes": 5261334937, "previousAppsAverageBytes": 3328599654, "cacheKind": "zfs-arc", "cacheAverageBytes": 12025908428, "freeAverageBytes": 1825361100, "daysAboveLevel": 0, "series": [] },
+    "temperature": { "source": "collected", "sensor": "cpu", "averageC": 41, "maxC": 58, "daysAboveLevel": 0, "series": [] },
+    "power": { "source": "none", "readings": [] }
+  },
+  "components": [
+    { "id": "hw-0201", "group": "compute", "kind": "processor", "name": "Intel Pentium Gold G5400", "spec": "2 cores · 4 threads · 3.7 GHz", "source": "detected", "status": "healthy", "statusIsLastKnown": true, "metric": "cpu" },
+    { "id": "hw-0202", "group": "compute", "kind": "memory", "name": "16 GB DDR4", "spec": "16 GB detected · modules not entered", "source": "detected", "status": "healthy", "statusIsLastKnown": true, "metric": "memory" },
+    { "id": "hw-0203", "group": "compute", "kind": "motherboard", "name": "ASRock Rack E3C246D4U", "spec": "micro-ATX · BIOS L2.34", "source": "detected", "status": "not-monitored", "metric": null },
+    { "id": "hw-0204", "group": "power-cooling", "kind": "power-supply", "name": "be quiet! Pure Power 11 400W", "spec": "400 W · 80+ Gold", "source": "entered", "status": "not-monitored", "metric": null },
+    { "id": "hw-0205", "group": "expansion-chassis", "kind": "case", "name": "Silverstone CS351", "spec": "5 × 3.5″ hot-swap bays", "source": "entered", "status": "not-monitored", "metric": null }
+  ]
+}

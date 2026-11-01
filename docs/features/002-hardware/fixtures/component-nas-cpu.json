@@ -1,0 +1,48 @@
+{
+  "_note": "Component panel (002.13) for media-nas's CPU. 'How it's running' reuses the server's metrics for the selected range; it isn't repeated here.",
+  "component": {
+    "id": "hw-0001",
+    "serverId": "c1a7e0de-0000-4000-8000-000000000001",
+    "group": "compute",
+    "kind": "processor",
+    "name": "Intel Xeon E-2236",
+    "spec": "6 cores · 12 threads · 3.4 GHz",
+    "status": "watch",
+    "why": "It ran above your 80 °C review level on 3 of the last 30 days, hottest 86 °C on Oct 28. Check the cooler and case airflow, especially after cleaning or moving the server.",
+    "metric": "cpu",
+    "details": [
+      { "label": "Model", "value": "Intel Xeon E-2236 CPU @ 3.40GHz", "source": "detected" },
+      { "label": "Cores", "value": "6 cores, 12 threads", "source": "detected" },
+      { "label": "Socket", "value": "LGA 1151", "source": "entered" },
+      { "label": "Cooler", "value": "Noctua NH-L9i", "source": "entered" }
+    ],
+    "detectedMismatch": null,
+    "purchase": {
+      "priceCents": 28900,
+      "currency": "USD",
+      "purchasedUtc": "2021-01-10T00:00:00Z",
+      "installedUtc": "2021-01-15T00:00:00Z",
+      "warrantyEndUtc": "2024-01-15T00:00:00Z",
+      "datesEstimated": false
+    },
+    "history": [
+      { "atUtc": "2026-10-28T03:15:00Z", "kind": "metric", "text": "Hottest reading this month: 86 °C" },
+      { "atUtc": "2026-10-09T02:30:00Z", "kind": "metric", "text": "Above 80 °C for 40 minutes during a scrub" },
+      { "atUtc": "2021-01-15T00:00:00Z", "kind": "installed", "text": "Installed (you entered)" }
+    ]
+  },
+  "_memoryExample": {
+    "_note": "For a memory component the panel also needs slots (002.14). Board maximum is entered by the owner unless the platform reports it.",
+    "slots": [
+      { "name": "DIMMA1", "sizeBytes": null },
+      { "name": "DIMMA2", "sizeBytes": 34359738368 },
+      { "name": "DIMMB1", "sizeBytes": null },
+      { "name": "DIMMB2", "sizeBytes": 34359738368 }
+    ],
+    "soldered": [],
+    "maxSupportedBytes": 137438953472,
+    "maxSupportedSource": "entered",
+    "detectedTotalBytes": 68719476736,
+    "enteredTotalBytes": 68719476736
+  }
+}

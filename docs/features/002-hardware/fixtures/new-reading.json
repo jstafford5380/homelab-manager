@@ -1,0 +1,12 @@
+{
+  "_note": "Add a reading (002.09): proposed request body. Every measurement is optional, but at least one is required. 'kind' says whether the values are a moment or an average over a period.",
+  "serverId": "c1a7e0de-0000-4000-8000-000000000004",
+  "takenUtc": "2026-11-01T18:30:00Z",
+  "kind": "moment",
+  "periodMinutes": null,
+  "cpuPercent": 22,
+  "memoryUsedBytes": 3650722201,
+  "temperatureC": null,
+  "powerWatts": 36,
+  "note": "Power from the smart plug, after the nightly backup."
+}

@@ -1,0 +1,785 @@
+<!doctype html>
+<!--
+  002 · Hardware mock. Built from docs/features/_template.
+
+  - Design tokens are copied from src/Web/src/index.css. Three mock-only tokens are added at the end of each
+    theme block (--info-bg, --info-border, --cache); see the brief's Implementation notes guidance.
+  - Everything inside #app is the design. The toolbar is mock chrome.
+  - Responsive rules use @container app so the Width switcher works. Map them to the app's 700px / 1100px @media breakpoints.
+  - Data below mirrors fixtures/*.json in spirit; the fixtures are the proposed contract shape, this script is a renderer.
+  - URL presets: ?state=synology&width=mobile&theme=dark&hwmetrics=off&synology=on
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>002 Hardware · Mock</title>
+  <style>
+    /* App tokens: light */
+    :root {
+      color-scheme: light;
+      --background: #ffffff;
+      --foreground: #24312e;
+      --card: #ffffff;
+      --card-foreground: #24312e;
+      --popover: #ffffff;
+      --popover-foreground: #24312e;
+      --primary: #246348;
+      --primary-foreground: #ffffff;
+      --secondary: #edf3ef;
+      --secondary-foreground: #355b45;
+      --muted: #f2f5f3;
+      --muted-foreground: #52655b;
+      --accent: #edf3ef;
+      --accent-foreground: #24312e;
+      --destructive: #b44336;
+      --border: #e0e7e2;
+      --input: #7b8b82;
+      --ring: #599476;
+      --page: #f7f8fa;
+      --surface-soft: #f5f8f6;
+      --surface-stripe: #fafcfb;
+      --text-secondary: var(--muted-foreground);
+      --brand: #172d26;
+      --brand-background: #1d5e48;
+      --brand-foreground: #ffffff;
+      --nav-active: #eaf3ed;
+      --nav-active-foreground: #226149;
+      --nav-count: #d5e9dc;
+      --error-background: #fff0ed;
+      --error-border: #f3d1c7;
+      --error-foreground: #9e4938;
+      --warning-background: #fff6e8;
+      --warning-border: #dfc9a0;
+      --warning-foreground: #69471e;
+      --chart-axis: #b7c6bc;
+      --chart-point: #28664b;
+      --tone-ok: #1f6a48;
+      --tone-ok-bg: #e8f4ec;
+      --tone-ok-border: #bfdcc9;
+      --tone-warn: #7a4a0e;
+      --tone-warn-bg: #fff4e0;
+      --tone-warn-border: #e6c98f;
+      --tone-bad: #a1301f;
+      --tone-bad-bg: #fdece8;
+      --tone-bad-border: #efc0b5;
+      --tone-neutral: #52655b;
+      --tone-neutral-bg: #f2f5f3;
+      --tone-neutral-border: #dbe3de;
+      --tone-info: #3f6487;
+      /* Mock-only additions */
+      --info-bg: #edf2f8;
+      --info-border: #c9d6e5;
+      --cache: #9fbfae;
+    }
+    /* App tokens: dark */
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --background: #121b17;
+      --foreground: #e4eee7;
+      --card: #19251f;
+      --card-foreground: #e4eee7;
+      --popover: #19251f;
+      --popover-foreground: #e4eee7;
+      --primary: #8dd6b2;
+      --primary-foreground: #10271c;
+      --secondary: #293f32;
+      --secondary-foreground: #d5ecdd;
+      --muted: #22332a;
+      --muted-foreground: #b2c3b8;
+      --accent: #293f32;
+      --accent-foreground: #e4eee7;
+      --destructive: #b44336;
+      --border: #43574b;
+      --input: #7f9589;
+      --ring: #8dd6b2;
+      --page: #0f1713;
+      --surface-soft: #22332a;
+      --surface-stripe: #1d2b23;
+      --brand: #e4eee7;
+      --brand-background: #8dd6b2;
+      --brand-foreground: #10271c;
+      --nav-active: #293f32;
+      --nav-active-foreground: #b5eccd;
+      --nav-count: #38563f;
+      --error-background: #38221e;
+      --error-border: #a46b5f;
+      --error-foreground: #ffc1b5;
+      --warning-background: #34291b;
+      --warning-border: #82683e;
+      --warning-foreground: #f3d4a0;
+      --chart-axis: #7f9589;
+      --chart-point: #8dd6b2;
+      --tone-ok: #9fe0bd;
+      --tone-ok-bg: #183026;
+      --tone-ok-border: #2f5a44;
+      --tone-warn: #f3cf92;
+      --tone-warn-bg: #33281a;
+      --tone-warn-border: #6e5531;
+      --tone-bad: #ffb4a6;
+      --tone-bad-bg: #3a201b;
+      --tone-bad-border: #7a3f34;
+      --tone-neutral: #b2c3b8;
+      --tone-neutral-bg: #1f2e26;
+      --tone-neutral-border: #3a4d42;
+      --tone-info: #9dbad8;
+      /* Mock-only additions */
+      --info-bg: #1c2a33;
+      --info-border: #3d5466;
+      --cache: #4f7a64;
+    }
+
+    /* App base (mirrors src/Web/src/App.css) */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--foreground); background: var(--page); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: -1px; font-weight: 600; }
+    h2 { font-size: 17px; font-weight: 600; }
+    h3 { font-size: 15px; font-weight: 600; }
+    small, .muted { color: var(--text-secondary); font-size: 12px; }
+    a { color: var(--primary); }
+    .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 600; color: var(--text-secondary); }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground); text-decoration: none; }
+    .btn.outline { background: var(--background); color: var(--foreground); border-color: var(--border); }
+    .btn.sm { height: 32px; padding: 0 12px; }
+    .btn:focus-visible, a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .tone-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); }
+    .tone-warn { --tone: var(--tone-warn); --tone-bg: var(--tone-warn-bg); --tone-border: var(--tone-warn-border); }
+    .tone-bad { --tone: var(--tone-bad); --tone-bg: var(--tone-bad-bg); --tone-border: var(--tone-bad-border); }
+    .tone-neutral { --tone: var(--tone-neutral); --tone-bg: var(--tone-neutral-bg); --tone-border: var(--tone-neutral-border); }
+    .tone-info { --tone: var(--tone-info); --tone-bg: var(--info-bg); --tone-border: var(--info-border); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); white-space: nowrap; }
+
+    /* Mock frame */
+    #app { container: app / inline-size; margin: 0 auto; padding: 36px 38px; max-width: 1600px; transition: max-width .2s; }
+    html[data-width="tablet"] #app { max-width: 900px; }
+    html[data-width="mobile"] #app { max-width: 390px; padding: 24px 16px; }
+    html[data-width="tablet"] body, html[data-width="mobile"] body { background: var(--muted); }
+    html[data-width="tablet"] #app, html[data-width="mobile"] #app { background: var(--page); min-height: calc(100vh - 49px); box-shadow: 0 0 0 1px var(--border); }
+
+    /* Mock-only toolbar */
+    .mock-toolbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: #1b1f1d; color: #e8ece9; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mock-toolbar strong { margin-right: auto; }
+    .mock-toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+    .mock-toolbar select { font: inherit; background: #2b312e; color: inherit; border: 1px solid #47504b; border-radius: 4px; padding: 3px 6px; }
+
+    /* Feature styles */
+    .stack { display: flex; flex-direction: column; gap: 24px; }
+    .stack-sm { display: flex; flex-direction: column; gap: 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .grow { flex: 1; min-width: 0; }
+    .sub { color: var(--text-secondary); margin-top: 4px; }
+    .line-sm { font-size: 13px; color: var(--text-secondary); }
+    .line-xs { font-size: 12px; color: var(--text-secondary); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+    .d-ok { background: var(--tone-ok); } .d-warn { background: var(--tone-warn); } .d-bad { background: var(--tone-bad); } .d-neutral { background: var(--tone-neutral); } .d-info { background: var(--tone-info); }
+    .link { background: none; border: 0; padding: 0; font: inherit; color: var(--primary); cursor: pointer; font-weight: 600; text-align: left; }
+    .icon-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); cursor: pointer; flex: none; }
+    .link:focus-visible, .tab:focus-visible, .seg-btn:focus-visible, .name-btn:focus-visible, .icon-btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tab { display: flex; align-items: center; gap: 10px; padding: 10px 16px; min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--foreground); font: inherit; cursor: pointer; text-align: left; }
+    .tab[aria-pressed="true"] { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+    .tab .tline { display: block; font-size: 12px; color: var(--text-secondary); }
+    .server-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; }
+    .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 4px; }
+    .title-row h2 { font-size: 22px; letter-spacing: -.4px; }
+    .banner { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); }
+    .banner svg { flex: none; margin-top: 2px; }
+    .facts { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .facts > div { padding: 14px 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); }
+    .facts dt { font-size: 12px; color: var(--text-secondary); }
+    .facts dd { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
+    .facts dd.fsub { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--text-secondary); margin: 0; }
+    .section-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 3px; gap: 2px; }
+    .seg-btn { font: inherit; font-size: 13px; font-weight: 500; border: 0; background: none; color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; min-height: 32px; }
+    .seg-btn[aria-pressed="true"] { background: var(--muted); color: var(--foreground); font-weight: 600; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .metric { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .metric-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; flex-wrap: wrap; }
+    .big { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .big .num { font-size: 28px; font-weight: 600; letter-spacing: -.8px; line-height: 1.1; }
+    .big .unit { font-size: 13px; color: var(--text-secondary); }
+    .spark { width: 100%; height: 56px; display: block; overflow: visible; }
+    .spark .ln { fill: none; stroke: var(--chart-point); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+    .spark .thr { stroke: var(--tone-warn); stroke-width: 1; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+    .spark .base { stroke: var(--chart-axis); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .spark .dots { fill: var(--chart-point); }
+    .mlines { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; }
+    .mlines li { display: flex; gap: 8px; align-items: baseline; }
+    .membar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--muted); }
+    .membar .apps { background: var(--chart-point); } .membar .cache { background: var(--cache); }
+    .legend { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-secondary); }
+    .legend li { display: flex; align-items: center; gap: 6px; }
+    .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .sw.apps { background: var(--chart-point); } .sw.cache { background: var(--cache); } .sw.free { background: var(--muted); border: 1px solid var(--border); }
+    .unmeasured { font-size: 20px; font-weight: 600; color: var(--text-secondary); letter-spacing: -.3px; }
+    .hatch { height: 56px; border-radius: 8px; border: 1px dashed var(--border); background: repeating-linear-gradient(135deg, transparent 0 6px, var(--muted) 6px 8px); }
+    .comp-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .group + .group { border-top: 1px solid var(--border); }
+    .group-h { padding: 14px 20px 4px; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+    th:first-child, td:first-child { padding-left: 20px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: var(--surface-soft); }
+    .name-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--foreground); cursor: pointer; text-align: left; font-weight: 600; }
+    .name-btn:hover { text-decoration: underline; }
+    .src { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .src.det { color: var(--tone-info); }
+    .cards { display: none; }
+    .ccard { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; width: 100%; padding: 14px 16px; border: 0; border-top: 1px solid var(--border); background: none; color: var(--foreground); font: inherit; text-align: left; cursor: pointer; min-height: 44px; }
+    .ccard:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+    .scrim { position: fixed; inset: 0; background: rgba(20, 30, 26, .32); z-index: 4; }
+    html[data-theme="dark"] .scrim { background: rgba(0, 0, 0, .5); }
+    .panel { position: fixed; top: 49px; right: 0; bottom: 0; width: min(480px, 100%); background: var(--card); border-left: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; z-index: 5; }
+    .dialog { position: fixed; z-index: 5; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(580px, calc(100% - 32px)); max-height: calc(100vh - 80px); overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; }
+    .panel.inline, .dialog.inline { position: static; transform: none; width: auto; max-height: none; border: 0; border-radius: 0; margin: -24px -16px 0; overflow: visible; }
+    .panel-head { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; }
+    .panel-head h2 { font-size: 20px; letter-spacing: -.3px; margin: 2px 0; }
+    .panel-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 24px; }
+    .panel-body section { display: flex; flex-direction: column; gap: 10px; }
+    .why { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); font-size: 13px; }
+    .tiles { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .tiles > div { padding: 10px 12px; border-radius: 8px; background: var(--muted); }
+    .tiles dt { font-size: 12px; color: var(--text-secondary); }
+    .tiles dd { margin: 2px 0 0; font-weight: 600; }
+    .tiles dd.tsub { font-weight: 400; font-size: 12px; color: var(--text-secondary); margin: 0; }
+    .kv { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; }
+    .kv dt { color: var(--text-secondary); }
+    .kv dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+    .slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .slot { border-radius: 8px; padding: 10px 8px; display: grid; gap: 2px; text-align: center; font-size: 12px; border: 1px solid var(--border); }
+    .slot.filled { background: var(--tone-ok-bg); border-color: var(--tone-ok-border); color: var(--tone-ok); }
+    .slot.empty { border-style: dashed; color: var(--text-secondary); }
+    .slot strong { font-size: 14px; }
+    .history { margin: 0; padding: 0; list-style: none; }
+    .history li { display: grid; grid-template-columns: 84px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .actions { position: sticky; bottom: 0; margin-top: auto; padding: 14px 24px; border-top: 1px solid var(--border); background: var(--card); display: flex; flex-wrap: wrap; gap: 8px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .field { display: grid; gap: 6px; align-content: start; }
+    .field.full { grid-column: 1 / -1; }
+    .field > label, .field legend { font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 0; }
+    .field fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+    input[type="text"], input[type="number"], input[type="datetime-local"], input[type="month"], select, textarea { font: inherit; color: var(--foreground); background: var(--card); border: 1px solid var(--input); border-radius: 8px; padding: 8px 11px; min-height: 40px; width: 100%; }
+    textarea { min-height: 64px; resize: vertical; }
+    .suffix { display: flex; align-items: center; gap: 8px; }
+    .suffix span { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+    .radio, .check { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--foreground); min-height: 32px; }
+    .radio input, .check input { accent-color: var(--primary); width: 16px; height: 16px; margin: 0; }
+    .empty-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 40px 32px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; max-width: 640px; }
+    .skeleton { background: var(--muted); border-radius: 8px; animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+    @container app (max-width: 1100px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @container app (max-width: 700px) {
+      h1 { font-size: 26px; }
+      .stack { gap: 20px; }
+      .tabs { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; }
+      .tab { flex: none; padding: 8px 14px; border-radius: 999px; }
+      .tab .tline { display: none; }
+      .facts { gap: 10px; }
+      .facts dd { font-size: 18px; }
+      .server-head .row { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+      .server-head .btn { justify-content: center; min-height: 44px; }
+      .seg { display: flex; width: 100%; } .seg-btn { flex: 1; min-height: 36px; padding: 6px 4px; }
+      .metrics { grid-template-columns: minmax(0, 1fr); }
+      .tablewrap { display: none; }
+      .cards { display: block; }
+      .group-h { padding: 14px 16px 6px; }
+      .panel-head, .panel-body { padding-left: 16px; padding-right: 16px; }
+      .actions { position: static; display: grid; padding: 14px 16px; }
+      .actions .btn { justify-content: center; min-height: 44px; }
+      .form-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-toolbar" role="region" aria-label="Mock controls (not part of the design)">
+    <strong>MOCK · 002 Hardware</strong>
+    <label>State <select id="mock-state">
+      <option value="normal">Normal (TrueNAS, 1 to watch)</option>
+      <option value="synology">Near its limit (Synology)</option>
+      <option value="manual">Not connected, readings by hand (Synology)</option>
+      <option value="stale">Out of date (backup TrueNAS)</option>
+      <option value="collecting">Just connected, collecting</option>
+      <option value="panel">Component panel open</option>
+      <option value="reading">Add a reading</option>
+      <option value="component">Add a component</option>
+      <option value="empty">Empty</option>
+      <option value="loading">Loading</option>
+      <option value="unavailable">Unavailable</option>
+    </select></label>
+    <label>Width <select id="mock-width"><option value="desktop">Desktop</option><option value="tablet">Tablet 900</option><option value="mobile">Mobile 390</option></select></label>
+    <label>Theme <select id="mock-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+    <label>Flag hwmetrics <select id="mock-hwmetrics"><option value="on">On</option><option value="off">Off</option></select></label>
+    <label>Flag synology <select id="mock-synology"><option value="on">On</option><option value="off">Off</option></select></label>
+  </div>
+
+  <main id="app"></main>
+
+  <script>
+    const RANGES = [["24h", "24 h"], ["7d", "7 days"], ["30d", "30 days"], ["90d", "90 days"]];
+    const RLONG = { "24h": "24-hour", "7d": "7-day", "30d": "30-day", "90d": "90-day" };
+    const RSPAN = { "24h": "24 hours", "7d": "7 days", "30d": "30 days", "90d": "90 days" };
+    const IDX = { "24h": 0, "7d": 1, "30d": 2, "90d": 3 };
+    const DAYS = [1, 7, 30, 90];
+    const LEVEL = { cpu: 80, mem: 80, temp: 80 };
+
+    const icon = {
+      warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+      info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>',
+      clock: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+      plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+      close: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+      back: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+      chip: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--text-secondary)"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>'
+    };
+
+    // ---------- chart helpers ----------
+    function rng(seed) { let s = seed % 2147483647; if (s <= 0) s += 2147483646; return () => { s = s * 16807 % 2147483647; return (s - 1) / 2147483646; }; }
+    function series(seed, base, amp, lo, hi, spike) {
+      const r = rng(seed), out = [];
+      for (let i = 0; i < 72; i++) {
+        let v = base + Math.sin(i / 72 * Math.PI * 9) * amp * 0.3 + (r() - 0.5) * amp;
+        if (spike && r() < spike) v += amp * (1.1 + r());
+        out.push(Math.max(lo, Math.min(hi, v)));
+      }
+      return out;
+    }
+    const yOf = (v, lo, hi) => (54 - (v - lo) / (hi - lo) * 50).toFixed(1);
+    function linePath(pts, lo, hi, gap, upto) {
+      let d = "", pen = false;
+      for (let i = 0; i < pts.length; i++) {
+        if (upto != null && i > upto) break;
+        if (gap && i >= gap[0] && i < gap[1]) { pen = false; continue; }
+        d += (pen ? "L" : "M") + (i / (pts.length - 1) * 240).toFixed(1) + " " + yOf(pts[i], lo, hi) + " ";
+        pen = true;
+      }
+      return d.trim();
+    }
+    function dotPath(vals, lo, hi) {
+      return vals.map((v, i) => {
+        const x = vals.length === 1 ? 228 : 12 + i / (vals.length - 1) * 216;
+        return `M${(x - 3.5).toFixed(1)} ${yOf(v, lo, hi)} a3.5 3.5 0 1 0 7 0 a3.5 3.5 0 1 0 -7 0`;
+      }).join(" ");
+    }
+    const pct = (a, b) => Math.round(a / b * 100);
+    const gb = v => v.toFixed(1) + " GB";
+    const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+
+    // ---------- data (mirrors fixtures/) ----------
+    const SERVERS = [
+      { id: "nas", name: "media-nas", host: "truenas.lan", platform: "truenas", platformLabel: "TrueNAS SCALE 24.10", auto: true, memGb: 64, seen: "last collected 2 minutes ago", fresh: ["Reporting", "tone-ok", "d-ok"], uptime: "41 days", uptimeSub: "Since Sep 21" },
+      { id: "ds920", name: "ds920", host: "synology.lan", platform: "synology", platformLabel: "Synology DSM 7.2", auto: true, memGb: 8, seen: "last collected 3 minutes ago", fresh: ["Reporting", "tone-ok", "d-ok"], uptime: "18 days", uptimeSub: "Since Oct 14" },
+      { id: "backup", name: "backup-box", host: "backup.lan", platform: "truenas", platformLabel: "TrueNAS SCALE 24.10", auto: true, stale: true, memGb: 16, seen: "last collected 2 days ago", fresh: ["Out of date", "tone-warn", "d-warn"], uptime: "63 days", uptimeSub: "Last known" }
+    ];
+    const PLATFORM = {
+      truenas: { cacheLabel: "ZFS cache", cacheNote: "ZFS borrows spare memory as a disk cache and gives it back when apps need it, so it isn’t counted as used.", tempLabel: "CPU temperature", noPower: "TrueNAS doesn’t report power draw. Add a reading from a power meter or your UPS to track it here." },
+      synology: { cacheLabel: "File cache", cacheNote: "DSM uses spare memory to cache files and gives it back when apps need it, so it isn’t counted as used.", tempLabel: "System temperature", noPower: "Synology doesn’t report power draw. Add a reading from a power meter or your UPS to track it here." }
+    };
+    const MANUAL_DS = { auto: false, seen: "last reading entered 3 days ago", fresh: ["Not connected", "tone-neutral", "d-neutral"] };
+
+    const AUTO = {
+      nas: {
+        cpu: { avg: [11, 13, 14, 12], p95: [33, 38, 41, 37], prev: [12, 12, 13, 11], over: [0, 0, 0, 0], base: 13, amp: 16, spike: 0.08, now: 9 },
+        mem: { apps: [17.9, 18.2, 18.4, 17.6], peak: [22.1, 23.8, 24.9, 26.0], cache: [40.6, 40.3, 40.1, 39.0], prev: [18.0, 17.9, 17.5, 16.8], now: 17.4 },
+        temp: { avg: [50, 51, 52, 49], peak: [71, 84, 86, 86], days: [0, 1, 3, 5], base: 51, amp: 12, spike: 0.12, now: 47 },
+        gap: [null, null, [43, 45], null],
+        coverage: ["Based on 288 of 288 five-minute samples.", "Based on 2,016 of 2,016 five-minute samples.", "Based on 8,604 of 8,640 five-minute samples (99.6%). One gap: 3 hours on Oct 19.", "Older than 30 days is kept as hourly averages. Based on 2,154 of 2,160 hours."]
+      },
+      ds920: {
+        cpu: { avg: [55, 58, 57, 52], p95: [88, 92, 93, 90], prev: [50, 54, null, null], over: [0, 2, 9, 12], base: 57, amp: 30, spike: 0.1, now: 54 },
+        mem: { apps: [3.1, 3.2, 3.3, 3.1], peak: [4.4, 4.9, 5.2, 5.2], cache: [3.9, 3.8, 3.7, 3.8], prev: [3.0, 3.1, null, null], now: 3.2 },
+        temp: { avg: [44, 45, 45, 44], peak: [51, 53, 55, 55], days: [0, 0, 0, 0], base: 45, amp: 6, spike: 0.01, now: 44 },
+        gap: [null, null, [0, 29], [0, 58]],
+        coverage: ["Based on 288 of 288 five-minute samples. DSM keeps no history the app can read, so the app records its own.", "Based on 2,016 of 2,016 five-minute samples.", "Covers 18 of 30 days: collection started Oct 14. Based on 5,184 five-minute samples.", "Covers 18 of 90 days: collection started Oct 14."]
+      },
+      backup: {
+        cpu: { avg: [5, 6, 6, 6], p95: [15, 17, 18, 17], prev: [6, 6, 6, 5], over: [0, 0, 0, 0], base: 6, amp: 8, spike: 0.03 },
+        mem: { apps: [3.0, 3.1, 3.1, 3.0], peak: [4.2, 4.6, 4.9, 5.1], cache: [11.4, 11.3, 11.2, 11.0], prev: [3.0, 3.0, 3.1, 3.0] },
+        temp: { avg: [40, 41, 41, 40], peak: [52, 56, 58, 58], days: [0, 0, 0, 0], base: 41, amp: 8, spike: 0.01 },
+        gap: [null, null, null, null],
+        coverage: Array(4).fill("Last known: samples up to Oct 30, 14:05.")
+      }
+    };
+
+    // Entered readings, oldest first. ds920 has power readings even while connected (Synology doesn't report power).
+    const READINGS = {
+      nas: [],
+      backup: [],
+      ds920: [
+        { d: "Aug 4", cpu: 52, mem: 2.9, pw: null }, { d: "Aug 19", cpu: 61, mem: 3.1, pw: 33 }, { d: "Sep 2", cpu: 55, mem: 3.0, pw: null },
+        { d: "Sep 16", cpu: 58, mem: 3.2, pw: 35 }, { d: "Sep 30", cpu: 49, mem: 3.3, pw: null }, { d: "Oct 6", cpu: 63, mem: 3.1, pw: null },
+        { d: "Oct 14", cpu: 84, mem: 3.6, pw: 38 }, { d: "Oct 22", cpu: 57, mem: 3.4, pw: null }, { d: "Oct 29", cpu: 88, mem: 3.5, pw: 37 }
+      ]
+    };
+    const READ_COUNT = [0, 1, 4, 9]; // how many of ds920's readings fall in each range
+
+    function C(o) {
+      return Object.assign({ tone: "tone-neutral", status: "Not monitored", why: "", details: [["Model", o.name, o.source === "Detected" ? "Detected" : "You entered"]],
+        cost: "Not recorded", installed: "Not recorded", warranty: "Not recorded", history: [], runningNote: "", match: "" }, o);
+    }
+    const COMPONENTS = {
+      nas: [
+        C({ id: "nas-cpu", group: "Compute", kind: "Processor", name: "Intel Xeon E-2236", spec: "6 cores · 12 threads · 3.4 GHz", source: "Detected", age: "4 y 10 m", status: "Watch", tone: "tone-warn", metric: "cpu",
+          why: "It ran above your 80 °C review level on 3 of the last 30 days, hottest 86 °C on Oct 28. Check the cooler and case airflow, especially after cleaning or moving the server.",
+          details: [["Model", "Intel Xeon E-2236 CPU @ 3.40GHz", "Detected"], ["Cores", "6 cores, 12 threads", "Detected"], ["Socket", "LGA 1151", "You entered"], ["Cooler", "Noctua NH-L9i", "You entered"]],
+          cost: "$289 · about $59 per year so far", installed: "Jan 2021", warranty: "Ended Jan 2024",
+          history: [["Oct 28", "Hottest reading this month: 86 °C"], ["Oct 9", "Above 80 °C for 40 minutes during a scrub"], ["Jan 2021", "Installed (you entered)"]] }),
+        C({ id: "nas-mem", group: "Compute", kind: "Memory", name: "Kingston 32 GB ECC × 2", spec: "64 GB · DDR4-2666 ECC · 2 of 4 slots", source: "Detected + entered", age: "4 y 10 m", status: "Healthy", tone: "tone-ok", metric: "mem",
+          details: [["Total", "64 GB", "Detected"], ["Modules", "2 × 32 GB DDR4-2666 ECC UDIMM", "You entered"], ["Part number", "KSM26ED8/32ME", "You entered"], ["Board maximum", "128 GB", "You entered"]],
+          match: "The detected total matches the modules you entered.",
+          slots: [["DIMMA1", ""], ["DIMMA2", "32 GB"], ["DIMMB1", ""], ["DIMMB2", "32 GB"]], slotLine: "2 of 4 slots used · 64 GB installed · board supports up to 128 GB", slotPlan: "Room for 2 more modules. To keep dual-channel, add them as a matching pair.",
+          cost: "$318 for both · about $65 per year so far", installed: "Jan 2021", warranty: "Lifetime", history: [["Jan 2021", "Installed (you entered)"]] }),
+        C({ id: "nas-board", group: "Compute", kind: "Motherboard", name: "Supermicro X11SCH-F", spec: "micro-ATX · BIOS 2.1 · IPMI", source: "Detected", age: "4 y 10 m",
+          runningNote: "TrueNAS doesn’t report motherboard health. The board model and BIOS version are checked on every collection, so a change shows up in History.",
+          details: [["Model", "Supermicro X11SCH-F", "Detected"], ["BIOS", "2.1 (Mar 2024)", "Detected"], ["Serial", "ZM21AS012345", "Detected"]],
+          cost: "$249 · about $51 per year so far", installed: "Jan 2021", warranty: "Ended Jan 2024", history: [["Mar 2024", "BIOS changed from 1.9 to 2.1 (detected)"], ["Jan 2021", "Installed (you entered)"]] }),
+        C({ id: "nas-psu", group: "Power & cooling", kind: "Power supply", name: "Seasonic Focus GX-650", spec: "650 W · 80+ Gold", source: "You entered", age: "4 y 10 m",
+          runningNote: "Power supplies don’t report to TrueNAS. If you have a power meter or UPS reading, add it as a power-draw reading for this server.",
+          details: [["Model", "SSR-650FX", "You entered"], ["Rating", "650 W · 80+ Gold", "You entered"]],
+          cost: "$109 · about $22 per year so far", installed: "Jan 2021 (estimated)", warranty: "Until Jan 2031", history: [["Jan 2021", "Installed (you entered, estimated)"]] }),
+        C({ id: "nas-cool", group: "Power & cooling", kind: "Cooling", name: "Noctua NH-L9i + 3 case fans", spec: "Low-profile CPU cooler · 3 × NF-A12", source: "You entered", age: "4 y 10 m",
+          runningNote: "Fan speeds aren’t collected. CPU temperature is the best sign of how cooling is doing.",
+          cost: "$45 + $66 · about $23 per year so far", installed: "Jan 2021", warranty: "Until Jan 2027", history: [["Jun 2025", "Dust filters cleaned (note)"], ["Jan 2021", "Installed (you entered)"]] }),
+        C({ id: "nas-hba", group: "Expansion & chassis", kind: "Storage controller", name: "Broadcom 9300-8i HBA", spec: "SAS3 · 8 ports · firmware P16", source: "You entered", age: "3 y 2 m",
+          runningNote: "Controller health isn’t collected. The drives on it are on the Storage page.", cost: "$85 (used) · about $27 per year so far", installed: "Sep 2023", warranty: "None", history: [["Sep 2023", "Installed (you entered)"]] }),
+        C({ id: "nas-case", group: "Expansion & chassis", kind: "Case", name: "Fractal Design Node 804", spec: "8 × 3.5″ bays · micro-ATX", source: "You entered", age: "4 y 10 m",
+          runningNote: "Nothing to measure here. Keep it for bay counts and the cost of the build.", cost: "$119", installed: "Jan 2021", warranty: "Ended Jan 2023" })
+      ],
+      ds920: [
+        C({ id: "ds-cpu", group: "Compute", kind: "Processor", name: "Intel Celeron J4125", spec: "4 cores · 2.0 GHz, up to 2.7 GHz", source: "Detected", age: "2 y 1 m", status: "Near its limit", tone: "tone-info", metric: "cpu", needsCollection: true,
+          why: "CPU use averaged 57% over the last 30 days and stayed above your 80% review level for an hour or more on 9 of them, peaking at 93%. Nothing points to a fault: it’s busy for its size. The CPU is soldered to the board, so more headroom means a different unit or moving work elsewhere.",
+          whyManual: "Two of your last 4 readings were above your 80% review level (84% and 88%). Nothing points to a fault: it’s busy for its size. The CPU is soldered to the board, so more headroom means a different unit or moving work elsewhere.",
+          details: [["Model", "Intel Celeron J4125", "Detected"], ["Cores", "4 cores, 4 threads", "Detected"]],
+          runningNote: "Built into the DS920+, so its purchase details follow the unit.", cost: "Part of the DS920+", installed: "Oct 2024", warranty: "Follows the unit", history: [["Oct 2024", "Installed with the unit (you entered)"]] }),
+        C({ id: "ds-mem", group: "Compute", kind: "Memory", name: "Onboard 4 GB + Synology 4 GB", spec: "8 GB · DDR4 non-ECC · 1 of 1 slot", source: "Detected + entered", age: "2 y 1 m", status: "Healthy", tone: "tone-ok", metric: "mem", needsCollection: true,
+          details: [["Total", "8 GB", "Detected"], ["Module", "Synology D4NESO-2666-4G", "You entered"], ["Maximum", "8 GB (Synology’s figure)", "You entered"]],
+          match: "The detected total matches the onboard memory plus the module you entered.",
+          slots: [["Onboard", "4 GB"], ["Slot 1", "4 GB"]], slotLine: "8 GB installed: 4 GB soldered to the board, plus 1 module", slotPlan: "Synology lists 8 GB as this model’s maximum, so it’s already at the supported limit.",
+          cost: "$60 for the module", installed: "Nov 2024", warranty: "Until Nov 2027", history: [["Nov 2024", "Module added (you entered)"], ["Oct 2024", "Installed with 4 GB onboard"]] }),
+        C({ id: "ds-fans", group: "Power & cooling", kind: "Cooling", name: "System fans", spec: "2 × 92 mm", source: "Detected", age: "2 y 1 m", status: "Healthy", tone: "tone-ok", needsCollection: true,
+          runningNote: "Synology reports whether each fan is working or has failed. It doesn’t report speeds.", details: [["Fans", "2, both working", "Detected"], ["Fan mode", "Quiet", "Detected"]], installed: "Oct 2024" }),
+        C({ id: "ds-psu", group: "Power & cooling", kind: "Power supply", name: "External power adapter", spec: "100 W", source: "You entered", age: "2 y 1 m",
+          runningNote: "Synology doesn’t report the adapter’s health or power draw. Readings you enter appear in the Power draw card.", details: [["Rating", "100 W, 12 V", "You entered"]], installed: "Oct 2024", warranty: "Follows the unit" }),
+        C({ id: "ds-unit", group: "Expansion & chassis", kind: "NAS unit", name: "Synology DS920+", spec: "4 bays · 2 M.2 slots · DSM 7.2.2", source: "Detected", age: "2 y 1 m", status: "Healthy", tone: "tone-ok", needsCollection: true,
+          runningNote: "The model and DSM version are checked on every collection, so an update shows up in History. Its drives are on the Storage page.",
+          details: [["Model", "DS920+", "Detected"], ["DSM", "7.2.2-72806 Update 3", "Detected"], ["Serial", "21A0PDN123456", "Detected"]],
+          cost: "$550 · about $262 per year so far", installed: "Oct 2024", warranty: "Until Oct 2026", history: [["Sep 2026", "DSM updated to 7.2.2 Update 3 (detected)"], ["Oct 2024", "Installed (you entered)"]] })
+      ],
+      backup: [
+        C({ id: "bk-cpu", group: "Compute", kind: "Processor", name: "Intel Pentium Gold G5400", spec: "2 cores · 4 threads · 3.7 GHz", source: "Detected", age: "5 y 1 m", status: "Last known: healthy", tone: "tone-neutral", metric: "cpu",
+          details: [["Model", "Intel Pentium Gold G5400 @ 3.70GHz", "Detected"], ["Cores", "2 cores, 4 threads", "Detected"]], installed: "Oct 2021" }),
+        C({ id: "bk-mem", group: "Compute", kind: "Memory", name: "16 GB DDR4", spec: "16 GB detected · modules not entered", source: "Detected", age: "5 y 1 m", status: "Last known: healthy", tone: "tone-neutral", metric: "mem",
+          details: [["Total", "16 GB", "Detected"], ["Modules", "Not entered yet", "You entered"]], installed: "Oct 2021" }),
+        C({ id: "bk-board", group: "Compute", kind: "Motherboard", name: "ASRock Rack E3C246D4U", spec: "micro-ATX · BIOS L2.34", source: "Detected", age: "5 y 1 m", runningNote: "TrueNAS doesn’t report motherboard health.", installed: "Oct 2021" }),
+        C({ id: "bk-psu", group: "Power & cooling", kind: "Power supply", name: "be quiet! Pure Power 11 400W", spec: "400 W · 80+ Gold", source: "You entered", age: "5 y 1 m", runningNote: "Power supplies don’t report to TrueNAS.", installed: "Oct 2021" }),
+        C({ id: "bk-case", group: "Expansion & chassis", kind: "Case", name: "Silverstone CS351", spec: "5 × 3.5″ hot-swap bays", source: "You entered", age: "5 y 1 m", runningNote: "Nothing to measure here.", installed: "Oct 2021" })
+      ]
+    };
+    const GROUPS = ["Compute", "Power & cooling", "Expansion & chassis"];
+
+    // ---------- UI state ----------
+    const ui = { scenario: "normal", server: "nas", range: "30d", panel: null, dialog: null, hw: true, syn: true };
+
+    function servers() {
+      return SERVERS.filter(s => ui.syn || s.platform !== "synology").map(s => ui.scenario === "manual" && s.id === "ds920" ? { ...s, ...MANUAL_DS } : s);
+    }
+    // Automatic metrics exist when the server is connected and its platform's collector is on.
+    const collects = s => s.auto && (s.platform === "synology" ? ui.syn : ui.hw);
+
+    function autoMetrics(sv, collecting) {
+      const D = AUTO[sv.id], P = PLATFORM[sv.platform], i = IDX[ui.range], st = !!sv.stale, gap = D.gap[i];
+      const upto = collecting ? (ui.range === "24h" ? 17 : 2) : null;
+      const seed = { nas: 100, ds920: 300, backup: 500 }[sv.id] + i * 10;
+      const cap = collecting ? `Latest sample · not enough history for a ${RLONG[ui.range]} average yet` : st ? `${RLONG[ui.range]} average · last known, up to Oct 30` : `${RLONG[ui.range]} average`;
+      const pending = [{ dot: "d-neutral", text: "Averages appear once there’s enough history" }];
+      // Card pills: at least 1 day above the level for the 24 h / 7-day ranges, at least 3 days for 30 / 90 days (same rule as component status).
+      const minDays = i >= 2 ? 3 : 1;
+      const over = D.cpu.over[i], busy = !collecting && over >= minDays;
+      const prevLine = (v, fmt) => v == null ? [] : [{ dot: "d-neutral", text: `Previous ${RSPAN[ui.range]}: ${fmt(v)}` }];
+      const cpu = { key: "cpu", label: "CPU use", measured: true, value: (collecting ? D.cpu.now : D.cpu.avg[i]) + "%", unit: "", caption: cap,
+        line: linePath(series(seed + 1, D.cpu.base, D.cpu.amp, 1, 100, D.cpu.spike), 0, 100, gap, upto), thrY: yOf(LEVEL.cpu, 0, 100),
+        chart: `CPU use over the last ${RSPAN[ui.range]}, average ${D.cpu.avg[i]}%, peak ${D.cpu.p95[i]}%`,
+        pill: busy ? [st ? "Last known: near its limit" : "Near its limit", st ? "tone-neutral" : "tone-info"] : null,
+        lines: collecting ? pending : [
+          { dot: "d-neutral", text: `Peak ${D.cpu.p95[i]}% (95th percentile)` },
+          ...prevLine(D.cpu.prev[i], v => v + "%"),
+          over > 0 ? { dot: "d-info", text: `Above your ${LEVEL.cpu}% review level for an hour or more on ${over} of the last ${DAYS[i]} days` } : { dot: "d-ok", text: `Never above your ${LEVEL.cpu}% review level` }] };
+      const apps = collecting ? D.mem.now : D.mem.apps[i], cache = D.mem.cache[i], free = Math.max(0, sv.memGb - apps - cache);
+      const mem = { key: "mem", label: "Memory", measured: true, value: gb(apps), unit: `of ${sv.memGb} GB used by apps`, caption: cap,
+        line: linePath(series(seed + 2, D.mem.apps[i], sv.memGb * 0.04, 0, sv.memGb, 0.04), 0, sv.memGb, gap, upto), thrY: yOf(sv.memGb * LEVEL.mem / 100, 0, sv.memGb),
+        chart: `Memory used by apps over the last ${RSPAN[ui.range]}, average ${gb(apps)} of ${sv.memGb} GB`,
+        split: { apps, cache, free, label: P.cacheLabel, note: P.cacheNote },
+        lines: collecting ? pending : [
+          { dot: "d-neutral", text: `Peak ${gb(D.mem.peak[i])} (${pct(D.mem.peak[i], sv.memGb)}%)` },
+          ...prevLine(D.mem.prev[i], gb),
+          { dot: "d-ok", text: `Never above your ${LEVEL.mem}% review level` }] };
+      const days = D.temp.days[i], hot = !collecting && days >= 1;
+      const temp = { key: "temp", label: P.tempLabel, measured: true, value: (collecting ? D.temp.now : D.temp.avg[i]) + " °C", unit: "", caption: cap,
+        line: linePath(series(seed + 3, D.temp.base, D.temp.amp, 30, 95, i >= 1 ? D.temp.spike : 0), 30, 95, gap, upto), thrY: yOf(LEVEL.temp, 30, 95),
+        chart: `${P.tempLabel} over the last ${RSPAN[ui.range]}, average ${D.temp.avg[i]} °C, hottest ${D.temp.peak[i]} °C, review level ${LEVEL.temp} °C`,
+        pill: hot ? [st ? "Last known: watch" : "Watch", st ? "tone-neutral" : "tone-warn"] : null,
+        lines: collecting ? pending : [
+          { dot: "d-neutral", text: `Hottest ${D.temp.peak[i]} °C` },
+          hot ? { dot: "d-warn", text: `Above your ${LEVEL.temp} °C review level on ${days} of the last ${DAYS[i]} days` } : { dot: "d-ok", text: `Not above your ${LEVEL.temp} °C review level ${i === 0 ? "today" : "in the last " + RSPAN[ui.range]}` }] };
+      return [cpu, mem, temp, powerCard(sv)];
+    }
+
+    // Power is never collected on either platform: it comes from entered readings, or shows the placeholder.
+    function powerCard(sv) {
+      const rs = readingsInRange(sv).filter(r => r.pw != null);
+      if (!rs.length) return { key: "power", label: "Power draw", measured: false, emptyTitle: "Not measured", emptyText: PLATFORM[sv.platform].noPower };
+      const pv = rs.map(r => r.pw), pa = Math.round(avg(pv)), last = rs[rs.length - 1];
+      return { key: "power", label: "Power draw", measured: true, value: pa + " W", unit: "", caption: `From ${pv.length} reading${pv.length > 1 ? "s" : ""} you entered`,
+        dots: dotPath(pv, 0, 60), thrY: -10, chart: `Power draw from ${pv.length} entered readings, average ${pa} W`,
+        lines: [{ dot: "d-neutral", text: `Last reading ${last.d}: ${last.w || last.pw} W` }, { dot: "d-neutral", text: `About ${Math.round(pa * 24 * 30 / 1000)} kWh a month at this rate` }] };
+    }
+    function readingsInRange(sv) {
+      const all = READINGS[sv.id];
+      return all.length ? all.slice(all.length - READ_COUNT[IDX[ui.range]]) : [];
+    }
+
+    function readingMetrics(sv) {
+      const P = PLATFORM[sv.platform], rs = readingsInRange(sv), n = rs.length, all = READINGS[sv.id], last = all[all.length - 1];
+      const none = (key, label, text) => ({ key, label, measured: false, emptyTitle: "No readings", emptyText: text });
+      if (!n) {
+        const lastLine = what => last ? `None in the last ${RSPAN[ui.range]}. Last reading ${last.d}: ${what(last)}.` : "No readings yet. Add one from the server’s own dashboard.";
+        return [none("cpu", "CPU use", lastLine(r => r.cpu + "%")), none("mem", "Memory", lastLine(r => gb(r.mem))), none("temp", P.tempLabel, "None of your readings include a temperature."), powerCard(sv)];
+      }
+      const from = n === 1 ? "From 1 reading" : `From ${n} readings`;
+      const cpuV = rs.map(r => r.cpu), memV = rs.map(r => r.mem), memThr = sv.memGb * LEVEL.mem / 100;
+      const cpuOver = cpuV.filter(v => v > LEVEL.cpu).length, memOver = memV.filter(v => v > memThr).length;
+      return [
+        { key: "cpu", label: "CPU use", measured: true, value: Math.round(avg(cpuV)) + "%", unit: "", caption: from + " · entered by you", dots: dotPath(cpuV, 0, 100), thrY: yOf(LEVEL.cpu, 0, 100),
+          chart: `CPU use from ${n} entered readings, average ${Math.round(avg(cpuV))}%`, pill: cpuOver && cpuOver * 2 >= n ? ["Near its limit", "tone-info"] : null,
+          lines: [{ dot: "d-neutral", text: `Highest reading ${Math.max(...cpuV)}%` }, cpuOver ? { dot: "d-info", text: `Above your ${LEVEL.cpu}% review level in ${cpuOver} of ${n} readings` } : { dot: "d-ok", text: `No reading above your ${LEVEL.cpu}% review level` }] },
+        { key: "mem", label: "Memory", measured: true, value: pct(avg(memV), sv.memGb) + "%", unit: `${gb(avg(memV))} of ${sv.memGb} GB used`, caption: from + " · entered by you", dots: dotPath(memV, 0, sv.memGb), thrY: yOf(memThr, 0, sv.memGb),
+          chart: `Memory used from ${n} entered readings, average ${pct(avg(memV), sv.memGb)}%`, pill: memOver && memOver * 2 >= n ? ["Near its limit", "tone-info"] : null,
+          lines: [{ dot: "d-neutral", text: `Highest reading ${gb(Math.max(...memV))}` }, memOver ? { dot: "d-info", text: `Above your ${LEVEL.mem}% review level in ${memOver} of ${n} readings` } : { dot: "d-ok", text: `No reading above your ${LEVEL.mem}% review level` }] },
+        { key: "temp", label: P.tempLabel, measured: false, emptyTitle: "Not in your readings", emptyText: "None of your readings for this period include a temperature. Add one next time if you can see it." },
+        powerCard(sv)
+      ];
+    }
+
+    // Components as shown: without collection nothing is detected and collection-based statuses fall back.
+    function componentsFor(sv, hasMetrics, readingsOnly) {
+      return COMPONENTS[sv.id].map(c => {
+        if (!sv.auto) return { ...c, source: "You entered", match: "", why: c.whyManual || "", details: c.details.map(d => [d[0], d[1], "You entered"]),
+          status: c.needsCollection && !c.metric ? "Not monitored" : c.status, tone: c.needsCollection && !c.metric ? "tone-neutral" : c.tone };
+        if (c.metric && !hasMetrics && !readingsOnly) return { ...c, status: "Not monitored", tone: "tone-neutral", why: "" };
+        return c;
+      });
+    }
+
+    // ---------- render ----------
+    const pill = (text, tone) => `<span class="pill ${tone}">${text}</span>`;
+    const isMobile = () => document.documentElement.dataset.width === "mobile";
+    const spark = (m, h) => `<svg class="spark" viewBox="0 0 240 56" preserveAspectRatio="none" role="img" aria-label="${m.chart}"${h ? ` style="height:${h}px"` : ""}><line class="base" x1="0" x2="240" y1="55" y2="55"/><line class="thr" x1="0" x2="240" y1="${m.thrY}" y2="${m.thrY}"/>${m.line ? `<path class="ln" d="${m.line}"/>` : ""}${m.dots ? `<path class="dots" d="${m.dots}"/>` : ""}</svg>`;
+
+    function metricCard(m) {
+      const top = `<div class="metric-top"><h3>${m.label}</h3>${m.pill ? pill(m.pill[0], m.pill[1]) : ""}</div>`;
+      if (!m.measured) return `<article class="metric">${top}<p class="unmeasured">${m.emptyTitle}</p><div class="hatch" aria-hidden="true"></div><p class="line-sm">${m.emptyText}</p><button class="link" data-open="reading" style="min-height:32px">Add a reading</button></article>`;
+      const s = m.split, split = s ? `<div class="membar" role="img" aria-label="Apps ${gb(s.apps)}, ${s.label} ${gb(s.cache)}, free ${gb(s.free)}"><span class="apps" style="width:${pct(s.apps, s.apps + s.cache + s.free)}%"></span><span class="cache" style="width:${pct(s.cache, s.apps + s.cache + s.free)}%"></span></div>
+        <ul class="legend"><li><span class="sw apps" aria-hidden="true"></span>Apps ${gb(s.apps)}</li><li><span class="sw cache" aria-hidden="true"></span>${s.label} ${gb(s.cache)}</li><li><span class="sw free" aria-hidden="true"></span>Free ${gb(s.free)}</li></ul><p class="line-xs">${s.note}</p>` : "";
+      return `<article class="metric">${top}<div class="big"><span class="num">${m.value}</span><span class="unit">${m.unit}</span></div><p class="line-xs">${m.caption}</p>${spark(m)}${split}
+        <ul class="mlines">${m.lines.map(l => `<li><span class="dot ${l.dot}" aria-hidden="true"></span><span>${l.text}</span></li>`).join("")}</ul></article>`;
+    }
+
+    function componentsBlock(comps) {
+      return `<div class="comp-card">${GROUPS.map(g => {
+        const items = comps.filter(c => c.group === g);
+        if (!items.length) return "";
+        const src = c => `<span class="src${c.source === "You entered" ? "" : " det"}">${c.source}</span>`;
+        return `<div class="group"><h3 class="group-h">${g}</h3>
+          <div class="tablewrap"><table><thead><tr><th scope="col" style="width:160px">Status</th><th scope="col">Component</th><th scope="col">Details</th><th scope="col" style="width:150px">Source</th><th scope="col" style="width:110px">In service</th></tr></thead><tbody>
+          ${items.map(c => `<tr><td>${pill(c.status, c.tone)}</td><td><button class="name-btn" data-comp="${c.id}">${c.name}</button><div class="line-xs">${c.kind}</div></td><td>${c.spec}</td><td>${src(c)}</td><td>${c.age}</td></tr>`).join("")}
+          </tbody></table></div>
+          <div class="cards">${items.map(c => `<button class="ccard" data-comp="${c.id}"><strong>${c.name}</strong>${pill(c.status, c.tone)}<span class="line-sm">${c.kind} · ${c.spec}</span>${src(c)}</button>`).join("")}</div></div>`;
+      }).join("")}</div>`;
+    }
+
+    function panel(sv, c, metrics, inline) {
+      const mm = c.metric ? metrics.find(m => m.key === c.metric) : null;
+      // TrueNAS CPU temperature belongs to the processor; Synology's system temperature belongs to the unit.
+      const tm = (c.metric === "cpu" && sv.platform === "truenas") || c.kind === "NAS unit" ? metrics.find(m => m.key === "temp") : null;
+      const label = sv.auto && collects(sv) ? RLONG[ui.range] + " avg" : "avg of readings";
+      const tiles = [];
+      if (mm && mm.measured) tiles.push([mm.label + " · " + label, mm.value + (c.metric === "mem" && mm.split ? ` of ${sv.memGb} GB` : ""), mm.lines[0].text]);
+      if (tm && tm.measured) tiles.push(["Temperature · " + label, tm.value, tm.lines[0].text]);
+      if (mm && mm.split) tiles.push([mm.split.label + " · " + label, gb(mm.split.cache), "Given back when apps need it"]);
+      const chartM = tm && tm.measured ? tm : mm && mm.measured ? mm : null;
+      const note = c.runningNote || (mm && !mm.measured ? mm.emptyText : "") || (c.metric && !tiles.length ? "No readings yet. Add a reading to see how it’s running." : "");
+      const head = inline
+        ? `<div class="panel-head" style="display:grid;gap:6px"><button class="link" data-close="1" style="display:inline-flex;align-items:center;gap:6px;min-height:44px">${icon.back}${sv.name} · Components</button><p class="line-xs">${c.kind} · ${sv.name}</p><h2 id="comp-title" tabindex="-1">${c.name}</h2><p class="line-sm">${c.spec}</p><span>${pill(c.status, c.tone)}</span></div>`
+        : `<div class="panel-head"><div class="grow"><p class="line-xs">${c.kind} · ${sv.name}</p><h2 id="comp-title" tabindex="-1">${c.name}</h2><p class="line-sm" style="margin-bottom:8px">${c.spec}</p>${pill(c.status, c.tone)}</div><button class="icon-btn" aria-label="Close" data-close="1">${icon.close}</button></div>`;
+      const showWhy = c.why && !["Healthy", "Not monitored"].includes(c.status) && !c.status.startsWith("Last known");
+      return `${inline ? "" : '<div class="scrim" aria-hidden="true"></div>'}<aside class="panel${inline ? " inline" : ""}" ${inline ? "" : 'role="dialog" aria-modal="true"'} aria-labelledby="comp-title">${head}
+        <div class="panel-body">
+          ${showWhy ? `<div class="why ${c.tone}"><strong>Why “${c.status}”:</strong> ${c.why}</div>` : ""}
+          <section><h3>How it’s running</h3>
+            ${tiles.length ? `<dl class="tiles">${tiles.map(t => `<div><dt>${t[0]}</dt><dd>${t[1]}</dd><dd class="tsub">${t[2]}</dd></div>`).join("")}</dl>` : ""}
+            ${chartM ? `<figure style="margin:0;display:grid;gap:6px">${spark(chartM, 80)}<figcaption class="line-xs">${chartM.label}${sv.auto && collects(sv) ? ", last " + RSPAN[ui.range] : ", your readings"}. The dashed line is your review level.</figcaption></figure>` : ""}
+            ${note ? `<p class="line-sm">${note}</p>` : ""}
+          </section>
+          ${c.slots ? `<section><h3>Memory slots</h3><div class="slots" role="img" aria-label="${c.slotLine}">${c.slots.map(s => `<div class="slot ${s[1] ? "filled" : "empty"}"><strong>${s[1] || "Empty"}</strong><span>${s[0]}</span></div>`).join("")}</div><p class="line-sm">${c.slotLine}</p><p class="line-sm">${c.slotPlan}</p></section>` : ""}
+          <section><h3>Details</h3><dl class="kv">${c.details.map(d => `<dt>${d[0]}</dt><dd><span>${d[1]}</span><span class="src${d[2] === "Detected" ? " det" : ""}">${d[2]}</span></dd>`).join("")}</dl>${c.match ? `<p class="line-sm">${c.match}</p>` : ""}</section>
+          <section><h3>Purchase</h3><dl class="kv"><dt>Price paid</dt><dd>${c.cost}</dd><dt>Installed</dt><dd>${c.installed}</dd><dt>Warranty</dt><dd>${c.warranty}</dd></dl></section>
+          <section><h3>History</h3><ul class="history">${(c.history.length ? c.history : [["—", "Nothing recorded yet"]]).map(h => `<li><span class="line-xs">${h[0]}</span><span>${h[1]}</span></li>`).join("")}</ul><button class="link" style="min-height:44px">Add note</button></section>
+        </div>
+        <div class="actions"><button class="btn outline">Edit details</button><button class="btn outline">Plan an upgrade</button><button class="btn outline">Mark as replaced</button></div></aside>`;
+    }
+
+    function dialog(sv, kind, inline) {
+      const wrap = (id, title, intro, body, save) => `${inline ? "" : '<div class="scrim" aria-hidden="true"></div>'}<section class="dialog${inline ? " inline" : ""}" role="dialog" aria-modal="${inline ? "false" : "true"}" aria-labelledby="${id}">
+        <div class="panel-head"><div class="grow"><h2 id="${id}" tabindex="-1">${title}</h2><p class="line-sm">${intro}</p></div><button class="icon-btn" aria-label="Close" data-close="1">${icon.close}</button></div>
+        <div class="panel-body">${body}</div><div class="actions"><button class="btn outline" data-close="1">Cancel</button><button class="btn">${save}</button></div></section>`;
+      if (kind === "reading") return wrap("reading-title", `Add a reading for ${sv.name}`, "Copy these from the server’s own dashboard, a power meter or your UPS. Leave blank anything you didn’t measure.",
+        `<div class="form-grid">
+          <div class="field"><label for="r-when">Taken</label><input id="r-when" type="datetime-local" value="2026-11-01T18:30"></div>
+          <div class="field"><fieldset><legend>What it shows</legend><label class="radio"><input type="radio" name="r-kind" checked>A moment in time</label><label class="radio"><input type="radio" name="r-kind">An average over a period</label></fieldset></div>
+          <div class="field"><label for="r-cpu">CPU use</label><div class="suffix"><input id="r-cpu" type="number" value="22"><span>%</span></div></div>
+          <div class="field"><label for="r-mem">Memory used</label><div class="suffix"><input id="r-mem" type="number" value="3.4"><span>GB of ${sv.memGb} GB</span></div></div>
+          <div class="field"><label for="r-temp">Temperature</label><div class="suffix"><input id="r-temp" type="number" placeholder="Not measured"><span>°C</span></div></div>
+          <div class="field"><label for="r-pw">Power draw</label><div class="suffix"><input id="r-pw" type="number" value="36"><span>W</span></div></div>
+          <div class="field full"><label for="r-note">Note</label><textarea id="r-note">Power from the smart plug, after the nightly backup.</textarea></div>
+        </div><p class="line-xs">Readings show as dots on the charts, apart from collected samples, and are labelled “entered by you” wherever they’re used.</p>`, "Save reading");
+      return wrap("compadd-title", `Add a component to ${sv.name}`, "For parts the app can’t detect, like power supplies, coolers and cards. Detected parts appear on their own.",
+        `<div class="form-grid">
+          <div class="field"><label for="c-kind">Kind</label><select id="c-kind"><option>Power supply</option><option>Processor</option><option>Memory</option><option>Motherboard</option><option>Cooling</option><option>Storage controller</option><option>Network card</option><option>Graphics card</option><option>Case</option><option>NAS unit</option><option>Other</option></select></div>
+          <div class="field"><label for="c-name">Name</label><input id="c-name" type="text" value="Seasonic Focus GX-650"></div>
+          <div class="field"><label for="c-model">Model or part number</label><input id="c-model" type="text" value="SSR-650FX"></div>
+          <div class="field"><label for="c-spec">Key specs</label><input id="c-spec" type="text" value="650 W · 80+ Gold"></div>
+          <div class="field"><label for="c-price">Price paid (USD)</label><input id="c-price" type="number" value="109"></div>
+          <div class="field"><label for="c-bought">Purchase date</label><input id="c-bought" type="month" value="2021-01"></div>
+          <div class="field"><label for="c-installed">Install date</label><input id="c-installed" type="month" value="2021-01"></div>
+          <div class="field"><label for="c-warranty">Warranty ends</label><input id="c-warranty" type="month" value="2031-01"></div>
+          <label class="check field full"><input type="checkbox" checked>These dates are estimates</label>
+          <div class="field full"><label for="c-notes">Notes</label><textarea id="c-notes"></textarea></div>
+        </div>`, "Add component");
+    }
+
+    function render() {
+      const sc = ui.scenario, app = document.getElementById("app");
+      const header = `<header style="margin-bottom:24px"><p class="eyebrow">HOMELAB CONTROL</p><h1>Hardware</h1><p class="sub">Components and how they’re running, one server at a time.</p></header>`;
+      if (sc === "empty") {
+        app.innerHTML = header + `<section class="empty-card">${icon.chip}<h2>No servers yet</h2><p class="line-sm" style="font-size:14px">Connect a TrueNAS${ui.syn ? " or Synology" : ""} server in Settings and its processor, memory and board appear here.</p><a class="btn" href="#settings">Go to Settings</a></section>`;
+        return;
+      }
+      if (sc === "loading") {
+        app.innerHTML = header + `<div class="stack" role="status" aria-busy="true" aria-label="Loading hardware"><div class="tabs"><div class="skeleton" style="width:190px;height:56px"></div><div class="skeleton" style="width:190px;height:56px"></div></div><div class="skeleton" style="width:280px;height:30px"></div>
+          <div class="facts"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px"></div></div>
+          <div class="metrics"><div class="skeleton" style="height:220px"></div><div class="skeleton" style="height:220px"></div><div class="skeleton" style="height:220px"></div><div class="skeleton" style="height:220px"></div></div><div class="skeleton" style="height:320px"></div></div>`;
+        return;
+      }
+      const list = servers();
+      const sv = list.find(s => s.id === ui.server) || list[0];
+      const P = PLATFORM[sv.platform];
+      const hasMetrics = collects(sv);
+      const collecting = sc === "collecting" && sv.id === "nas" && hasMetrics;
+      const metrics = hasMetrics ? autoMetrics(sv, collecting) : readingMetrics(sv);
+      const comps = componentsFor(sv, hasMetrics, READINGS[sv.id].length > 0);
+      const failing = comps.filter(c => c.status === "Watch" || c.status === "Act now").length;
+      const limit = comps.filter(c => c.status === "Near its limit").length;
+      const i = IDX[ui.range];
+
+      const tabLine = s => {
+        if (s.stale) return "Out of date · 2 days ago";
+        if (!s.auto) return "Entered by hand";
+        const cs = componentsFor(s, collects(s), READINGS[s.id].length > 0);
+        const f = cs.filter(c => c.status === "Watch").length, l = cs.filter(c => c.status === "Near its limit").length;
+        return `${cs.length} components · ` + (f || l ? [f && f + " to watch", l && l + " near its limit"].filter(Boolean).join(" · ") : "nothing to look at");
+      };
+
+      let facts;
+      if (hasMetrics) {
+        const D = AUTO[sv.id];
+        facts = collecting
+          ? [[`CPU · ${RLONG[ui.range]} avg`, "Collecting", `Latest ${D.cpu.now}%`], ["Memory used by apps", "Collecting", `Latest ${gb(D.mem.now)} of ${sv.memGb} GB`], ["Uptime", sv.uptime, sv.uptimeSub], ["Needs a look", String(failing + limit), "Components"]]
+          : [[`CPU · ${RLONG[ui.range]} avg`, D.cpu.avg[i] + "%", (sv.stale ? "Last known · " : "") + `Peak ${D.cpu.p95[i]}%`], ["Memory used by apps", gb(D.mem.apps[i]), (sv.stale ? "Last known · " : "") + `of ${sv.memGb} GB`], ["Uptime", sv.uptime, sv.uptimeSub], ["Needs a look", sv.stale ? "Unknown" : String(failing + limit), sv.stale ? "Server out of date" : "Components"]];
+      } else {
+        const n = readingsInRange(sv).length;
+        facts = [["CPU · avg of readings", n ? metrics[0].value : "No readings", n ? "Entered by you" : `In the last ${RSPAN[ui.range]}`], ["Memory · avg of readings", n ? metrics[1].value : "No readings", n ? `of ${sv.memGb} GB` : `In the last ${RSPAN[ui.range]}`],
+          sv.auto ? ["Uptime", sv.uptime, sv.uptimeSub] : ["Readings", String(n), `In the last ${RSPAN[ui.range]}`], ["Needs a look", sv.stale ? "Unknown" : String(failing + limit), sv.stale ? "Server out of date" : "Components"]];
+      }
+      let coverage;
+      if (hasMetrics) coverage = collecting ? "Collecting since 6 hours ago · 72 five-minute samples so far." : AUTO[sv.id].coverage[i];
+      else { const n = readingsInRange(sv).length; coverage = n ? `From ${n} reading${n > 1 ? "s" : ""} you entered. A few spot readings can miss busy and quiet periods.` : `No readings in the last ${RSPAN[ui.range]}.`; }
+
+      const summary = `${comps.length} components · ${comps.filter(c => c.source !== "You entered").length} detected, ${comps.filter(c => c.source === "You entered").length} entered by you` + (failing ? ` · ${failing} to watch` : "") + (limit ? ` · ${limit} near its limit` : "");
+
+      const banners = [
+        sc === "unavailable" ? `<div class="banner tone-bad" role="status">${icon.warn}<div class="grow"><strong>Hardware couldn’t be loaded.</strong> The control service didn’t respond. Showing what was loaded 12 minutes ago.</div><button class="btn outline sm">Retry</button></div>` : "",
+        sv.stale ? `<div class="banner tone-warn" role="status">${icon.warn}<div><strong>Can’t reach this server right now.</strong> Everything below is from the last successful check, 2 days ago. Averages stop at that point, and component status may have changed since.</div></div>` : "",
+        !sv.auto ? `<div class="banner tone-info">${icon.info}<div><strong>This server isn’t connected, so its readings are entered by hand.</strong> Averages come only from the readings you add and can miss busy or quiet periods. <button class="link" data-open="reading">Add a reading</button> or <a href="#settings">connect it in Settings</a> to collect automatically.</div></div>` : "",
+        collecting ? `<div class="banner tone-info" role="status">${icon.clock}<div><strong>Collecting since 6 hours ago.</strong> Each average appears once its whole range has been sampled: 24 hours tomorrow, 30 days in a month. Until then, cards show the latest sample.</div></div>` : ""
+      ].join("");
+
+      const content = `<div class="stack">
+        ${banners}
+        <nav class="tabs" aria-label="Servers">${list.map(s => `<button class="tab" data-server="${s.id}" aria-pressed="${s.id === sv.id}"><span class="dot ${s.fresh[2]}" aria-hidden="true"></span><span><strong>${s.name}</strong><span class="tline">${tabLine(s)}</span></span></button>`).join("")}</nav>
+        <div class="server-head"><div class="grow"><div class="title-row"><h2>${sv.name}</h2>${pill(sv.fresh[0], sv.fresh[1])}${pill(sv.auto ? "Collected automatically" : "Entered by hand", "tone-info")}</div><p class="line-sm">${sv.host} · ${sv.platformLabel} · ${sv.seen}</p></div>
+          <div class="row"><button class="btn outline" data-open="reading">${icon.plus}Add reading</button><button class="btn outline" data-open="component">${icon.plus}Add component</button></div></div>
+        <dl class="facts">${facts.map(f => `<div><dt>${f[0]}</dt><dd>${f[1]}</dd><dd class="fsub">${f[2]}</dd></div>`).join("")}</dl>
+        <section class="stack-sm" aria-labelledby="perf-h"><div class="section-row"><div><h2 id="perf-h">How it’s running</h2><p class="line-sm">${coverage}</p></div>
+          <div class="seg" role="group" aria-label="Time range">${RANGES.map(r => `<button class="seg-btn" data-range="${r[0]}" aria-pressed="${r[0] === ui.range}">${r[1]}</button>`).join("")}</div></div>
+          <div class="metrics">${metrics.map(metricCard).join("")}</div>
+          <p class="line-xs">Review levels: CPU ${LEVEL.cpu}%, memory ${LEVEL.mem}%, temperature ${LEVEL.temp} °C. Dashed lines on the charts. <a href="#settings">Change in Settings</a></p></section>
+        <section class="stack-sm" aria-labelledby="comp-h"><div><h2 id="comp-h">Components</h2><p class="line-sm">${summary}</p></div>${componentsBlock(comps)}</section>
+      </div>`;
+
+      const pc = ui.panel && comps.find(c => c.id === ui.panel);
+      const overlay = pc ? panel(sv, pc, metrics, isMobile()) : ui.dialog ? dialog(sv, ui.dialog, isMobile()) : "";
+      app.innerHTML = header + (overlay && isMobile() ? overlay : content + overlay);
+    }
+
+    // ---------- events ----------
+    let returnFocus = null;
+    document.getElementById("app").addEventListener("click", e => {
+      const t = e.target.closest("[data-server],[data-range],[data-comp],[data-open],[data-close]");
+      if (!t) return;
+      if (t.dataset.server) { ui.server = t.dataset.server; ui.panel = null; ui.dialog = null; }
+      if (t.dataset.range) ui.range = t.dataset.range;
+      if (t.dataset.comp) { returnFocus = `[data-comp="${t.dataset.comp}"]`; ui.panel = t.dataset.comp; ui.dialog = null; }
+      if (t.dataset.open) { returnFocus = `[data-open="${t.dataset.open}"]`; ui.dialog = t.dataset.open; ui.panel = null; }
+      if (t.dataset.close) { ui.panel = null; ui.dialog = null; }
+      render();
+      if (t.dataset.comp || t.dataset.open) document.querySelector("#comp-title,#reading-title,#compadd-title")?.focus();
+      else if (t.dataset.close && returnFocus) document.querySelector(returnFocus)?.focus();
+      else if (t.dataset.server) document.querySelector(`[data-server="${ui.server}"]`)?.focus();
+      else if (t.dataset.range) document.querySelector(`[data-range="${ui.range}"]`)?.focus();
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && (ui.panel || ui.dialog)) { ui.panel = null; ui.dialog = null; render(); if (returnFocus) document.querySelector(returnFocus)?.focus(); } });
+
+    // Toolbar: state, width, theme and flags. Shareable URL, e.g. mock.html?state=synology&width=mobile&theme=dark&hwmetrics=off
+    const sel = id => document.getElementById(id);
+    const SCENARIO = {
+      normal: { server: "nas" }, synology: { server: "ds920" }, manual: { server: "ds920" }, stale: { server: "backup" }, collecting: { server: "nas" },
+      panel: { server: "nas", panel: "nas-cpu" }, reading: { server: "nas", dialog: "reading" }, component: { server: "nas", dialog: "component" },
+      empty: {}, loading: {}, unavailable: { server: "nas" }
+    };
+    function apply() {
+      ui.scenario = sel("mock-state").value;
+      ui.hw = sel("mock-hwmetrics").value === "on";
+      ui.syn = sel("mock-synology").value === "on";
+      const s = SCENARIO[ui.scenario];
+      ui.server = s.server && (ui.syn || s.server !== "ds920") ? s.server : "nas";
+      ui.panel = s.panel || null; ui.dialog = s.dialog || null; ui.range = "30d";
+      document.documentElement.dataset.width = sel("mock-width").value;
+      document.documentElement.dataset.theme = sel("mock-theme").value;
+      try { history.replaceState(null, "", "?" + new URLSearchParams({ state: ui.scenario, width: sel("mock-width").value, theme: sel("mock-theme").value, hwmetrics: sel("mock-hwmetrics").value, synology: sel("mock-synology").value })); } catch { /* Opaque origins refuse URL changes. */ }
+      render();
+    }
+    const params = new URLSearchParams(location.search);
+    if (SCENARIO[params.get("state")]) sel("mock-state").value = params.get("state");
+    sel("mock-width").value = ["tablet", "mobile"].includes(params.get("width")) ? params.get("width") : "desktop";
+    sel("mock-theme").value = params.get("theme") === "dark" ? "dark" : "light";
+    sel("mock-hwmetrics").value = params.get("hwmetrics") === "off" ? "off" : "on";
+    sel("mock-synology").value = params.get("synology") === "off" ? "off" : "on";
+    ["mock-state", "mock-width", "mock-theme", "mock-hwmetrics", "mock-synology"].forEach(id => sel(id).addEventListener("change", apply));
+    apply();
+  </script>
+</body>
+</html>

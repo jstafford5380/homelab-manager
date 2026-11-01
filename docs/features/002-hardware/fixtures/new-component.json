@@ -1,0 +1,15 @@
+{
+  "_note": "Add a component (002.15): proposed request body. Only kind and name are required.",
+  "serverId": "c1a7e0de-0000-4000-8000-000000000001",
+  "kind": "power-supply",
+  "name": "Seasonic Focus GX-650",
+  "model": "SSR-650FX",
+  "spec": "650 W · 80+ Gold",
+  "priceCents": 10900,
+  "currency": "USD",
+  "purchasedMonth": "2021-01",
+  "installedMonth": "2021-01",
+  "warrantyEndMonth": "2031-01",
+  "datesEstimated": true,
+  "notes": ""
+}

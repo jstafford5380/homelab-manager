@@ -1,0 +1,41 @@
+{
+  "_note": "Server tabs (002.01). Same servers as Storage. Synology rows only exist while flag `synology` is on.",
+  "servers": [
+    {
+      "id": "c1a7e0de-0000-4000-8000-000000000001",
+      "name": "media-nas",
+      "host": "truenas.lan",
+      "platform": "truenas",
+      "connection": "connected",
+      "freshness": "fresh",
+      "lastSuccessUtc": "2026-11-01T21:26:00Z",
+      "componentCount": 7,
+      "watchCount": 1,
+      "nearLimitCount": 0
+    },
+    {
+      "id": "c1a7e0de-0000-4000-8000-000000000004",
+      "name": "ds920",
+      "host": "synology.lan",
+      "platform": "synology",
+      "connection": "connected",
+      "freshness": "fresh",
+      "lastSuccessUtc": "2026-11-01T21:25:00Z",
+      "componentCount": 5,
+      "watchCount": 0,
+      "nearLimitCount": 1
+    },
+    {
+      "id": "c1a7e0de-0000-4000-8000-000000000002",
+      "name": "backup-box",
+      "host": "backup.lan",
+      "platform": "truenas",
+      "connection": "connected",
+      "freshness": "stale",
+      "lastSuccessUtc": "2026-10-30T14:05:00Z",
+      "componentCount": 5,
+      "watchCount": null,
+      "nearLimitCount": null
+    }
+  ]
+}

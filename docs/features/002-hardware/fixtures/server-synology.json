@@ -1,0 +1,134 @@
+{
+  "_note": "Near its limit (Synology, flag synology on), range 30d. Collection started 18 days ago, so coverage is partial and the series starts partway through the range. Power comes only from entered readings. Series trimmed.",
+  "server": {
+    "id": "c1a7e0de-0000-4000-8000-000000000004",
+    "name": "ds920",
+    "host": "synology.lan",
+    "platform": "synology",
+    "platformVersion": "DSM 7.2.2-72806 Update 3",
+    "connection": "connected",
+    "freshness": "fresh",
+    "lastSuccessUtc": "2026-11-01T21:25:00Z",
+    "uptimeSeconds": 1555200,
+    "bootedUtc": "2026-10-14T21:25:00Z"
+  },
+  "reviewLevels": { "cpuPercent": 80, "memoryPercent": 80, "temperatureC": 80, "sustainedMinutes": 60 },
+  "metrics": {
+    "range": "30d",
+    "coverage": {
+      "intervalSeconds": 300,
+      "expectedSamples": 8640,
+      "samples": 5184,
+      "firstSampleUtc": "2026-10-14T21:25:00Z",
+      "collectionStartedUtc": "2026-10-14T21:25:00Z",
+      "downsampledToSeconds": null,
+      "gaps": []
+    },
+    "cpu": {
+      "source": "collected",
+      "averagePercent": 57,
+      "p95Percent": 93,
+      "previousAveragePercent": null,
+      "daysAboveLevel": 9,
+      "latestPercent": 54,
+      "series": [
+        { "atUtc": "2026-10-15T00:00:00Z", "value": 61.0 },
+        { "atUtc": "2026-10-15T06:00:00Z", "value": 88.5 }
+      ]
+    },
+    "memory": {
+      "source": "collected",
+      "totalBytes": 8589934592,
+      "appsAverageBytes": 3543348019,
+      "appsPeakBytes": 5583457484,
+      "previousAppsAverageBytes": null,
+      "cacheKind": "page-cache",
+      "cacheAverageBytes": 3972844748,
+      "freeAverageBytes": 1073741824,
+      "daysAboveLevel": 0,
+      "series": [{ "atUtc": "2026-10-15T00:00:00Z", "value": 3435973836 }]
+    },
+    "temperature": {
+      "source": "collected",
+      "sensor": "system",
+      "averageC": 45,
+      "maxC": 55,
+      "maxAtUtc": "2026-10-22T14:00:00Z",
+      "daysAboveLevel": 0,
+      "series": [{ "atUtc": "2026-10-15T00:00:00Z", "value": 44 }]
+    },
+    "power": {
+      "source": "entered",
+      "averageWatts": 36,
+      "readings": [
+        { "id": "rd-0107", "atUtc": "2026-10-14T19:00:00Z", "watts": 38 },
+        { "id": "rd-0109", "atUtc": "2026-10-29T18:30:00Z", "watts": 37 }
+      ]
+    }
+  },
+  "_previousNote": "previous*Percent / previous*Bytes are null because the previous 30 days weren't sampled. The UI hides the 'Previous …' line when null.",
+  "components": [
+    {
+      "id": "hw-0101",
+      "group": "compute",
+      "kind": "processor",
+      "name": "Intel Celeron J4125",
+      "spec": "4 cores · 2.0 GHz, up to 2.7 GHz",
+      "source": "detected",
+      "installedUtc": "2024-10-05T00:00:00Z",
+      "status": "near-limit",
+      "why": "CPU use averaged 57% over the last 30 days and stayed above your 80% review level for an hour or more on 9 of them, peaking at 93%. Nothing points to a fault: it’s busy for its size. The CPU is soldered to the board, so more headroom means a different unit or moving work elsewhere.",
+      "metric": "cpu",
+      "partOfUnit": "hw-0105"
+    },
+    {
+      "id": "hw-0102",
+      "group": "compute",
+      "kind": "memory",
+      "name": "Onboard 4 GB + Synology 4 GB",
+      "spec": "8 GB · DDR4 non-ECC · 1 of 1 slot",
+      "source": "detected+entered",
+      "installedUtc": "2024-11-02T00:00:00Z",
+      "status": "healthy",
+      "why": null,
+      "metric": "memory"
+    },
+    {
+      "id": "hw-0103",
+      "group": "power-cooling",
+      "kind": "cooling",
+      "name": "System fans",
+      "spec": "2 × 92 mm",
+      "source": "detected",
+      "installedUtc": "2024-10-05T00:00:00Z",
+      "status": "healthy",
+      "why": null,
+      "metric": null,
+      "fans": [{ "name": "Fan 1", "state": "ok" }, { "name": "Fan 2", "state": "ok" }]
+    },
+    {
+      "id": "hw-0104",
+      "group": "power-cooling",
+      "kind": "power-supply",
+      "name": "External power adapter",
+      "spec": "100 W",
+      "source": "entered",
+      "installedUtc": "2024-10-05T00:00:00Z",
+      "status": "not-monitored",
+      "why": null,
+      "metric": null
+    },
+    {
+      "id": "hw-0105",
+      "group": "expansion-chassis",
+      "kind": "nas-unit",
+      "name": "Synology DS920+",
+      "spec": "4 bays · 2 M.2 slots · DSM 7.2.2",
+      "source": "detected",
+      "installedUtc": "2024-10-05T00:00:00Z",
+      "status": "healthy",
+      "why": null,
+      "metric": "temperature"
+    }
+  ]
+}
