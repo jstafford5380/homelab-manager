@@ -99,7 +99,7 @@ api.MapInventory();
 api.MapFindings();
 api.MapConnections();
 api.MapPost("/logout", async (HttpContext ctx) => { await ctx.SignOutAsync(); return Results.Ok(); });
-api.MapGet("/overview", async (HomelabDb db) => {
+api.MapGet("/overview", async (HomelabDb db, CancellationToken ct) => {
     var recoveryPolicies = await db.Recovery.ToListAsync();
     var backupEvidence = await db.BackupEvidence.ToListAsync();
     var restoreExercises = await db.RestoreExercises.ToListAsync();
@@ -109,7 +109,8 @@ api.MapGet("/overview", async (HomelabDb db) => {
     settings = await db.Settings.SingleOrDefaultAsync() ?? new OperatingSettings(),
     disks = await db.Disks.ToListAsync(), findings = await db.Findings.ToListAsync(),
     plans = await db.Plans.ToListAsync(), recovery = recoveryPolicies,
-    scanReports = await ScanOverview.ReadAsync(db, DateTime.UtcNow),
+    scanReports = await ScanOverview.ReadAsync(db, DateTime.UtcNow, ct),
+    capacityOutlook = await CapacityOutlook.ReadAsync(db, DateTime.UtcNow, ct),
     recoveryAssessments = recoveryPolicies.Select(p => new { policyId = p.Id, assessment = RecoveryEvaluator.Assess(p, backupEvidence.Where(r => r.PolicyId == p.Id), restoreExercises.Where(r => r.PolicyId == p.Id), DateTime.UtcNow) }),
     activity = await db.Activity.OrderByDescending(x => x.Id).Take(100).ToListAsync()
 }; });

@@ -302,6 +302,13 @@ public sealed class ObservationApiTests
             Assert.Equal(JsonValueKind.Null, scanOverview[0].GetProperty("errors").ValueKind);
             Assert.Equal(JsonValueKind.Null, scanOverview[0].GetProperty("validUntilUtc").ValueKind);
             Assert.EndsWith("Z", scanOverview[0].GetProperty("fetchedUtc").GetString());
+            var capacityOverview = await client.GetFromJsonAsync<JsonElement>("/api/v1/overview");
+            var outlook = Assert.Single(capacityOverview.GetProperty("capacityOutlook").EnumerateArray(), x => x.GetProperty("connectionId").GetGuid() == nas.Id && x.GetProperty("poolGuid").GetString() == "capacity-pool");
+            Assert.Equal("paused", outlook.GetProperty("status").GetString());
+            Assert.Equal(JsonValueKind.Null, outlook.GetProperty("projectedDateAtThreshold").ValueKind);
+            Assert.Equal(30, outlook.GetProperty("basisDays").GetInt32());
+            Assert.Equal(.8, outlook.GetProperty("thresholdFraction").GetDouble());
+            Assert.InRange(outlook.GetProperty("usedFraction").GetDouble(), .39, .41);
             var capacityPath = $"/api/v1/connections/{nas.Id}/pools/capacity-pool/capacity";
             var capacity = await client.GetFromJsonAsync<JsonElement>(capacityPath);
             Assert.Equal("paused", capacity.GetProperty("status").GetString());
