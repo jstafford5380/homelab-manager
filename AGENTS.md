@@ -2,13 +2,24 @@
 
 ## Ownership
 
-- `src/Api` (ASP.NET, Aspire, EF/SQLite, collectors, domain rules) is owned by Codex.
-- `src/Web` (React UI/UX) is owned by Claude. Avoid UI changes unless a task requires them; describe needed UI follow-ups in the request file below instead.
+- **Codex** owns all implementation: `src/Api` (ASP.NET, Aspire, EF/SQLite, collectors, domain rules) and `src/Web` (React UI), including the real API contracts.
+- **Claude** owns design: feature packages in `docs/features/` (briefs, mocks, fixtures, assets), plus design reviews of implemented features.
+- The owner approves packages and accepts results.
 
-## UI → API requests
+## Implementing a feature package
 
-UI work logs the API data it needs in [docs/UI_API_REQUESTS.md](docs/UI_API_REQUESTS.md). When asked to "pick up a UI request", or when starting API work:
+Packages live in `docs/features/NNN-slug/`. The process is in [docs/features/README.md](docs/features/README.md). When asked to implement a feature, or to "pick up the next feature":
 
-1. Read the **Open** entries. Unless told which one, take the lowest-numbered entry whose status is `requested`, and set it to `in progress` with today's date.
-2. Treat the suggested contract as a proposal. Keep the project's read-only NAS contract and truthfulness rules (unknowns stay explicit; no failure predictions). If you change the shape or decline part of the request, explain why under **Notes**.
-3. When it's merged and tested, set the status to `done`, record the final endpoint and fields under **Implemented as**, and leave the entry in **Open**. The UI side wires it up and moves it to **Completed**.
+1. Unless told which one, take the lowest-numbered package whose brief has status `ready`. Set it to `in progress` with today's date, in the brief and in the index table in `docs/features/README.md`.
+2. The brief (`README.md`) is the behavioural spec. `mock.html` is the visual spec: open it and step through every option in its State, Width and Theme switchers. If the two disagree, the brief wins.
+3. `fixtures/` shows the data each state needs, as a proposal. Design the real API shape for correctness and performance, and keep the project's read-only NAS contract and truthfulness rules: unknowns stay explicit, and no failure predictions.
+4. Build the UI with the app's existing tokens and components (`src/Web/src/index.css`, `src/Web/src/components/ui`). Don't paste mock CSS. Map the mock's `@container app` rules to the app's `@media` breakpoints (700px and 1100px).
+5. Work through the brief's acceptance checklist, and extend `src/Web/e2e` to cover each state, including axe checks in light and dark.
+6. When it's merged and tested, set the status to `implemented` and fill in **Implementation notes**: final endpoints and fields, components touched, deviations from the mock or fixtures and why, and test coverage. Claude reviews next.
+7. If a `review.md` exists with open findings, fix them (or note why not), then record each resolution in that file.
+
+Don't edit mocks, fixtures or design copy to match the implementation. Record the difference in **Implementation notes** instead.
+
+## Legacy UI → API requests
+
+[docs/UI_API_REQUESTS.md](docs/UI_API_REQUESTS.md) predates feature packages. Finish its remaining open entries using the rules in that file. New work arrives as feature packages instead.

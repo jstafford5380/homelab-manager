@@ -1,0 +1,52 @@
+# Feature design handoff
+
+New UI features and major redesigns start here as a design package. Claude and the owner design the experience as a working mock. Codex then implements both the UI and the backend that supports it. Because the design isn't tied to the current API, Codex can shape endpoints and components together instead of retrofitting one to the other.
+
+## Roles
+
+| Role | Owns |
+| --- | --- |
+| Owner | Product decisions, approving a package as `ready`, accepting the result |
+| Claude | `docs/features/`: briefs, mocks, fixtures, assets, and post-implementation design reviews |
+| Codex | All implementation in `src/Api` and `src/Web`, including the real API contract |
+
+## Lifecycle
+
+`draft → ready → in progress → implemented → reviewed → done`
+
+1. **draft:** Claude and the owner iterate on the brief and mock. Nothing is final.
+2. **ready:** the owner approves. The package doesn't change after this without a note in the brief's **Change log**.
+3. **in progress:** Codex is implementing. Questions and deviations go in the brief's **Implementation notes**.
+4. **implemented:** merged, tested, and described in **Implementation notes**: final endpoints, components, and any deliberate differences from the mock.
+5. **reviewed:** Claude has compared the running app against the mock in every state and width, and written `review.md`.
+6. **done:** review findings are resolved or explicitly accepted by the owner.
+
+Whoever changes the status updates it in the brief's header, with the date.
+
+## Package layout
+
+Copy `_template/` to `NNN-short-slug/`, using the next free three-digit number. Never reuse a number.
+
+```
+docs/features/NNN-short-slug/
+  README.md   brief: goal, screens, states, copy, data needs, acceptance checklist, status
+  mock.html   self-contained mock with a state switcher, built on the app's colour tokens
+  fixtures/   sample data per state, in the proposed contract shape
+  assets/     icons, images, anything generated for the design
+  review.md   Claude's design review after implementation
+```
+
+## Rules that keep the handoff honest
+
+- **The mock is the visual spec. The brief is the behavioural spec.** If they disagree, the brief wins. Note the conflict under **Implementation notes**.
+- **Every state is designed, not just the happy path.** At minimum: normal, empty, loading, error or unavailable, stale or unknown data, and mobile width. The mock's state switcher must cover each one listed in the brief.
+- **Fixtures are a proposal, not a binding contract.** Codex owns the real API shape and may change it. Record the final shape and the reason in **Implementation notes**.
+- **Truthfulness rules apply to designs too.** No invented precision, failure predictions, or fake certainty in mock copy. Unknown, stale, and unsupported data must look different from healthy data.
+- **Mocks use the app's tokens.** `_template/mock.html` carries a copy of the light and dark colour tokens from `src/Web/src/index.css`. Implementation should map to existing tokens and components, not copy mock CSS verbatim.
+- **Small fixes don't need a package.** Copy tweaks, spacing, and bug fixes can go straight to Codex as normal tasks.
+
+## Index
+
+| # | Feature | Status | Updated |
+| --- | --- | --- | --- |
+| — | _No packages yet_ | | |

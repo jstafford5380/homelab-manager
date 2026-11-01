@@ -1,0 +1,220 @@
+<!doctype html>
+<!--
+  Feature mock template. Copy this whole folder from docs/features/_template.
+
+  - Design tokens are copied from src/Web/src/index.css (regenerate if that file changes).
+  - Mock-only chrome (the toolbar) lives in .mock-toolbar. Everything inside #app is the design.
+  - States: add an option to STATES below, then mark markup with data-state="name"
+    (space-separated for several states). Unmarked markup shows in every state.
+  - Responsive rules: use @container app (...) instead of @media so the Width switcher
+    reflows the design. Implementation should map them back to the app's @media breakpoints.
+  - Fixtures: keep inline copies in <script type="application/json" data-fixture="name">
+    in sync with fixtures/name.json so this file stays self-contained.
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NNN Feature name · Mock</title>
+  <style>
+    /* App tokens: light */
+    :root {
+      color-scheme: light;
+      --background: #ffffff;
+      --foreground: #24312e;
+      --card: #ffffff;
+      --card-foreground: #24312e;
+      --popover: #ffffff;
+      --popover-foreground: #24312e;
+      --primary: #246348;
+      --primary-foreground: #ffffff;
+      --secondary: #edf3ef;
+      --secondary-foreground: #355b45;
+      --muted: #f2f5f3;
+      --muted-foreground: #52655b;
+      --accent: #edf3ef;
+      --accent-foreground: #24312e;
+      --destructive: #b44336;
+      --border: #e0e7e2;
+      --input: #7b8b82;
+      --ring: #599476;
+      --page: #f7f8fa;
+      --surface-soft: #f5f8f6;
+      --surface-stripe: #fafcfb;
+      --text-secondary: var(--muted-foreground);
+      --brand: #172d26;
+      --brand-background: #1d5e48;
+      --brand-foreground: #ffffff;
+      --nav-active: #eaf3ed;
+      --nav-active-foreground: #226149;
+      --nav-count: #d5e9dc;
+      --error-background: #fff0ed;
+      --error-border: #f3d1c7;
+      --error-foreground: #9e4938;
+      --warning-background: #fff6e8;
+      --warning-border: #dfc9a0;
+      --warning-foreground: #69471e;
+      --chart-axis: #b7c6bc;
+      --chart-point: #28664b;
+      --tone-ok: #1f6a48;
+      --tone-ok-bg: #e8f4ec;
+      --tone-ok-border: #bfdcc9;
+      --tone-warn: #7a4a0e;
+      --tone-warn-bg: #fff4e0;
+      --tone-warn-border: #e6c98f;
+      --tone-bad: #a1301f;
+      --tone-bad-bg: #fdece8;
+      --tone-bad-border: #efc0b5;
+      --tone-neutral: #52655b;
+      --tone-neutral-bg: #f2f5f3;
+      --tone-neutral-border: #dbe3de;
+      --tone-info: #3f6487;
+    }
+    /* App tokens: dark */
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --background: #121b17;
+      --foreground: #e4eee7;
+      --card: #19251f;
+      --card-foreground: #e4eee7;
+      --popover: #19251f;
+      --popover-foreground: #e4eee7;
+      --primary: #8dd6b2;
+      --primary-foreground: #10271c;
+      --secondary: #293f32;
+      --secondary-foreground: #d5ecdd;
+      --muted: #22332a;
+      --muted-foreground: #b2c3b8;
+      --accent: #293f32;
+      --accent-foreground: #e4eee7;
+      --destructive: #b44336;
+      --border: #43574b;
+      --input: #7f9589;
+      --ring: #8dd6b2;
+      --page: #0f1713;
+      --surface-soft: #22332a;
+      --surface-stripe: #1d2b23;
+      --brand: #e4eee7;
+      --brand-background: #8dd6b2;
+      --brand-foreground: #10271c;
+      --nav-active: #293f32;
+      --nav-active-foreground: #b5eccd;
+      --nav-count: #38563f;
+      --error-background: #38221e;
+      --error-border: #a46b5f;
+      --error-foreground: #ffc1b5;
+      --warning-background: #34291b;
+      --warning-border: #82683e;
+      --warning-foreground: #f3d4a0;
+      --chart-axis: #7f9589;
+      --chart-point: #8dd6b2;
+      --tone-ok: #9fe0bd;
+      --tone-ok-bg: #183026;
+      --tone-ok-border: #2f5a44;
+      --tone-warn: #f3cf92;
+      --tone-warn-bg: #33281a;
+      --tone-warn-border: #6e5531;
+      --tone-bad: #ffb4a6;
+      --tone-bad-bg: #3a201b;
+      --tone-bad-border: #7a3f34;
+      --tone-neutral: #b2c3b8;
+      --tone-neutral-bg: #1f2e26;
+      --tone-neutral-border: #3a4d42;
+      --tone-info: #9dbad8;
+    }
+
+    /* App base (mirrors src/Web/src/App.css) */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--foreground); background: var(--page); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: -1px; font-weight: 600; }
+    h2 { font-size: 17px; font-weight: 600; }
+    h3 { font-size: 15px; font-weight: 600; }
+    small, .muted { color: var(--text-secondary); font-size: 12px; }
+    a { color: var(--primary); }
+    .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 600; color: var(--text-secondary); }
+    .card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground); }
+    .btn.outline { background: var(--background); color: var(--foreground); border-color: var(--border); }
+    .btn.sm { height: 32px; padding: 0 12px; }
+    .btn:focus-visible, a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .tone-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); }
+    .tone-warn { --tone: var(--tone-warn); --tone-bg: var(--tone-warn-bg); --tone-border: var(--tone-warn-border); }
+    .tone-bad { --tone: var(--tone-bad); --tone-bg: var(--tone-bad-bg); --tone-border: var(--tone-bad-border); }
+    .tone-neutral { --tone: var(--tone-neutral); --tone-bg: var(--tone-neutral-bg); --tone-border: var(--tone-neutral-border); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); }
+
+    /* Mock frame: the page area the design renders in */
+    #app { container: app / inline-size; margin: 0 auto; padding: 36px 38px; max-width: 1600px; transition: max-width .2s; }
+    html[data-width="tablet"] #app { max-width: 900px; }
+    html[data-width="mobile"] #app { max-width: 390px; padding: 24px 16px; }
+    html[data-width="tablet"] body, html[data-width="mobile"] body { background: var(--muted); }
+    html[data-width="tablet"] #app, html[data-width="mobile"] #app { background: var(--page); min-height: calc(100vh - 49px); box-shadow: 0 0 0 1px var(--border); }
+
+    /* Mock-only toolbar: not part of the design */
+    .mock-toolbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: #1b1f1d; color: #e8ece9; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mock-toolbar strong { margin-right: auto; }
+    .mock-toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+    .mock-toolbar select { font: inherit; background: #2b312e; color: inherit; border: 1px solid #47504b; border-radius: 4px; padding: 3px 6px; }
+    [data-state][hidden] { display: none !important; }
+
+    /* Feature styles: put design-specific CSS below.
+       For responsive rules use container queries so the Width switcher works:
+       @container app (max-width: 700px) { ... }   (the app's mobile breakpoint)
+       @container app (max-width: 1100px) { ... }  (the app's tablet breakpoint) */
+  </style>
+</head>
+<body>
+  <div class="mock-toolbar" role="region" aria-label="Mock controls (not part of the design)">
+    <strong>MOCK · NNN Feature name</strong>
+    <label>State <select id="mock-state"></select></label>
+    <label>Width <select id="mock-width"><option value="desktop">Desktop</option><option value="tablet">Tablet 900</option><option value="mobile">Mobile 390</option></select></label>
+    <label>Theme <select id="mock-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  </div>
+
+  <main id="app">
+    <p class="eyebrow">HOMELAB CONTROL</p>
+    <h1>Page heading</h1>
+    <p class="muted" style="margin: 8px 0 30px">Supporting line.</p>
+
+    <section class="card" data-state="normal">
+      <div class="section-title"><h2>Section</h2><span class="pill tone-ok">Reporting</span></div>
+      <p>Normal-state content. Replace with the design.</p>
+    </section>
+    <section class="card" data-state="empty"><h2>Nothing here yet</h2><p class="muted">Empty-state guidance.</p></section>
+    <section class="card" data-state="loading"><p class="muted">Loading…</p></section>
+    <section class="card" data-state="unavailable"><h2>Unavailable</h2><p class="muted">What failed and what still holds.</p><button class="btn outline sm">Retry</button></section>
+    <section class="card" data-state="stale"><div class="section-title"><h2>Section</h2><span class="pill tone-warn">Out of date</span></div><p class="muted">Last-known data, clearly marked.</p></section>
+  </main>
+
+  <script type="application/json" data-fixture="normal">{}</script>
+
+  <script>
+    // States from the brief's state table. Keys must match data-state values.
+    const STATES = { normal: "Normal", empty: "Empty", loading: "Loading", unavailable: "Unavailable / error", stale: "Stale or unknown" };
+    // Parsed inline fixtures, for scripted mocks: FIXTURES.normal, ...
+    const FIXTURES = Object.fromEntries([...document.querySelectorAll("[data-fixture]")].map(el => [el.dataset.fixture, JSON.parse(el.textContent)]));
+
+    const params = new URLSearchParams(location.search);
+    const stateSelect = document.getElementById("mock-state");
+    const widthSelect = document.getElementById("mock-width");
+    const themeSelect = document.getElementById("mock-theme");
+    for (const [value, label] of Object.entries(STATES)) stateSelect.add(new Option(label, value));
+
+    function apply() {
+      const state = stateSelect.value;
+      document.querySelectorAll("#app [data-state]").forEach(el => { el.hidden = !el.dataset.state.split(" ").includes(state); });
+      document.documentElement.dataset.width = widthSelect.value;
+      document.documentElement.dataset.theme = themeSelect.value;
+      // Shareable URL, e.g. mock.html?state=stale&width=mobile&theme=dark
+      try { history.replaceState(null, "", "?" + new URLSearchParams({ state, width: widthSelect.value, theme: themeSelect.value })); } catch { /* Opaque origins (data:, some file: viewers) refuse URL changes. */ }
+    }
+    stateSelect.value = STATES[params.get("state")] ? params.get("state") : "normal";
+    widthSelect.value = params.get("width") || "desktop";
+    themeSelect.value = params.get("theme") === "dark" ? "dark" : "light";
+    [stateSelect, widthSelect, themeSelect].forEach(el => el.addEventListener("change", apply));
+    apply();
+  </script>
+</body>
+</html>

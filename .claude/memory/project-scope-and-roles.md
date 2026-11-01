@@ -1,13 +1,13 @@
 ---
 name: project-scope-and-roles
-description: What Homelab Control is for, and the Claude (UI/UX) vs Codex (API/core logic) split
+description: What Homelab Control is for, and the Claude (design) vs Codex (all implementation) split
 metadata:
   type: project
 ---
 
 Homelab Control is a single pane of glass for the owner's home network servers (TrueNAS NAS + standalone servers). Goal goes beyond aggregate health: help the owner stay ahead of building issues — e.g. drives nearing EoL (rising read/write errors, reallocated/pending sectors), and when to plan buying drives, adding RAM, upgrading board/CPU — so upkeep is proactive, not reactive.
 
-Division of labor (stated 2026-11-01): Claude owns UI/UX design and implementation (src/Web). Codex owns core coding of the API and supplementary logic (src/Api, .NET 10 + Aspire + EF/SQLite).
+Division of labor (revised 2026-11-01): Claude owns design — feature packages in docs/features/ (brief, mock.html, fixtures, assets) and post-implementation design reviews. Codex owns ALL implementation, src/Api and src/Web, including real API contracts. The overview redesign (commit 20af51f) was the last UI Claude implemented directly.
 
-**Why:** avoid stepping on Codex's work; Claude's value here is design quality.
-**How to apply:** default to working in src/Web; when UI needs an API change, describe the contract needed rather than implementing backend logic, unless the user asks. See [[ui-stack-and-constraints]].
+**Why:** owner wants Codex to optimize UI + backend together instead of adapting to Claude's implementation; mirrors their earlier "download mock HTML, Codex implements" workflow.
+**How to apply:** don't edit src/Web or src/Api unless the owner explicitly asks; produce packages per [[feature-design-handoff]]. Constraints in [[ui-stack-and-constraints]] still govern designs.
