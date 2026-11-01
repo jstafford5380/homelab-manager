@@ -10,6 +10,7 @@
     "build": "npm run build:web && dotnet build src/Api/Homelab.sln",
     "test": "dotnet test src/Api/Homelab.sln",
     "test:web": "cd src/Web && npx playwright test",
-    "lint": "npm --prefix src/Web run lint"
+    "lint": "npm --prefix src/Web run lint",
+    "gallery": "node scripts/gallery.mjs"
   }
 }

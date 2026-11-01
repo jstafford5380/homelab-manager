@@ -46,6 +46,10 @@ docs/features/NNN-short-slug/
   review.md   Claude's design review after implementation
 ```
 
+## Viewing mocks
+
+Run `npm run gallery` from the repository root, then open http://127.0.0.1:4178/. The gallery lists every package with links to its mock, brief, review and fixtures. A mock's URL is `http://127.0.0.1:4178/NNN-short-slug/mock.html`, and it accepts the toolbar's settings as a query string, e.g. `?state=stale&width=mobile&theme=dark&smart=off`. Files are read from disk on every request. The server is read-only, listens on localhost only, and never serves anything outside `docs/features/`. Set `GALLERY_PORT` to use a different port.
+
 ## Rules that keep the handoff honest
 
 - **The mock is the visual spec. The brief is the behavioural spec.** If they disagree, the brief wins. Note the conflict under **Implementation notes**.
@@ -59,4 +63,4 @@ docs/features/NNN-short-slug/
 
 | # | Feature | Status | Updated |
 | --- | --- | --- | --- |
-| [001](001-storage-redesign/README.md) | Storage redesign | ready | 2026-11-01 |
+| [001](001-storage-redesign/README.md) | Storage redesign | in progress | 2026-11-01 |

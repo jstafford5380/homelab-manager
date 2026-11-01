@@ -9,6 +9,8 @@ New features/major redesigns: EXPLORE with a mock only (scratchpad file and/or p
 
 Numbering: reserve the package number (NNN) when exploration starts — put it in the canvas/mock title, record it below — and assign feature IDs (NNN.01, NNN.02…) during exploration (a sticky note on the canvas works). IDs are stable: never renumber, mark dropped, next free number for additions. At lock-in they become the brief's Features table (with Depends on / Flag / Status). Reserved: 001 = Storage redesign — LOCKED IN 2026-11-01, package docs/features/001-storage-redesign (status ready; canvas https://claude.ai/artifact/DvJnB3bpZr8whJFi7iNccp; IDs 001.01–001.20, 001.17–001.20 behind flag `smart`). Next step for Claude: review once Codex marks it implemented. Next free: 002.
 
+Gallery: `npm run gallery` (scripts/gallery.mjs) serves docs/features at http://127.0.0.1:4178/; mocks take ?state=Mock template notes:width=Mock template notes:theme=Mock template notes:smart= presets — use it for reviews and to give Codex URLs.
+
 Mock template notes: tokens are generated from src/Web/src/index.css (regenerate if it changes); toolbar switches state/width/theme; responsive rules must use `@container app` (not @media) so the width switcher works; inline fixtures mirror fixtures/*.json. Also publish the mock as an Artifact for the owner to view/share when useful.
 
 Legacy docs/UI_API_REQUESTS.md: Codex finishes open entries there; no new entries. UR-1 (capacityOutlook on /overview) was done by Codex 2026-11-01 but not yet surfaced in UI — candidate first package.
