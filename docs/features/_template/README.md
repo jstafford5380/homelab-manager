@@ -13,6 +13,17 @@ What the owner should be able to notice, decide, or do after this ships, in one 
 
 The main layout and interaction decisions, and why. Note any alternatives considered and rejected, so they don't get re-proposed.
 
+## Features
+
+One row per capability that can be built, flagged, deferred, or reviewed on its own. IDs are stable: never renumber, mark dropped rows `dropped`, and give new rows the next free number. Codex updates **Status** as each feature lands (`ready`, `in progress`, `implemented`, `deferred`, `dropped`).
+
+| ID | Feature | Depends on | Flag | Status |
+| --- | --- | --- | --- | --- |
+| NNN.01 | | — | — | ready |
+| NNN.02 | | NNN.01 | — | ready |
+
+**Flag** names a feature flag that keeps the feature hidden until its backend support exists. Hidden means not rendered at all, not a "coming soon" placeholder.
+
 ## States
 
 Each row needs a matching option in the mock's state switcher, and a fixture if it needs data.
@@ -34,9 +45,9 @@ The final wording for headings, labels, empty states, and caveats. If the wordin
 
 What the UI needs to render each state. `fixtures/` holds a proposed shape. Codex owns the real contract.
 
-| Need | Proposed field(s) | Notes (units, nullability, freshness) |
-| --- | --- | --- |
-| | | |
+| Feature | Need | Proposed field(s) | Notes (units, nullability, freshness) |
+| --- | --- | --- | --- |
+| NNN.01 | | | |
 
 ## Interaction and accessibility
 
@@ -57,11 +68,17 @@ What the UI needs to render each state. `fixtures/` holds a proposed shape. Code
 - [ ] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
 - [ ] Unknown, stale, and unsupported data look different from healthy data.
 - [ ] No claims beyond the evidence (no failure dates or probabilities).
-- [ ] Feature-specific checks:
+- [ ] Every flagged feature is completely absent when its flag is off, and the page still reads correctly without it.
+- [ ] Feature-specific checks, each tagged with its ID:
+  - [ ] NNN.01 —
 
 ## Implementation notes
 
-_Codex: final endpoints and fields, components touched, deviations from the mock or fixtures and why, and test coverage._
+_Codex: one entry per feature ID as it lands: final endpoints and fields, components touched, deviations from the mock or fixtures and why, and test coverage._
+
+### NNN.01
+
+—
 
 ## Change log
 

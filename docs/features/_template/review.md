@@ -17,6 +17,7 @@ Number each finding and keep the numbers stable. Severity: **blocker** (wrong or
 
 ### 1. Title
 
+- **Feature:** NNN.01
 - **Severity:**
 - **Where:**
 - **Expected (mock / brief):**

@@ -15,10 +15,18 @@ Packages live in `docs/features/NNN-slug/`. The process is in [docs/features/REA
 3. `fixtures/` shows the data each state needs, as a proposal. Design the real API shape for correctness and performance, and keep the project's read-only NAS contract and truthfulness rules: unknowns stay explicit, and no failure predictions.
 4. Build the UI with the app's existing tokens and components (`src/Web/src/index.css`, `src/Web/src/components/ui`). Don't paste mock CSS. Map the mock's `@container app` rules to the app's `@media` breakpoints (700px and 1100px).
 5. Work through the brief's acceptance checklist, and extend `src/Web/e2e` to cover each state, including axe checks in light and dark.
-6. When it's merged and tested, set the status to `implemented` and fill in **Implementation notes**: final endpoints and fields, components touched, deviations from the mock or fixtures and why, and test coverage. Claude reviews next.
+6. As each feature ID is merged and tested, set its status in the **Features** table and fill in its entry under **Implementation notes**: final endpoints and fields, components touched, deviations from the mock or fixtures and why, and test coverage. When the package is complete, set its status to `implemented`. Claude reviews next.
 7. If a `review.md` exists with open findings, fix them (or note why not), then record each resolution in that file.
 
 Don't edit mocks, fixtures or design copy to match the implementation. Record the difference in **Implementation notes** instead.
+
+### Package numbers and feature IDs
+
+- A package number (`001`) names a whole package. A feature ID (`001.03`) names one capability, listed in the brief's **Features** table. See **Numbering** in [docs/features/README.md](docs/features/README.md).
+- When asked to implement specific IDs (e.g. "implement 001.01–001.04"), do only those, plus anything they list under **Depends on**. Update each feature's **Status** in the table as it lands, and write its entry under **Implementation notes** using the ID as the heading.
+- A feature with a **Flag** must be completely absent from the UI while the flag is off: no placeholders, no "coming soon". Turn the flag on only when its backend support is merged and tested, and say so in that feature's implementation notes.
+- Reference feature IDs in commit messages and review responses.
+- Set the package status to `implemented` only when every feature that isn't `deferred` or `dropped` is `implemented`.
 
 ## Legacy UI → API requests
 

@@ -24,9 +24,18 @@ New UI features and major redesigns start here as a design package. Claude and t
 
 Whoever changes the status updates it in the brief's header, with the date.
 
+## Numbering
+
+Numbers make it easy to point at work precisely, e.g. "implement 001.03" or "001.08 stays behind the SMART flag".
+
+- **Package number (`001`).** Assigned when exploration starts, so the design conversation can use it before anything is written here. Claude puts it in the mock's title (e.g. "001 · Storage redesign") and keeps track of reserved numbers. The package folder and index row still appear only at lock-in. Numbers are never reused, even for an abandoned exploration.
+- **Feature ID (`001.03`).** Each capability inside a package that could be built, flagged, deferred, or reviewed on its own gets an ID: package number, a dot, then a two-digit sequence. Claude assigns them during exploration and lists them in the brief's **Features** table at lock-in.
+- **IDs are stable.** Never renumber. A dropped feature keeps its row, marked `dropped`. A new feature takes the next free number, even if it belongs between two others.
+- **Use IDs everywhere** they help: acceptance checklist items, Codex's implementation notes, review findings, commit messages, and requests like "implement 001.01–001.04 now, defer 001.09".
+
 ## Package layout
 
-At lock-in, copy `_template/` to `NNN-short-slug/`, using the next free three-digit number. Never reuse a number.
+At lock-in, copy `_template/` to `NNN-short-slug/`, using the package number reserved at exploration.
 
 ```
 docs/features/NNN-short-slug/
