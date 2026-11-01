@@ -1,4 +1,4 @@
 - [Project scope and roles](project-scope-and-roles.md) — proactive homelab health app; Claude=design packages+reviews, Codex=all implementation
 - [UI stack and constraints](ui-stack-and-constraints.md) — React/Vite/shadcn stack; a11y+mobile review; truthful, read-only UX
 - [Web verification workflow](web-verification-workflow.md) — e2e serves wwwroot; build API to scratch dir; mock-data screenshots
-- [Feature design handoff](feature-design-handoff.md) — docs/features packages: lifecycle, mock template, review duty; check for `implemented`
+- [Feature design handoff](feature-design-handoff.md) — mock-only until owner says "lock it in", then write docs/features package once; review `implemented`

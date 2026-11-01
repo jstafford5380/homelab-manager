@@ -1,6 +1,6 @@
 # NNN · Feature name
 
-- **Status:** draft · YYYY-MM-DD
+- **Status:** ready · YYYY-MM-DD
 - **Mock:** [mock.html](mock.html)
 - **Shared preview:** — (link to the published mock, if there is one)
 - **Affected screens:** e.g. Overview → "Coming up"

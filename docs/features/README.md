@@ -12,20 +12,21 @@ New UI features and major redesigns start here as a design package. Claude and t
 
 ## Lifecycle
 
-`draft → ready → in progress → implemented → reviewed → done`
+`exploring → (lock-in) → ready → in progress → implemented → reviewed → done`
 
-1. **draft:** Claude and the owner iterate on the brief and mock. Nothing is final.
-2. **ready:** the owner approves. The package doesn't change after this without a note in the brief's **Change log**.
-3. **in progress:** Codex is implementing. Questions and deviations go in the brief's **Implementation notes**.
-4. **implemented:** merged, tested, and described in **Implementation notes**: final endpoints, components, and any deliberate differences from the mock.
-5. **reviewed:** Claude has compared the running app against the mock in every state and width, and written `review.md`.
-6. **done:** review findings are resolved or explicitly accepted by the owner.
+1. **exploring:** Claude and the owner iterate on the design using a working mock only: a scratch file or a private published preview. **Nothing is written to `docs/features/` yet.** No brief, no fixtures, no package folder, no index entry. Rewriting Codex-facing docs on every iteration wastes effort, and half-settled docs risk being picked up early.
+2. **lock-in:** the owner explicitly says the design is settled, e.g. "lock that feature in". Only then does Claude write the whole package in one pass: copy `_template/`, finalize the mock, write the brief and fixtures, and add the index row with status `ready`. Claude never treats approval of one detail, or a pause in feedback, as lock-in. When unsure, Claude asks.
+3. **ready:** waiting for Codex. The package doesn't change after this unless the owner asks, and then every change gets a row in the brief's **Change log**. If a redesign is needed, go back to exploring outside the package and lock in again.
+4. **in progress:** Codex is implementing. Questions and deviations go in the brief's **Implementation notes**.
+5. **implemented:** merged, tested, and described in **Implementation notes**: final endpoints, components, and any deliberate differences from the mock.
+6. **reviewed:** Claude has compared the running app against the mock in every state and width, and written `review.md`.
+7. **done:** review findings are resolved or explicitly accepted by the owner.
 
 Whoever changes the status updates it in the brief's header, with the date.
 
 ## Package layout
 
-Copy `_template/` to `NNN-short-slug/`, using the next free three-digit number. Never reuse a number.
+At lock-in, copy `_template/` to `NNN-short-slug/`, using the next free three-digit number. Never reuse a number.
 
 ```
 docs/features/NNN-short-slug/

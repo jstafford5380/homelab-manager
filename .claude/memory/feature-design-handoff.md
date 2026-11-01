@@ -1,15 +1,15 @@
 ---
 name: feature-design-handoff
-description: How design packages flow to Codex via docs/features (lifecycle, template, review duty)
+description: How design packages flow to Codex via docs/features — explore mock-only, write docs only on explicit "lock it in"
 metadata:
   type: feedback
 ---
 
-New features/major redesigns: copy docs/features/_template to docs/features/NNN-slug, iterate brief + mock with the owner (status draft), owner approves → ready, Codex implements → implemented, Claude reviews the running app against the mock in every state/width/theme and writes review.md → reviewed → done. Keep the index table in docs/features/README.md current. AGENTS.md tells Codex how to pick packages up.
+New features/major redesigns: EXPLORE with a mock only (scratchpad file and/or private published Artifact) — do NOT create or edit anything in docs/features/ (no folder, brief, fixtures, index row) while iterating. Only when the owner explicitly locks it in ("lock that feature in" or similar) write the full package in one pass: copy docs/features/_template to docs/features/NNN-slug, finalize mock, brief, fixtures, index row with status ready. Approval of one detail or silence is not lock-in; if unsure, ask. After ready, change the package only when the owner asks (log it in Change log). Then Codex implements → implemented, Claude reviews the running app against the mock in every state/width/theme and writes review.md → reviewed → done. Keep the index table in docs/features/README.md current. AGENTS.md tells Codex how to pick packages up.
 
 Mock template notes: tokens are generated from src/Web/src/index.css (regenerate if it changes); toolbar switches state/width/theme; responsive rules must use `@container app` (not @media) so the width switcher works; inline fixtures mirror fixtures/*.json. Also publish the mock as an Artifact for the owner to view/share when useful.
 
 Legacy docs/UI_API_REQUESTS.md: Codex finishes open entries there; no new entries. UR-1 (capacityOutlook on /overview) was done by Codex 2026-11-01 but not yet surfaced in UI — candidate first package.
 
-**Why:** owner set this up 2026-11-01 to get the best results from the Claude-designs / Codex-implements split.
+**Why:** owner set this up 2026-11-01 to get the best results from the Claude-designs / Codex-implements split; the lock-in gate avoids burning tokens rewriting Codex-facing docs on every design iteration.
 **How to apply:** at session start, check docs/features/README.md index for packages in `implemented` (need review) and the request file for done entries. See [[project-scope-and-roles]].
