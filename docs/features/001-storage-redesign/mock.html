@@ -1,0 +1,551 @@
+<!doctype html>
+<!--
+  Feature mock template. Copy this whole folder from docs/features/_template.
+
+  - Design tokens are copied from src/Web/src/index.css (regenerate if that file changes).
+  - Mock-only chrome (the toolbar) lives in .mock-toolbar. Everything inside #app is the design.
+  - States: add an option to STATES below, then mark markup with data-state="name"
+    (space-separated for several states). Unmarked markup shows in every state.
+  - Responsive rules: use @container app (...) instead of @media so the Width switcher
+    reflows the design. Implementation should map them back to the app's @media breakpoints.
+  - Fixtures: keep inline copies in <script type="application/json" data-fixture="name">
+    in sync with fixtures/name.json so this file stays self-contained.
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>001 Storage redesign · Mock</title>
+  <style>
+    /* App tokens: light */
+    :root {
+      color-scheme: light;
+      --background: #ffffff;
+      --foreground: #24312e;
+      --card: #ffffff;
+      --card-foreground: #24312e;
+      --popover: #ffffff;
+      --popover-foreground: #24312e;
+      --primary: #246348;
+      --primary-foreground: #ffffff;
+      --secondary: #edf3ef;
+      --secondary-foreground: #355b45;
+      --muted: #f2f5f3;
+      --muted-foreground: #52655b;
+      --accent: #edf3ef;
+      --accent-foreground: #24312e;
+      --destructive: #b44336;
+      --border: #e0e7e2;
+      --input: #7b8b82;
+      --ring: #599476;
+      --page: #f7f8fa;
+      --surface-soft: #f5f8f6;
+      --surface-stripe: #fafcfb;
+      --text-secondary: var(--muted-foreground);
+      --brand: #172d26;
+      --brand-background: #1d5e48;
+      --brand-foreground: #ffffff;
+      --nav-active: #eaf3ed;
+      --nav-active-foreground: #226149;
+      --nav-count: #d5e9dc;
+      --error-background: #fff0ed;
+      --error-border: #f3d1c7;
+      --error-foreground: #9e4938;
+      --warning-background: #fff6e8;
+      --warning-border: #dfc9a0;
+      --warning-foreground: #69471e;
+      --chart-axis: #b7c6bc;
+      --chart-point: #28664b;
+      --tone-ok: #1f6a48;
+      --tone-ok-bg: #e8f4ec;
+      --tone-ok-border: #bfdcc9;
+      --tone-warn: #7a4a0e;
+      --tone-warn-bg: #fff4e0;
+      --tone-warn-border: #e6c98f;
+      --tone-bad: #a1301f;
+      --tone-bad-bg: #fdece8;
+      --tone-bad-border: #efc0b5;
+      --tone-neutral: #52655b;
+      --tone-neutral-bg: #f2f5f3;
+      --tone-neutral-border: #dbe3de;
+      --tone-info: #3f6487;
+    }
+    /* App tokens: dark */
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --background: #121b17;
+      --foreground: #e4eee7;
+      --card: #19251f;
+      --card-foreground: #e4eee7;
+      --popover: #19251f;
+      --popover-foreground: #e4eee7;
+      --primary: #8dd6b2;
+      --primary-foreground: #10271c;
+      --secondary: #293f32;
+      --secondary-foreground: #d5ecdd;
+      --muted: #22332a;
+      --muted-foreground: #b2c3b8;
+      --accent: #293f32;
+      --accent-foreground: #e4eee7;
+      --destructive: #b44336;
+      --border: #43574b;
+      --input: #7f9589;
+      --ring: #8dd6b2;
+      --page: #0f1713;
+      --surface-soft: #22332a;
+      --surface-stripe: #1d2b23;
+      --brand: #e4eee7;
+      --brand-background: #8dd6b2;
+      --brand-foreground: #10271c;
+      --nav-active: #293f32;
+      --nav-active-foreground: #b5eccd;
+      --nav-count: #38563f;
+      --error-background: #38221e;
+      --error-border: #a46b5f;
+      --error-foreground: #ffc1b5;
+      --warning-background: #34291b;
+      --warning-border: #82683e;
+      --warning-foreground: #f3d4a0;
+      --chart-axis: #7f9589;
+      --chart-point: #8dd6b2;
+      --tone-ok: #9fe0bd;
+      --tone-ok-bg: #183026;
+      --tone-ok-border: #2f5a44;
+      --tone-warn: #f3cf92;
+      --tone-warn-bg: #33281a;
+      --tone-warn-border: #6e5531;
+      --tone-bad: #ffb4a6;
+      --tone-bad-bg: #3a201b;
+      --tone-bad-border: #7a3f34;
+      --tone-neutral: #b2c3b8;
+      --tone-neutral-bg: #1f2e26;
+      --tone-neutral-border: #3a4d42;
+      --tone-info: #9dbad8;
+    }
+
+    /* App base (mirrors src/Web/src/App.css) */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--foreground); background: var(--page); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: -1px; font-weight: 600; }
+    h2 { font-size: 17px; font-weight: 600; }
+    h3 { font-size: 15px; font-weight: 600; }
+    small, .muted { color: var(--text-secondary); font-size: 12px; }
+    a { color: var(--primary); }
+    .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 600; color: var(--text-secondary); }
+    .card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground); }
+    .btn.outline { background: var(--background); color: var(--foreground); border-color: var(--border); }
+    .btn.sm { height: 32px; padding: 0 12px; }
+    .btn:focus-visible, a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .tone-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); }
+    .tone-warn { --tone: var(--tone-warn); --tone-bg: var(--tone-warn-bg); --tone-border: var(--tone-warn-border); }
+    .tone-bad { --tone: var(--tone-bad); --tone-bg: var(--tone-bad-bg); --tone-border: var(--tone-bad-border); }
+    .tone-neutral { --tone: var(--tone-neutral); --tone-bg: var(--tone-neutral-bg); --tone-border: var(--tone-neutral-border); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); }
+
+    /* Mock frame: the page area the design renders in */
+    #app { container: app / inline-size; margin: 0 auto; padding: 36px 38px; max-width: 1600px; transition: max-width .2s; }
+    html[data-width="tablet"] #app { max-width: 900px; }
+    html[data-width="mobile"] #app { max-width: 390px; padding: 24px 16px; }
+    html[data-width="tablet"] body, html[data-width="mobile"] body { background: var(--muted); }
+    html[data-width="tablet"] #app, html[data-width="mobile"] #app { background: var(--page); min-height: calc(100vh - 49px); box-shadow: 0 0 0 1px var(--border); }
+
+    /* Mock-only toolbar: not part of the design */
+    .mock-toolbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: #1b1f1d; color: #e8ece9; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mock-toolbar strong { margin-right: auto; }
+    .mock-toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+    .mock-toolbar select { font: inherit; background: #2b312e; color: inherit; border: 1px solid #47504b; border-radius: 4px; padding: 3px 6px; }
+    [data-state][hidden] { display: none !important; }
+
+    /* Feature styles: put design-specific CSS below.
+       For responsive rules use container queries so the Width switcher works:
+       @container app (max-width: 700px) { ... }   (the app's mobile breakpoint)
+       @container app (max-width: 1100px) { ... }  (the app's tablet breakpoint) */
+    .page-head p.sub { color: var(--text-secondary); margin-top: 4px; }
+    .pill.t-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+    .d-ok { background: var(--tone-ok); } .d-warn { background: var(--tone-warn); } .d-bad { background: var(--tone-bad); } .d-neutral { background: var(--tone-neutral); }
+    .tabs { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tab { display: flex; align-items: center; gap: 10px; padding: 10px 16px; min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--foreground); font: inherit; cursor: pointer; text-align: left; }
+    .tab[aria-pressed="true"] { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+    .tab span.line { display: block; font-size: 12px; color: var(--text-secondary); }
+    .server-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+    .banner { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); }
+    .facts { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .facts div { padding: 14px 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); }
+    .facts dt { font-size: 12px; color: var(--text-secondary); }
+    .facts dd { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
+    .stack { display: flex; flex-direction: column; gap: 20px; }
+    .pool { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .pool-head { padding: 18px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; border-bottom: 1px solid var(--border); }
+    .pool-head .meta { display: grid; gap: 2px; min-width: 220px; }
+    .pool-head .usage { flex: 1 1 280px; display: grid; gap: 6px; max-width: 420px; }
+    .line-sm { font-size: 13px; color: var(--text-secondary); }
+    .line-xs { font-size: 12px; color: var(--text-secondary); }
+    .bar { height: 8px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+    .bar > span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+    .note { margin: 0; padding: 10px 20px; font-size: 13px; background: var(--muted); border-bottom: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: var(--surface-soft); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+    .drive-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--foreground); cursor: pointer; text-align: left; font-weight: 600; }
+    .drive-btn:hover { text-decoration: underline; }
+    .link { background: none; border: 0; padding: 0; font: inherit; color: var(--primary); cursor: pointer; font-weight: 600; }
+    .drive-btn:focus-visible, .link:focus-visible, .tab:focus-visible, summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .confirm { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--tone-ok); }
+    .unconfirmed { margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--tone-warn); }
+    .cards { display: none; }
+    .dcard { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; width: 100%; padding: 14px 16px; border: 0; border-top: 1px solid var(--border); background: none; color: var(--foreground); font: inherit; text-align: left; cursor: pointer; min-height: 44px; }
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    .chev { transition: transform .15s; flex: none; }
+    details[open] .chev { transform: rotate(90deg); }
+    .space summary { display: flex; align-items: center; gap: 8px; padding: 14px 20px; min-height: 44px; font-weight: 600; border-top: 1px solid var(--border); }
+    .space ul { margin: 0; padding: 0 20px 18px 42px; list-style: none; display: grid; gap: 10px; max-width: 620px; }
+    .scrim { position: fixed; background: rgba(20, 30, 26, .32); }
+    html[data-theme="dark"] .scrim { background: rgba(0, 0, 0, .5); }
+    .panel { position: fixed; background: var(--card); border-left: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; z-index: 5; }
+    .panel.inline { position: static; border: 0; border-radius: 0; overflow: visible; margin: -24px -16px 0; }
+    .panel-head { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; }
+    .panel-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 24px; }
+    .panel h3 { font-size: 15px; }
+    .tiles { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .tiles div { padding: 10px 12px; border-radius: 8px; background: var(--muted); }
+    .tiles dt { font-size: 12px; color: var(--text-secondary); }
+    .tiles dd { margin: 2px 0 0; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tiles dd.sub { font-weight: 400; font-size: 12px; color: var(--text-secondary); }
+    .kv { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; }
+    .kv dt { color: var(--text-secondary); }
+    .kv dd { margin: 0; }
+    .boxed { padding: 14px; border-radius: 10px; border: 1px solid var(--border); display: grid; gap: 6px; }
+    .why { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); font-size: 13px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .field { display: grid; gap: 6px; }
+    .field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .field input { font: inherit; color: var(--foreground); background: var(--card); border: 1px solid var(--input); border-radius: 8px; padding: 9px 11px; min-height: 40px; }
+    .history { margin: 0; padding: 0; list-style: none; }
+    .history li { display: grid; grid-template-columns: 92px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .actions { position: sticky; bottom: 0; margin-top: auto; padding: 14px 24px; border-top: 1px solid var(--border); background: var(--card); display: flex; flex-wrap: wrap; gap: 8px; }
+    .skeleton { background: var(--muted); border-radius: 8px; animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+    @container app (max-width: 1100px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @container app (max-width: 700px) {
+      .tabs { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; }
+      .tab { flex: none; padding: 8px 14px; border-radius: 999px; }
+      .tab span.line { display: none; }
+      .tablewrap { display: none; }
+      .cards { display: block; }
+      .pool-head { padding: 16px; }
+      .pool-head .meta { min-width: 0; }
+      .panel-head, .panel-body { padding-left: 16px; padding-right: 16px; }
+      .actions { position: static; display: grid; padding: 14px 16px; }
+      .form-grid { grid-template-columns: minmax(0, 1fr); }
+      h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-toolbar" role="region" aria-label="Mock controls (not part of the design)">
+    <strong>MOCK · 001 Storage redesign</strong>
+    <label>State <select id="mock-state">
+      <option value="normal">Normal (TrueNAS)</option>
+      <option value="stale">Out of date (Backup NAS)</option>
+      <option value="partial">Partly unknown + scrub running (Proxmox)</option>
+      <option value="empty">Empty</option>
+      <option value="loading">Loading</option>
+      <option value="unavailable">Unavailable</option>
+    </select></label>
+    <label>Width <select id="mock-width"><option value="desktop">Desktop</option><option value="tablet">Tablet 900</option><option value="mobile">Mobile 390</option></select></label>
+    <label>Theme <select id="mock-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+    <label>Flag smart <select id="mock-smart"><option value="on">On</option><option value="off">Off</option></select></label>
+  </div>
+
+  <main id="app"></main>
+
+  <script>
+    // Sample data mirrors fixtures/*.json in display-ready form. All drives, serials and prices are invented.
+    const NOW = 2026.84, PLAN = 5;
+    const SERVERS = [
+      { id: "truenas", name: "TrueNAS", host: "truenas.lan", fresh: "ok", freshLabel: "Reporting", seen: "4 min ago", raw: "57 TB", enclosures: false,
+        alerts: [{ title: "Device /dev/sdc has 8 currently unreadable (pending) sectors", when: "Today, 6:12 AM" }, { title: "A system update is available (24.10.2.5)", when: "3 days ago" }],
+        pools: [
+          { name: "tank", layout: "RAIDZ2 · 6 drives · survives 2 drive losses", status: "warn", label: "Needs a look", used: "27.1 TB", size: "43.6 TB", pct: 62,
+            scrub: "Last scrub 6 days ago · 0 errors", scrubDot: "ok", forecast: "At the current rate, 80% full around Mar 2027",
+            note: "One drive is showing early wear. The pool is fully protected for now.",
+            datasets: [["media", "18.2 TB", 18.2], ["backups", "5.1 TB", 5.1], ["photos", "2.9 TB", 2.9], ["apps", "0.9 TB", 0.9]],
+            drives: ["t1", "t2", "t3", "t4", "t5", "t6"] },
+          { name: "fast", layout: "Mirror · 2 drives · survives 1 drive loss", status: "ok", label: "Healthy", used: "410 GB", size: "1 TB", pct: 41,
+            scrub: "Last scrub 6 days ago · 0 errors", scrubDot: "ok", forecast: "Not growing, so no fill date to show",
+            datasets: [["apps", "300 GB", .3], ["vms", "110 GB", .11]], drives: ["f1", "f2"] }
+        ], loose: ["l1"] },
+      { id: "backup", name: "Backup NAS", host: "backup.lan", fresh: "warn", freshLabel: "Out of date", seen: "2 days ago", raw: "24 TB", stale: true, enclosures: true, alerts: [],
+        pools: [
+          { name: "vault", layout: "Mirror · 2 drives · survives 1 drive loss", status: "neutral", label: "Last known: healthy", used: "6.9 TB", size: "12 TB", pct: 58,
+            scrub: "Last scrub 9 days ago · 0 errors (last known)", scrubDot: "neutral", forecast: "Forecast paused until this server reports again",
+            datasets: [["replica/tank", "6.4 TB", 6.4], ["replica/photos", "0.5 TB", .5]], drives: ["b1", "b2"] }
+        ], loose: [] },
+      { id: "proxmox", name: "Proxmox host", host: "pve.lan", fresh: "ok", freshLabel: "Reporting", seen: "1 min ago", raw: "1 TB", enclosures: false, alerts: [],
+        pools: [
+          { name: "rpool", layout: "Mirror · 2 drives · survives 1 drive loss", status: "neutral", label: "Partly unknown", smartOnly: true, used: "188 GB", size: "480 GB", pct: 39,
+            scrub: "Scrub in progress · 72% · started 2 hours ago", scrubDot: "ok", forecast: "Not enough history yet for a forecast",
+            note: "One drive doesn’t provide health data, so this pool’s health is only partly known.",
+            datasets: [["data/vm-disks", "142 GB", .142], ["ROOT/pve-1", "38 GB", .038], ["data/templates", "8 GB", .008]], drives: ["p1", "p2"] }
+        ], loose: [] }
+    ];
+    const base = { kind: "HDD · 7200 rpm", fw: "83.H0A83", notes: "—", status: "ok", label: "Healthy", hours: "—", temp: "—" };
+    const wd = { nick: "WD Red Plus 8TB", raw: "WDC WD80EFZZ-68BTXN0", cap: "8 TB" };
+    const sg = { nick: "Seagate IronWolf 8TB", raw: "ST8000VN004-2M2101", cap: "8 TB", fw: "SC60" };
+    const ssd = { nick: "Samsung 990 Pro 1TB", raw: "Samsung SSD 990 PRO 1TB", cap: "1 TB", kind: "NVMe SSD", fw: "4B2QJXD7" };
+    const exos = { nick: "Seagate Exos X14 12TB", raw: "ST12000NM0008-2H3101", cap: "12 TB", fw: "SN04", status: "neutral", label: "Last known: OK", estimated: true,
+      why: ["Out of date:", "This server hasn’t reported for 2 days, so this drive’s current state is unknown.", "warn"] };
+    const DRIVES = {
+      t1: { ...base, ...wd, serial: "VK1ABC12", bay: "Bay 1", inst: 2022.2, cost: 179, purchased: "Feb 2022", hours: "31,880 h", temp: "33 °C" },
+      t2: { ...base, ...wd, serial: "VK1ABD07", bay: "Bay 2", inst: 2022.2, cost: 179, purchased: "Feb 2022", hours: "31,874 h", temp: "34 °C" },
+      t3: { ...base, ...sg, serial: "ZA1XYZ99", bay: "Bay 3", inst: 2021.6, cost: 165, purchased: "Jul 2021", hours: "38,410 h", temp: "37 °C", status: "warn", label: "Watch", pending: 8,
+            trend: [0, 0, 0, 0, 0, 2, 5, 8], plan: "$160 budget · not ordered yet",
+            why: ["Why “Watch”:", "Pending sectors went from 0 to 8 this week. This is often the first sign of wear. Make sure you have a spare and a recent backup.", "warn"],
+            whyOff: "TrueNAS reported 8 unreadable (pending) sectors on this drive today. This is often the first sign of wear. Make sure you have a spare and a recent backup.",
+            history: [["Oct 30, 2026", "Pending sectors rose from 0 to 8"], ["Mar 2025", "Note: reseated SATA cable after CRC errors"], ["Jul 2021", "Installed in Bay 3"]] },
+      t4: { ...base, ...sg, serial: "ZA1XYZ98", bay: "Bay 4", inst: null, unconfirmed: true, hours: "38,402 h", temp: "36 °C" },
+      t5: { ...base, ...wd, serial: "VK1AFF31", bay: "Bay 5", inst: 2023.9, cost: 149, purchased: "Nov 2023", hours: "17,050 h", temp: "33 °C",
+            history: [["Nov 2023", "Replaced Seagate ST8000VN004 (ZA1OLD01) in Bay 5 after SMART failure"]] },
+      t6: { ...base, ...wd, serial: "VK1AFF44", bay: "Bay 6", inst: 2023.9, cost: 149, purchased: "Nov 2023", hours: "17,046 h", temp: "35 °C" },
+      f1: { ...base, ...ssd, serial: "S6Z1NJ0W12", bay: "M.2 slot A", inst: 2024.4, cost: 109, purchased: "May 2024", hours: "12,300 h", temp: "41 °C", wear: "3% used" },
+      f2: { ...base, ...ssd, serial: "S6Z1NJ0W40", bay: "M.2 slot B", inst: 2024.4, cost: 109, purchased: "May 2024", hours: "12,298 h", temp: "43 °C", wear: "3% used" },
+      l1: { ...base, ...wd, serial: "VK1AGG02", bay: "Bay 8", inst: null, unconfirmed: true, asleep: true, cost: 155, purchased: "Aug 2025", hours: "40 h", temp: "30 °C", status: "neutral", label: "Spare", notes: "Cold spare for tank",
+            why: ["Spare:", "Installed but not in any pool, ready to swap in.", "neutral"] },
+      b1: { ...base, ...exos, serial: "ZHZ0AB12", bay: "Bay 1", encl: 1, slot: 1, inst: 2020.8, cost: 230, purchased: "Oct 2020", hours: "52,900 h" },
+      b2: { ...base, ...exos, serial: "ZHZ0AB77", bay: "Bay 2", encl: 1, slot: 2, inst: 2020.8, cost: 230, purchased: "Oct 2020", hours: "52,880 h" },
+      p1: { ...base, nick: "Crucial MX500 500GB", raw: "CT500MX500SSD1", cap: "500 GB", kind: "SATA SSD", fw: "M3CR046", serial: "2219E5F1A2B3", bay: "SATA port 0", inst: 2022.9, cost: 52, purchased: "Nov 2022", hours: "26,100 h", temp: "35 °C", wear: "9% used" },
+      p2: { ...base, nick: null, raw: "SSD 512GB", cap: "512 GB", kind: "SATA SSD", fw: "", serial: "AA000000000000001", bay: "SATA port 1", inst: null, noSmart: true, status: "neutral", label: "Unknown",
+            why: ["Unknown:", "This drive doesn’t provide SMART data, so its health can’t be checked. Consider replacing it with a drive that does.", "neutral"] }
+    };
+
+    const ui = { scenario: "normal", server: "truenas", drive: null, editing: false, smart: true, saved: false };
+    const app = document.getElementById("app");
+    const icon = {
+      check: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+      chev: '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
+      warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+      x: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+      back: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>'
+    };
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const month = y => MONTHS[Math.min(11, Math.round((y % 1) * 12))] + " " + Math.floor(y);
+    const age = y => { const m = Math.round(y * 12); return Math.floor(m / 12) + " y " + (m % 12) + " m"; };
+    const pill = (tone, text) => `<span class="pill tone-${tone}">${text}</span>`;
+    const narrow = () => app.clientWidth < 700;
+
+    function serverOf() { return SERVERS.find(s => s.id === ui.server); }
+    function view(id, server, poolName) {
+      let d = { ...DRIVES[id], id };
+      if (!ui.smart && d.noSmart) d = { ...d, status: "ok", label: "Healthy", why: null };
+      const yrs = d.inst ? NOW - d.inst : null;
+      const slot = server.enclosures && d.encl ? `Enclosure ${d.encl} · Slot ${d.slot}` : "";
+      return { ...d, title: d.nick || d.raw, yrs, slot, pool: poolName,
+        age: yrs === null ? "" : age(yrs),
+        why: !ui.smart && d.whyOff ? ["Why “Watch”:", d.whyOff, "warn"] : d.why };
+    }
+
+    function tabs() {
+      return `<nav class="tabs" aria-label="Servers">${SERVERS.map(s => {
+        const ids = s.pools.flatMap(p => p.drives).concat(s.loose);
+        const watch = ids.filter(i => ["warn", "bad"].includes(DRIVES[i].status)).length;
+        const line = s.stale ? `Out of date · ${s.seen}` : `${ids.length} drives · ${watch ? watch + " to watch" : "all healthy"}`;
+        return `<button class="tab" data-server="${s.id}" aria-pressed="${s.id === ui.server}"><span class="dot d-${s.fresh}" aria-hidden="true"></span><span><strong>${s.name}</strong><span class="line">${line}</span></span></button>`;
+      }).join("")}</nav>`;
+    }
+
+    function driveRow(d) {
+      const bayMark = d.unconfirmed ? `<span class="unconfirmed">Not confirmed</span>` : `<span class="confirm" title="You confirmed this location">${icon.check}Confirmed</span>`;
+      const inService = d.age || `<button class="link" data-drive="${d.id}" data-edit="1">Add install date</button>`;
+      return `<tr><td>${pill(d.status, d.label)}</td>
+        <td><button class="drive-btn" data-drive="${d.id}" aria-label="Open details for ${d.title}, ${d.bay}">${d.title}</button><div class="line-xs">${d.kind}</div></td>
+        <td style="font-variant-numeric: tabular-nums">${d.cap}</td><td class="mono">${d.serial}</td>
+        <td><strong>${d.bay}</strong>${bayMark}${d.slot ? `<div class="line-xs">${d.slot}</div>` : ""}</td><td>${inService}</td></tr>`;
+    }
+    function driveCard(d) {
+      return `<button class="dcard" data-drive="${d.id}"><strong>${d.title}</strong>${pill(d.status, d.label)}
+        <span class="line-sm">${d.bay}${d.unconfirmed ? ' <span style="color: var(--tone-warn); font-weight: 600">(not confirmed)</span>' : ""} · ${d.cap} · ${d.serial}</span>
+        <span class="line-sm">${d.age || '<span style="color: var(--primary); font-weight: 600">Add date</span>'}</span></button>`;
+    }
+    function driveList(drives) {
+      return `<div class="tablewrap"><table><thead><tr><th scope="col" style="width:130px">Status</th><th scope="col">Drive</th><th scope="col">Capacity</th><th scope="col">Serial</th><th scope="col">Location</th><th scope="col">In service</th></tr></thead>
+        <tbody>${drives.map(driveRow).join("")}</tbody></table></div><div class="cards">${drives.map(driveCard).join("")}</div>`;
+    }
+    function poolCard(p, s) {
+      const status = !ui.smart && p.smartOnly ? { status: "ok", label: "Healthy", note: "" } : p;
+      const max = Math.max(...p.datasets.map(x => x[2]));
+      const drives = p.drives.map(i => view(i, s, p.name));
+      return `<article class="pool"><div class="pool-head"><div class="meta">
+          <div style="display:flex;align-items:center;gap:10px"><h3 style="font-size:17px">${p.name}</h3>${pill(status.status, status.label)}</div>
+          <span class="line-sm">${p.layout}</span>
+          <span style="font-size:13px;display:flex;align-items:center;gap:6px"><span class="dot d-${p.scrubDot}" aria-hidden="true"></span>${p.scrub}</span></div>
+        <div class="usage"><div style="display:flex;justify-content:space-between;font-size:13px"><span><strong>${p.used}</strong> used of ${p.size}</span><span class="line-sm">${p.pct}% full</span></div>
+          <div class="bar" role="img" aria-label="${p.pct} percent used"><span style="width:${p.pct}%"></span></div><span class="line-xs">${p.forecast}</span></div></div>
+        ${status.note ? `<p class="note">${status.note}</p>` : ""}${driveList(drives)}
+        <details class="space"><summary>${icon.chev}What’s using space</summary><ul>${p.datasets.map(([n, sz, v]) =>
+          `<li style="display:grid;gap:4px"><div style="display:flex;justify-content:space-between;font-size:13px"><span class="mono">${n}</span><span>${sz}</span></div><div class="bar" role="img" aria-label="${n} uses ${sz}"><span style="width:${Math.max(2, Math.round(v / max * 100))}%;opacity:.7"></span></div></li>`).join("")}</ul></details></article>`;
+    }
+    function serverSection(s, lastLoaded) {
+      const drives = s.pools.flatMap(p => p.drives.map(i => view(i, s, p.name))).concat(s.loose.map(i => view(i, s, null)));
+      const attention = drives.filter(d => ["warn", "bad"].includes(d.status)).length;
+      return `<section class="stack" aria-labelledby="server-title">
+        <div class="server-head"><h2 id="server-title" style="font-size:22px;letter-spacing:-.4px">${s.name}</h2>${pill(s.fresh, s.freshLabel)}
+          <span class="line-sm">${s.host} · last collected ${s.seen}</span>
+          ${s.alerts.length ? `<details style="width:100%"><summary style="display:inline-flex">${pill("warn", icon.chev + s.alerts.length + " NAS alerts")}</summary>
+            <ul style="margin:10px 0 0;padding:12px 16px;list-style:none;display:grid;gap:8px;border-radius:10px;background:var(--card);border:1px solid var(--border)">${s.alerts.map(a =>
+              `<li style="display:grid;gap:1px"><strong style="font-size:13px">${a.title}</strong><span class="line-xs">${a.when} · reported by TrueNAS</span></li>`).join("")}</ul></details>` : ""}</div>
+        ${s.stale ? `<div class="banner tone-warn" role="status">${icon.warn}<div><strong>Can’t reach this server right now.</strong> Everything below is from the last successful check, ${s.seen}. Drive status may have changed since.</div></div>` : ""}
+        <dl class="facts"><div><dt>Pools</dt><dd>${s.pools.length}</dd></div><div><dt>Drives</dt><dd>${drives.length}</dd></div><div><dt>Raw capacity</dt><dd>${s.raw}</dd></div><div><dt>Needs a look</dt><dd>${s.stale ? "Unknown" : attention}</dd></div></dl>
+        ${s.pools.map(p => poolCard(p, s)).join("")}
+        ${s.loose.length ? `<article class="pool"><div class="pool-head"><div class="meta"><h3 style="font-size:17px">Not in a pool</h3><span class="line-sm">Spares, boot drives and anything unassigned</span></div></div>${driveList(s.loose.map(i => view(i, s, null)))}</article>` : ""}
+      </section>`;
+    }
+
+    function health(d, s) {
+      const zfs = { l: "ZFS errors", v: "0 · 0 · 0", sub: s.stale ? "Read · write · checksum, as of 2 days ago" : "Read · write · checksum", t: s.stale ? "neutral" : "ok" };
+      const temp = { l: "Temperature", v: d.temp, sub: d.temp === "—" ? "No recent reading" : "Normal range", t: d.temp === "—" ? "neutral" : "ok" };
+      if (!ui.smart) return [{ l: "Pool member", v: d.pool ? "Online" : "Not in a pool", sub: s.stale ? "As of 2 days ago" : "Reported by ZFS", t: s.stale || !d.pool ? "neutral" : "ok" }, zfs, temp];
+      if (d.noSmart) return [{ l: "SMART", v: "Not provided", sub: "This drive doesn’t support it", t: "neutral" }, zfs, { l: "Powered on", v: "Unknown", t: "neutral" }, { l: "Temperature", v: "Unknown", t: "neutral" }];
+      const old = s.stale || d.asleep;
+      return [{ l: "SMART", v: old ? "Passed (2 days ago)" : "Passed", t: old ? "neutral" : "ok" },
+        { l: "Powered on", v: d.hours, sub: (Math.round(parseInt(d.hours.replace(/\D/g, ""), 10) / 876) / 10) + " years", t: "neutral" }, temp,
+        d.wear ? { l: "SSD wear", v: d.wear, sub: "Manufacturer rating", t: "ok" } : { l: "Pending sectors", v: String(d.pending || 0), sub: d.pending ? "Up from 0 this week" : "No change", t: d.pending ? "warn" : "ok" },
+        { l: "Reallocated sectors", v: "0", sub: "No change", t: "ok" }, zfs];
+    }
+    function smartLine(d, s) {
+      if (!ui.smart) return ["neutral", "From ZFS and TrueNAS. No SMART details yet."];
+      if (d.noSmart) return ["neutral", "This drive doesn’t provide SMART data."];
+      if (s.stale) return ["neutral", "Last SMART reading 2 days ago, before this server stopped reporting."];
+      if (d.asleep) return ["neutral", "Asleep, so it was skipped to avoid waking it. Last SMART reading 2 days ago."];
+      return ["ok", "SMART read 3 hours ago · last self-test passed 3 days ago"];
+    }
+    function panel(d, s, inline) {
+      const [lineTone, line] = smartLine(d, s);
+      const life = d.yrs === null ? null : Math.min(100, Math.round(d.yrs / PLAN * 100));
+      const history = d.history || [[d.yrs === null ? "Oct 2026" : month(d.inst), d.yrs === null ? `First seen in ${d.bay}. Add an install date to track its age.` : `Installed in ${d.bay}`]];
+      const trend = ui.smart && d.trend ? d.trend.map((v, i) => `${Math.round(i * 200 / (d.trend.length - 1))},${(40 - v / Math.max(...d.trend) * 34).toFixed(1)}`).join(" ") : null;
+      const head = inline
+        ? `<div class="panel-head" style="display:grid;gap:8px"><button class="link" data-close="1" style="display:inline-flex;align-items:center;gap:6px;min-height:44px">${icon.back}${s.name} · ${d.pool || "Not in a pool"}</button>`
+        : `<div class="panel-head"><div style="flex:1;display:grid;gap:6px">`;
+      return `<aside class="panel${inline ? " inline" : ""}" ${inline ? "" : 'role="dialog" aria-modal="true"'} aria-labelledby="drive-title">
+        ${head}
+          ${pill(d.status, d.label).replace('class="pill', 'style="justify-self:start" class="pill')}
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><h2 id="drive-title" tabindex="-1" style="font-size:20px;letter-spacing:-.3px">${d.title}</h2><button class="link" style="font-size:13px">${d.nick ? "Rename" : "Give it a name"}</button></div>
+          <span class="line-sm">${d.cap} · ${d.kind} · ${d.pool ? "in pool " + d.pool : "not in a pool"}</span>
+          <span class="mono line-xs">Reported model: ${d.raw}</span>
+        ${inline ? "</div>" : `</div><button class="btn outline" data-close="1" aria-label="Close drive details" style="width:40px;padding:0;justify-content:center">${icon.x}</button></div>`}
+        <div class="panel-body">
+          ${d.why ? `<div class="why tone-${d.why[2]}"><strong>${d.why[0]}</strong> ${d.why[1]}</div>` : ""}
+          <section style="display:grid;gap:12px" aria-labelledby="h-health"><div style="display:grid;gap:2px"><h3 id="h-health">Health</h3>
+            <span class="line-xs" style="display:flex;align-items:center;gap:6px"><span class="dot d-${lineTone}" aria-hidden="true"></span>${line}</span></div>
+            <dl class="tiles">${health(d, s).map(h => `<div><dt>${h.l}</dt><dd><span class="dot d-${h.t}" aria-hidden="true"></span>${h.v}</dd>${h.sub ? `<dd class="sub">${h.sub}</dd>` : ""}</div>`).join("")}</dl>
+            ${trend ? `<figure class="boxed" style="margin:0"><figcaption style="display:flex;justify-content:space-between;font-size:13px"><strong>Pending sectors</strong><span class="line-sm">last 8 weeks</span></figcaption>
+              <svg viewBox="0 0 200 44" width="100%" height="56" preserveAspectRatio="none" role="img" aria-label="Pending sectors over 8 weeks: ${d.trend.join(", ")}" style="color:var(--tone-warn)"><line x1="0" y1="40" x2="200" y2="40" stroke="var(--border)"/><polyline points="${trend}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+              <div class="line-xs" style="display:flex;justify-content:space-between"><span>8 weeks ago: 0</span><span>Now: ${d.trend[d.trend.length - 1]}</span></div></figure>` : ""}
+          </section>
+          <section style="display:grid;gap:12px" aria-labelledby="h-where"><h3 id="h-where">Where it is</h3><dl class="kv">
+            <dt>Location</dt><dd><strong>${d.bay}${d.slot ? " · " + d.slot : ""}</strong><div class="line-xs" style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center">${d.unconfirmed ? `<span>Not yet confirmed. Check the physical label before pulling this drive.</span><button class="link" style="font-size:12px">I’ve checked it’s here</button>` : "<span>You confirmed this location.</span>"}</div></dd>
+            <dt>Serial</dt><dd class="mono">${d.serial}</dd><dt>Model</dt><dd class="mono">${d.raw}</dd>
+            ${ui.smart && d.fw ? `<dt>Firmware</dt><dd>${d.fw}</dd>` : ""}</dl></section>
+          <section style="display:grid;gap:12px" aria-labelledby="h-cost"><div style="display:flex;align-items:center;justify-content:space-between"><h3 id="h-cost">Cost &amp; lifespan</h3>${ui.editing ? "" : '<button class="link" data-startedit="1">Edit</button>'}</div>
+            ${ui.saved ? '<p role="status" class="line-sm" style="color:var(--tone-ok);font-weight:600">Saved</p>' : ""}
+            ${ui.editing ? `<form class="boxed" style="gap:14px;padding:16px" data-form="1"><div class="form-grid">
+                <div class="field"><label for="f-cost">Price paid (USD)</label><input id="f-cost" inputmode="decimal" value="${d.cost || ""}" placeholder="e.g. 189"></div>
+                <div class="field"><label for="f-p">Purchase date</label><input id="f-p" type="date"></div>
+                <div class="field"><label for="f-i">Install date</label><input id="f-i" type="date"></div>
+                <div class="field"><label for="f-w">Warranty ends</label><input id="f-w" type="date"></div></div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;min-height:32px"><input type="checkbox" ${d.estimated ? "checked" : ""} style="width:16px;height:16px;accent-color:var(--primary)"> These dates are estimates</label>
+                <div class="field"><label for="f-n">Notes</label><input id="f-n" value="${d.notes === "—" ? "" : d.notes}" placeholder="Where you bought it, RMA history…"></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn outline" data-canceledit="1">Cancel</button><button type="submit" class="btn">Save</button></div></form>`
+              : `${life === null ? "" : `<div class="boxed"><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px"><strong>Year ${Math.min(PLAN, Math.floor(d.yrs) + 1)} of ${PLAN}</strong><span class="line-sm">${d.yrs >= PLAN ? "Replacement due" : "Replace around " + month(d.inst + PLAN)}</span></div>
+                  <div class="bar" role="img" aria-label="${life}% of planned service life used"><span style="width:${life}%"></span></div><span class="line-xs">Based on your ${PLAN}-year replacement plan, not a failure prediction.</span></div>`}
+                <dl class="kv"><dt>Paid</dt><dd>${d.cost ? "$" + d.cost + (d.yrs ? " · about $" + Math.round(d.cost / Math.max(1, d.yrs)) + " per year so far" : "") : "Not recorded"}</dd>
+                <dt>Purchased</dt><dd>${d.purchased || "Not recorded"}</dd>
+                <dt>Installed</dt><dd>${d.yrs === null ? "Not recorded" : month(d.inst) + " · " + d.age + " ago" + (d.estimated ? " (estimated)" : "")}</dd>
+                <dt>Warranty</dt><dd>${d.inst ? (d.inst + 3 < NOW ? "Ended " : "Until ") + month(d.inst + 3) : "Not recorded"}</dd><dt>Notes</dt><dd>${d.notes}</dd></dl>`}
+            ${d.plan ? `<a href="#planning" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:12px 14px;border-radius:10px;background:var(--muted);color:var(--foreground);text-decoration:none;font-size:13px;min-height:44px"><span><strong>Replacement planned</strong> · ${d.plan}</span><span style="color:var(--primary);font-weight:600">Open plan</span></a>` : ""}
+          </section>
+          <section style="display:grid;gap:12px" aria-labelledby="h-history"><div style="display:flex;align-items:center;justify-content:space-between"><h3 id="h-history">History</h3><button class="link">Add note</button></div>
+            <ol class="history">${history.map(([w, t]) => `<li><span class="line-sm">${w}</span><span>${t}</span></li>`).join("")}</ol></section>
+        </div>
+        <div class="actions">${d.plan ? "" : '<button class="btn outline">Plan a replacement</button>'}<button class="btn outline">Mark as replaced</button>${ui.smart ? '<button class="btn outline">Import SMART report</button>' : ""}</div>
+      </aside>`;
+    }
+
+    function pageHead() {
+      return `<div class="page-head"><p class="eyebrow">HOMELAB CONTROL</p><h1 style="margin-top:6px">Storage</h1><p class="sub">Pools and drives, one server at a time.</p></div>`;
+    }
+    function render() {
+      const sc = ui.scenario;
+      let body;
+      if (sc === "empty") {
+        body = `<div class="card" style="align-items:center;text-align:center;padding:48px 24px;gap:14px"><h2>No servers yet</h2><p class="muted" style="font-size:14px;max-width:380px">Connect a NAS or server in Settings and its pools and drives will appear here.</p><a class="btn" href="#settings" style="text-decoration:none">Go to Settings</a></div>`;
+      } else if (sc === "loading") {
+        body = `<div role="status" aria-busy="true" aria-label="Loading storage" class="stack"><div class="tabs"><div class="skeleton" style="width:180px;height:52px"></div><div class="skeleton" style="width:180px;height:52px"></div></div>
+          <div class="skeleton" style="width:240px;height:28px"></div><div class="facts"><div class="skeleton" style="height:70px;border:0"></div><div class="skeleton" style="height:70px;border:0"></div><div class="skeleton" style="height:70px;border:0"></div><div class="skeleton" style="height:70px;border:0"></div></div>
+          <div class="skeleton" style="height:320px;border-radius:14px"></div></div>`;
+      } else {
+        const s = serverOf();
+        const banner = sc === "unavailable" ? `<div class="banner tone-bad" role="status">${icon.warn}<div style="flex:1"><strong>Storage couldn’t be loaded.</strong> The control service didn’t respond. Showing what was loaded 12 minutes ago.</div><button class="btn outline sm">Retry</button></div>` : "";
+        const d = ui.drive ? view(ui.drive, s, s.pools.find(p => p.drives.includes(ui.drive))?.name || null) : null;
+        if (d && narrow()) body = banner + panel(d, s, true);
+        else body = banner + tabs() + serverSection(s) + (d ? `<div class="scrim" data-close="1" aria-hidden="true"></div>` + panel(d, s, false) : "");
+      }
+      app.innerHTML = `<div class="stack" style="gap:28px">${app.querySelector && ui.drive && narrow() && !["empty", "loading"].includes(sc) ? "" : pageHead()}${body}</div>`;
+      placeOverlay();
+    }
+    function placeOverlay() {
+      const r = app.getBoundingClientRect(), top = document.querySelector(".mock-toolbar").offsetHeight;
+      const right = window.innerWidth - r.right, w = Math.min(500, r.width);
+      const scrim = app.querySelector(".scrim"), p = app.querySelector(".panel:not(.inline)");
+      if (scrim) Object.assign(scrim.style, { top: top + "px", bottom: "0", left: r.left + "px", right: right + "px" });
+      if (p) Object.assign(p.style, { top: top + "px", bottom: "0", right: right + "px", width: w + "px" });
+    }
+
+    let opener = null;
+    app.addEventListener("click", e => {
+      const t = e.target.closest("button, [data-close], a");
+      if (!t) return;
+      if (t.dataset.server) { ui.server = t.dataset.server; ui.drive = null; ui.editing = false; render(); return; }
+      if (t.dataset.drive) { opener = t.dataset.drive; ui.drive = t.dataset.drive; ui.editing = !!t.dataset.edit; ui.saved = false; render(); app.querySelector("#drive-title")?.focus(); return; }
+      if (t.dataset.close) { ui.drive = null; ui.editing = false; render(); app.querySelector(`[data-drive="${opener}"]`)?.focus(); return; }
+      if (t.dataset.startedit) { ui.editing = true; ui.saved = false; render(); app.querySelector("#f-cost")?.focus(); return; }
+      if (t.dataset.canceledit) { ui.editing = false; render(); return; }
+      if (t.getAttribute("href")?.startsWith("#")) e.preventDefault();
+    });
+    app.addEventListener("submit", e => { e.preventDefault(); ui.editing = false; ui.saved = true; render(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && ui.drive) { ui.drive = null; ui.editing = false; render(); app.querySelector(`[data-drive="${opener}"]`)?.focus(); } });
+    window.addEventListener("resize", () => { placeOverlay(); });
+    new ResizeObserver(() => { const wasNarrow = app.dataset.narrow === "1", now = narrow(); app.dataset.narrow = now ? "1" : "0"; if (ui.drive && wasNarrow !== now) render(); else placeOverlay(); }).observe(app);
+
+    // Toolbar: state, width, theme and flag. Shareable URL, e.g. mock.html?state=stale&width=mobile&theme=dark&smart=off
+    const params = new URLSearchParams(location.search);
+    const sel = id => document.getElementById(id);
+    const SERVER_FOR = { normal: "truenas", stale: "backup", partial: "proxmox", unavailable: "truenas" };
+    function apply() {
+      ui.scenario = sel("mock-state").value;
+      if (SERVER_FOR[ui.scenario]) ui.server = SERVER_FOR[ui.scenario];
+      ui.drive = null; ui.editing = false;
+      ui.smart = sel("mock-smart").value === "on";
+      document.documentElement.dataset.width = sel("mock-width").value;
+      document.documentElement.dataset.theme = sel("mock-theme").value;
+      try { history.replaceState(null, "", "?" + new URLSearchParams({ state: ui.scenario, width: sel("mock-width").value, theme: sel("mock-theme").value, smart: sel("mock-smart").value })); } catch { /* Opaque origins refuse URL changes. */ }
+      requestAnimationFrame(render);
+    }
+    if (params.get("state")) sel("mock-state").value = params.get("state");
+    sel("mock-width").value = params.get("width") || "desktop";
+    sel("mock-theme").value = params.get("theme") === "dark" ? "dark" : "light";
+    sel("mock-smart").value = params.get("smart") === "off" ? "off" : "on";
+    ["mock-state", "mock-width", "mock-theme", "mock-smart"].forEach(id => sel(id).addEventListener("change", apply));
+    apply();
+  </script>
+</body>
+</html>

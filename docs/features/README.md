@@ -59,4 +59,4 @@ docs/features/NNN-short-slug/
 
 | # | Feature | Status | Updated |
 | --- | --- | --- | --- |
-| — | _No packages yet_ | | |
+| [001](001-storage-redesign/README.md) | Storage redesign | ready | 2026-11-01 |

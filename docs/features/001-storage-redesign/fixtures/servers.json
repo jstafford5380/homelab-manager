@@ -1,0 +1,32 @@
+{
+  "_note": "Server tabs (001.01).",
+  "servers": [
+    {
+      "id": "c1a7e0de-0000-4000-8000-000000000001",
+      "name": "TrueNAS",
+      "host": "truenas.lan",
+      "freshness": "fresh",
+      "lastSuccessUtc": "2026-11-01T21:26:00Z",
+      "driveCount": 9,
+      "attentionCount": 1
+    },
+    {
+      "id": "c1a7e0de-0000-4000-8000-000000000002",
+      "name": "Backup NAS",
+      "host": "backup.lan",
+      "freshness": "stale",
+      "lastSuccessUtc": "2026-10-30T21:00:00Z",
+      "driveCount": 2,
+      "attentionCount": null
+    },
+    {
+      "id": "c1a7e0de-0000-4000-8000-000000000003",
+      "name": "Proxmox host",
+      "host": "pve.lan",
+      "freshness": "fresh",
+      "lastSuccessUtc": "2026-11-01T21:29:00Z",
+      "driveCount": 2,
+      "attentionCount": 0
+    }
+  ]
+}

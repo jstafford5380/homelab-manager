@@ -1,0 +1,116 @@
+{
+  "_note": "Drive panel (001.10-001.20). `smart`, `trend` and firmware are ignored while the `smart` flag is off. All values invented.",
+  "id": "d-t3",
+  "status": "watch",
+  "why": "Pending sectors went from 0 to 8 this week. This is often the first sign of wear. Make sure you have a spare and a recent backup.",
+  "nickname": null,
+  "suggestedName": "Seagate IronWolf 8TB",
+  "rawModel": "ST8000VN004-2M2101",
+  "sizeBytes": 8000000000000,
+  "type": "HDD",
+  "rotationRate": 7200,
+  "serial": "ZA1XYZ99",
+  "bay": "Bay 3",
+  "enclosure": null,
+  "slot": null,
+  "bayConfirmed": true,
+  "installedUtc": "2021-07-20T00:00:00Z",
+  "poolGuid": "pool-tank",
+  "poolName": "tank",
+  "serverId": "c1a7e0de-0000-4000-8000-000000000001",
+  "whyWithoutSmart": "TrueNAS reported 8 unreadable (pending) sectors on this drive today. This is often the first sign of wear. Make sure you have a spare and a recent backup.",
+  "zfs": {
+    "memberState": "ONLINE",
+    "readErrors": 0,
+    "writeErrors": 0,
+    "checksumErrors": 0,
+    "sinceUtc": "2026-10-26T09:41:00Z"
+  },
+  "temperatureC": 37,
+  "acquisition": {
+    "purchaseCost": 165,
+    "currency": "USD",
+    "purchasedUtc": "2021-07-02T00:00:00Z",
+    "installedUtc": "2021-07-20T00:00:00Z",
+    "warrantyEndUtc": "2024-07-02T00:00:00Z",
+    "datesEstimated": false,
+    "notes": ""
+  },
+  "servicePlanYears": 5,
+  "plan": {
+    "id": "plan-za1xyz99",
+    "budget": 160,
+    "currency": "USD",
+    "status": "planned"
+  },
+  "history": [
+    {
+      "atUtc": "2026-10-30T06:00:00Z",
+      "kind": "counter-change",
+      "text": "Pending sectors rose from 0 to 8"
+    },
+    {
+      "atUtc": "2025-03-14T00:00:00Z",
+      "kind": "note",
+      "text": "Reseated SATA cable after CRC errors"
+    },
+    {
+      "atUtc": "2021-07-20T00:00:00Z",
+      "kind": "installed",
+      "text": "Installed in Bay 3"
+    }
+  ],
+  "smart": {
+    "overall": "PASSED",
+    "readUtc": "2026-11-01T18:30:00Z",
+    "skippedAsleep": false,
+    "powerOnHours": 38410,
+    "temperatureC": 37,
+    "pendingSectors": 8,
+    "reallocatedSectors": 0,
+    "nvmeWearPercent": null,
+    "lastSelfTest": {
+      "type": "short",
+      "result": "passed",
+      "atUtc": "2026-10-29T03:00:00Z"
+    },
+    "firmware": "SC60"
+  },
+  "trend": {
+    "metric": "pendingSectors",
+    "points": [
+      {
+        "atUtc": "2026-09-06T06:00:00Z",
+        "value": 0
+      },
+      {
+        "atUtc": "2026-09-13T06:00:00Z",
+        "value": 0
+      },
+      {
+        "atUtc": "2026-09-20T06:00:00Z",
+        "value": 0
+      },
+      {
+        "atUtc": "2026-09-27T06:00:00Z",
+        "value": 0
+      },
+      {
+        "atUtc": "2026-10-04T06:00:00Z",
+        "value": 0
+      },
+      {
+        "atUtc": "2026-10-11T06:00:00Z",
+        "value": 2
+      },
+      {
+        "atUtc": "2026-10-18T06:00:00Z",
+        "value": 5
+      },
+      {
+        "atUtc": "2026-11-01T06:00:00Z",
+        "value": 8
+      }
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "_note": "Proposed shape for 001 (see brief Data needs). Codex owns the real contract. All values invented.",
+  "server": {
+    "id": "c1a7e0de-0000-4000-8000-000000000003",
+    "name": "Proxmox host",
+    "host": "pve.lan",
+    "freshness": "fresh",
+    "lastSuccessUtc": "2026-11-01T21:29:00Z",
+    "facts": {
+      "poolCount": 1,
+      "driveCount": 2,
+      "rawCapacityBytes": 1012000000000,
+      "attentionCount": 0
+    },
+    "alerts": [],
+    "datasetsEnabled": true
+  },
+  "pools": [
+    {
+      "guid": "pool-rpool",
+      "name": "rpool",
+      "status": "partly-unknown",
+      "layout": "MIRROR",
+      "memberCount": 2,
+      "toleratedFailures": 1,
+      "usedBytes": 188000000000,
+      "sizeBytes": 480000000000,
+      "note": "One drive doesn't provide health data, so this pool's health is only partly known.",
+      "scan": {
+        "function": "SCRUB",
+        "state": "SCANNING",
+        "percentage": 72,
+        "startedUtc": "2026-11-01T19:30:00Z",
+        "endedUtc": null,
+        "errors": 0
+      },
+      "capacityOutlook": {
+        "status": "insufficient",
+        "thresholdFraction": 0.8,
+        "projectedDateAtThreshold": null,
+        "confidence": "unavailable"
+      },
+      "datasets": [
+        {
+          "name": "rpool/data/vm-disks",
+          "usedBytes": 142000000000
+        },
+        {
+          "name": "rpool/ROOT/pve-1",
+          "usedBytes": 38000000000
+        },
+        {
+          "name": "rpool/data/templates",
+          "usedBytes": 8000000000
+        }
+      ],
+      "drives": [
+        {
+          "id": "d-p1",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "Crucial MX500 500GB",
+          "rawModel": "CT500MX500SSD1",
+          "sizeBytes": 500000000000,
+          "type": "SSD",
+          "rotationRate": 0,
+          "serial": "2219E5F1A2B3",
+          "bay": "SATA port 0",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2022-11-25T00:00:00Z",
+          "poolGuid": "pool-rpool"
+        },
+        {
+          "id": "d-p2",
+          "status": "unknown",
+          "why": "This drive doesn't provide SMART data, so its health can't be checked. Consider replacing it with a drive that does.",
+          "nickname": null,
+          "suggestedName": null,
+          "rawModel": "SSD 512GB",
+          "sizeBytes": 512000000000,
+          "type": "SSD",
+          "rotationRate": 0,
+          "serial": "AA000000000000001",
+          "bay": "SATA port 1",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": null,
+          "poolGuid": "pool-rpool"
+        }
+      ]
+    }
+  ],
+  "notInPool": []
+}

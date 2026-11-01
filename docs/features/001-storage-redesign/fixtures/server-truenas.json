@@ -1,0 +1,277 @@
+{
+  "_note": "Proposed shape for 001 (see brief Data needs). Codex owns the real contract. All values invented.",
+  "server": {
+    "id": "c1a7e0de-0000-4000-8000-000000000001",
+    "name": "TrueNAS",
+    "host": "truenas.lan",
+    "freshness": "fresh",
+    "lastSuccessUtc": "2026-11-01T21:26:00Z",
+    "facts": {
+      "poolCount": 2,
+      "driveCount": 9,
+      "rawCapacityBytes": 58000000000000,
+      "attentionCount": 1
+    },
+    "alerts": [
+      {
+        "title": "Device /dev/sdc has 8 currently unreadable (pending) sectors",
+        "level": "WARNING",
+        "seenUtc": "2026-11-01T13:12:00Z"
+      },
+      {
+        "title": "A system update is available (24.10.2.5)",
+        "level": "INFO",
+        "seenUtc": "2026-10-29T08:00:00Z"
+      }
+    ],
+    "datasetsEnabled": true
+  },
+  "pools": [
+    {
+      "guid": "pool-tank",
+      "name": "tank",
+      "status": "needs-attention",
+      "layout": "RAIDZ2",
+      "memberCount": 6,
+      "toleratedFailures": 2,
+      "usedBytes": 27100000000000,
+      "sizeBytes": 43600000000000,
+      "note": "One drive is showing early wear. The pool is fully protected for now.",
+      "scan": {
+        "function": "SCRUB",
+        "state": "FINISHED",
+        "percentage": 100,
+        "startedUtc": "2026-10-26T02:00:00Z",
+        "endedUtc": "2026-10-26T09:41:00Z",
+        "errors": 0
+      },
+      "capacityOutlook": {
+        "status": "estimated",
+        "thresholdFraction": 0.8,
+        "projectedDateAtThreshold": "2027-03-14T00:00:00Z",
+        "confidence": "supported-trend"
+      },
+      "datasets": [
+        {
+          "name": "tank/media",
+          "usedBytes": 18200000000000
+        },
+        {
+          "name": "tank/backups",
+          "usedBytes": 5100000000000
+        },
+        {
+          "name": "tank/photos",
+          "usedBytes": 2900000000000
+        },
+        {
+          "name": "tank/apps",
+          "usedBytes": 900000000000
+        }
+      ],
+      "drives": [
+        {
+          "id": "d-t1",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "WD Red Plus 8TB",
+          "rawModel": "WDC WD80EFZZ-68BTXN0",
+          "sizeBytes": 8000000000000,
+          "type": "HDD",
+          "rotationRate": 7200,
+          "serial": "VK1ABC12",
+          "bay": "Bay 1",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2022-03-01T00:00:00Z",
+          "poolGuid": "pool-tank"
+        },
+        {
+          "id": "d-t2",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "WD Red Plus 8TB",
+          "rawModel": "WDC WD80EFZZ-68BTXN0",
+          "sizeBytes": 8000000000000,
+          "type": "HDD",
+          "rotationRate": 7200,
+          "serial": "VK1ABD07",
+          "bay": "Bay 2",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2022-03-01T00:00:00Z",
+          "poolGuid": "pool-tank"
+        },
+        {
+          "id": "d-t3",
+          "status": "watch",
+          "why": "Pending sectors went from 0 to 8 this week. This is often the first sign of wear. Make sure you have a spare and a recent backup.",
+          "nickname": null,
+          "suggestedName": "Seagate IronWolf 8TB",
+          "rawModel": "ST8000VN004-2M2101",
+          "sizeBytes": 8000000000000,
+          "type": "HDD",
+          "rotationRate": 7200,
+          "serial": "ZA1XYZ99",
+          "bay": "Bay 3",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2021-07-20T00:00:00Z",
+          "poolGuid": "pool-tank"
+        },
+        {
+          "id": "d-t4",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "Seagate IronWolf 8TB",
+          "rawModel": "ST8000VN004-2M2101",
+          "sizeBytes": 8000000000000,
+          "type": "HDD",
+          "rotationRate": 7200,
+          "serial": "ZA1XYZ98",
+          "bay": "Bay 4",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": false,
+          "installedUtc": null,
+          "poolGuid": "pool-tank"
+        },
+        {
+          "id": "d-t5",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "WD Red Plus 8TB",
+          "rawModel": "WDC WD80EFZZ-68BTXN0",
+          "sizeBytes": 8000000000000,
+          "type": "HDD",
+          "rotationRate": 7200,
+          "serial": "VK1AFF31",
+          "bay": "Bay 5",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2023-11-10T00:00:00Z",
+          "poolGuid": "pool-tank"
+        },
+        {
+          "id": "d-t6",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "WD Red Plus 8TB",
+          "rawModel": "WDC WD80EFZZ-68BTXN0",
+          "sizeBytes": 8000000000000,
+          "type": "HDD",
+          "rotationRate": 7200,
+          "serial": "VK1AFF44",
+          "bay": "Bay 6",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2023-11-10T00:00:00Z",
+          "poolGuid": "pool-tank"
+        }
+      ]
+    },
+    {
+      "guid": "pool-fast",
+      "name": "fast",
+      "status": "healthy",
+      "layout": "MIRROR",
+      "memberCount": 2,
+      "toleratedFailures": 1,
+      "usedBytes": 410000000000,
+      "sizeBytes": 1000000000000,
+      "note": null,
+      "scan": {
+        "function": "SCRUB",
+        "state": "FINISHED",
+        "percentage": 100,
+        "startedUtc": "2026-10-26T02:00:00Z",
+        "endedUtc": "2026-10-26T02:09:00Z",
+        "errors": 0
+      },
+      "capacityOutlook": {
+        "status": "not-growing",
+        "thresholdFraction": 0.8,
+        "projectedDateAtThreshold": null,
+        "confidence": "unavailable"
+      },
+      "datasets": [
+        {
+          "name": "fast/apps",
+          "usedBytes": 300000000000
+        },
+        {
+          "name": "fast/vms",
+          "usedBytes": 110000000000
+        }
+      ],
+      "drives": [
+        {
+          "id": "d-f1",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "Samsung 990 Pro 1TB",
+          "rawModel": "Samsung SSD 990 PRO 1TB",
+          "sizeBytes": 1000000000000,
+          "type": "SSD",
+          "rotationRate": 0,
+          "serial": "S6Z1NJ0W12",
+          "bay": "M.2 slot A",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2024-05-20T00:00:00Z",
+          "poolGuid": "pool-fast"
+        },
+        {
+          "id": "d-f2",
+          "status": "healthy",
+          "why": null,
+          "nickname": null,
+          "suggestedName": "Samsung 990 Pro 1TB",
+          "rawModel": "Samsung SSD 990 PRO 1TB",
+          "sizeBytes": 1000000000000,
+          "type": "SSD",
+          "rotationRate": 0,
+          "serial": "S6Z1NJ0W40",
+          "bay": "M.2 slot B",
+          "enclosure": null,
+          "slot": null,
+          "bayConfirmed": true,
+          "installedUtc": "2024-05-20T00:00:00Z",
+          "poolGuid": "pool-fast"
+        }
+      ]
+    }
+  ],
+  "notInPool": [
+    {
+      "id": "d-l1",
+      "status": "spare",
+      "why": "Installed but not in any pool, ready to swap in.",
+      "nickname": null,
+      "suggestedName": "WD Red Plus 8TB",
+      "rawModel": "WDC WD80EFZZ-68BTXN0",
+      "sizeBytes": 8000000000000,
+      "type": "HDD",
+      "rotationRate": 7200,
+      "serial": "VK1AGG02",
+      "bay": "Bay 8",
+      "enclosure": null,
+      "slot": null,
+      "bayConfirmed": false,
+      "installedUtc": null,
+      "poolGuid": null
+    }
+  ]
+}
