@@ -1,0 +1,71 @@
+{
+  "baseline": "ab87b14d2e721ec6fe6f917be02090c7e98a52df",
+  "target": "dee0b599f18b9d158bd0eef9ca8276b954bf941f",
+  "files": [
+    {
+      "path": "plugins/disk.py",
+      "identical": true,
+      "sha256": "d667593653bdf31b4a28be6ba6088ac6992c3d0ce4dacbee40b2726ab8e750b9",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/disk.py"
+    },
+    {
+      "path": "plugins/disk_/temperature.py",
+      "identical": true,
+      "sha256": "297c51a9441152db204627383c852bd9b6bfddfa69a7de2be0a4b5d9d2075401",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/disk_/temperature.py"
+    },
+    {
+      "path": "plugins/pool_/pool.py",
+      "identical": true,
+      "sha256": "1927007d86518b4ac9e2f4393ab9f4d057852f3f0ed6baeaf1068716246cac41",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/pool_/pool.py"
+    },
+    {
+      "path": "plugins/pool_/dataset.py",
+      "identical": true,
+      "sha256": "995095a1daa0ba430026db0cc6567d3d2e0d48d061572ed5426ba60fe419f79f",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/pool_/dataset.py"
+    },
+    {
+      "path": "plugins/pool_/utils.py",
+      "identical": true,
+      "sha256": "43efa096bbf98ae9b3b85912033f8604108882849fc2a00a4c1621471abee38e",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/pool_/utils.py"
+    },
+    {
+      "path": "plugins/alert.py",
+      "identical": true,
+      "sha256": "c68d2d8dfc6b2b8ad72176a4aaeaae8891fb29cc4b7d195cd2b4f06aa877e846",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/alert.py"
+    },
+    {
+      "path": "plugins/system/info.py",
+      "identical": true,
+      "sha256": "c83bf42ee5becfa4ef70cc58a62f56688d51741841a888fa6e91c2d325a24d7f",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/system/info.py"
+    },
+    {
+      "path": "plugins/auth.py",
+      "identical": true,
+      "sha256": "845a4e5209360b188c9c9143596f6973ca7684cb162b2347cd45587ac46718bd",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/auth.py"
+    },
+    {
+      "path": "main.py",
+      "identical": true,
+      "sha256": "6e8713c453ecd066933f5c1e92e78b1c7f77cbcb8c51d4532f0a3619f97ee056",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/main.py"
+    },
+    {
+      "path": "plugins/disk_/sync.py",
+      "identical": true,
+      "sha256": "80b6c4f481e27ca3f4debceb2fdaf0132609ea84121b9f20bdb42a18a2df883c",
+      "url": "https://github.com/truenas/middleware/blob/dee0b599f18b9d158bd0eef9ca8276b954bf941f/src/middlewared/middlewared/plugins/disk_/sync.py"
+    }
+  ],
+  "schemaVersion": 1,
+  "reviewedDate": "2026-11-01",
+  "repository": "https://github.com/truenas/middleware",
+  "targetTag": "TS-24.10.2.4",
+  "scope": "Byte comparison of selected upstream middleware files. Not a complete dependency audit, installed permission matrix or live NAS validation."
+}

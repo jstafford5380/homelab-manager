@@ -1,0 +1,219 @@
+@import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+}
+
+.daily-summary {
+  margin-top: 16px;
+  padding: 16px;
+  gap: 12px;
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+.daily-summary-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.daily-summary h4 {
+  font-weight: 600;
+}
+.daily-summary small {
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+.daily-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+.daily-summary dt {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.daily-summary dd {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.daily-summary details {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.daily-summary summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+.daily-summary details p {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.daily-summary dd small {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 4px;
+}
+
+.dataset-usage { margin-top: 16px; }
+.dataset-status { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-block: 12px; }
+.dataset-list { display: grid; gap: 12px; margin-block: 12px; }
+.dataset-card { padding: 16px; min-width: 0; }
+.dataset-card h4 { overflow-wrap: anywhere; }
+.dataset-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; margin-block: 12px; }
+.dataset-metrics dt { color: var(--muted-foreground); font-size: .875rem; }
+.dataset-metrics dd { margin: 4px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.dataset-usage > .field { margin-block: 16px; }
+.dataset-card { gap: 12px; }
+.dataset-card .section-title { margin: 0; align-items: flex-start; }
+.dataset-card h4 { font-weight: 600; }
+.dataset-card > .dataset-metrics { margin-block: 0; }
+.dataset-card details .dataset-metrics { margin-bottom: 0; }
+
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #24312e;
+  --card: #ffffff;
+  --card-foreground: #24312e;
+  --popover: #ffffff;
+  --popover-foreground: #24312e;
+  --primary: #246348;
+  --primary-foreground: #ffffff;
+  --secondary: #edf3ef;
+  --secondary-foreground: #355b45;
+  --muted: #f2f5f3;
+  --muted-foreground: #52655b;
+  --accent: #edf3ef;
+  --accent-foreground: #24312e;
+  --destructive: #b44336;
+  --border: #e0e7e2;
+  --input: #7b8b82;
+  --ring: #599476;
+  --page: #f7f8fa;
+  --surface-soft: #f5f8f6;
+  --surface-stripe: #fafcfb;
+  --text-secondary: var(--muted-foreground);
+  --brand: #172d26;
+  --brand-background: #1d5e48;
+  --brand-foreground: #ffffff;
+  --nav-active: #eaf3ed;
+  --nav-active-foreground: #226149;
+  --nav-count: #d5e9dc;
+  --error-background: #fff0ed;
+  --error-border: #f3d1c7;
+  --error-foreground: #9e4938;
+  --warning-background: #fff6e8;
+  --warning-border: #dfc9a0;
+  --warning-foreground: #69471e;
+  --chart-axis: #b7c6bc;
+  --chart-point: #28664b;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #121b17;
+  --foreground: #e4eee7;
+  --card: #19251f;
+  --card-foreground: #e4eee7;
+  --popover: #19251f;
+  --popover-foreground: #e4eee7;
+  --primary: #8dd6b2;
+  --primary-foreground: #10271c;
+  --secondary: #293f32;
+  --secondary-foreground: #d5ecdd;
+  --muted: #22332a;
+  --muted-foreground: #b2c3b8;
+  --accent: #293f32;
+  --accent-foreground: #e4eee7;
+  --destructive: #b44336;
+  --border: #43574b;
+  --input: #7f9589;
+  --ring: #8dd6b2;
+  --page: #0f1713;
+  --surface-soft: #22332a;
+  --surface-stripe: #1d2b23;
+  --brand: #e4eee7;
+  --brand-background: #8dd6b2;
+  --brand-foreground: #10271c;
+  --nav-active: #293f32;
+  --nav-active-foreground: #b5eccd;
+  --nav-count: #38563f;
+  --error-background: #38221e;
+  --error-border: #a46b5f;
+  --error-foreground: #ffc1b5;
+  --warning-background: #34291b;
+  --warning-border: #82683e;
+  --warning-foreground: #f3d4a0;
+  --chart-axis: #7f9589;
+  --chart-point: #8dd6b2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+  --background: #121b17;
+  --foreground: #e4eee7;
+  --card: #19251f;
+  --card-foreground: #e4eee7;
+  --popover: #19251f;
+  --popover-foreground: #e4eee7;
+  --primary: #8dd6b2;
+  --primary-foreground: #10271c;
+  --secondary: #293f32;
+  --secondary-foreground: #d5ecdd;
+  --muted: #22332a;
+  --muted-foreground: #b2c3b8;
+  --accent: #293f32;
+  --accent-foreground: #e4eee7;
+  --destructive: #b44336;
+  --border: #43574b;
+  --input: #7f9589;
+  --ring: #8dd6b2;
+  --page: #0f1713;
+  --surface-soft: #22332a;
+  --surface-stripe: #1d2b23;
+  --brand: #e4eee7;
+  --brand-background: #8dd6b2;
+  --brand-foreground: #10271c;
+  --nav-active: #293f32;
+  --nav-active-foreground: #b5eccd;
+  --nav-count: #38563f;
+  --error-background: #38221e;
+  --error-border: #a46b5f;
+  --error-foreground: #ffc1b5;
+  --warning-background: #34291b;
+  --warning-border: #82683e;
+  --warning-foreground: #f3d4a0;
+  --chart-axis: #7f9589;
+  --chart-point: #8dd6b2;
+  }
+}
+
+@layer base {
+  * { border-color: var(--border); }
+}

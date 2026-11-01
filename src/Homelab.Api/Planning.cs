@@ -1,0 +1,65 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace Homelab.Api;
+
+public record PlanningReason(string Kind, string Detail, Guid? FindingId = null);
+public record DriveReview(Guid DiskId, string Model, string Serial, string Priority, string NextStep,
+    DateTime LastSeenUtc, bool Present, string MappingConfidence, PlanningReason[] Reasons, Guid[] OpenPlanIds);
+
+public static class Planning
+{
+    public const string RuleVersion = "drive-planning-v1";
+    public static DriveReview? Review(Disk disk, IEnumerable<Finding> findings, IEnumerable<PlanningItem> plans, OperatingSettings settings, DateTime now)
+    {
+        if (disk.Lifecycle == "retired") return null;
+        var reasons = new List<PlanningReason>();
+        var active = findings.Where(f => f.DiskId == disk.Id && f.State != "resolved").ToArray();
+        var media = active.Any(f => f.Rule.StartsWith("media-present-v1:", StringComparison.Ordinal) || f.Rule.StartsWith("media-increase-v1:", StringComparison.Ordinal));
+        foreach (var finding in active)
+            reasons.Add(new("finding", $"{finding.Title}: {finding.Evidence} Last recorded {finding.LastSeenUtc:O}; state {finding.State}.", finding.Id));
+        if (disk.PurchasedUtc is not {} purchased || disk.PurchaseDateConfidence == "unknown")
+            reasons.Add(new("age-unknown", "Purchase date is unknown. Add a receipt or an explicitly estimated date; first discovery is not purchase or installation date."));
+        else if (purchased <= now.AddYears(-settings.DriveAgeReviewYears))
+            reasons.Add(new("age-review", $"{disk.PurchaseDateConfidence} purchase date {purchased:yyyy-MM-dd} exceeds the configured {settings.DriveAgeReviewYears}-year planning review threshold. Age alone is not evidence of failure or a reason to replace a working drive."));
+        if (disk.WarrantyEndUtc is {} warranty && warranty.Date <= now.Date.AddDays(settings.WarrantyNoticeDays))
+            reasons.Add(new("warranty", warranty.Date < now.Date ? $"Recorded warranty ended {warranty:yyyy-MM-dd}. Confirm terms and purchase records before budgeting." : $"Recorded warranty ends {warranty:yyyy-MM-dd}, within the configured {settings.WarrantyNoticeDays}-day notice window. Review coverage and purchase records."));
+        if (!disk.Present) reasons.Add(new("identity", "This drive was absent from the last inventory snapshot. Verify its current location and identity before planning a physical action."));
+        if (disk.MappingConfidence == "ambiguous") reasons.Add(new("identity", "Identity is ambiguous. Resolve conflicting identifiers before associating replacement evidence with a physical drive."));
+        if (reasons.Count == 0) return null;
+        return new(disk.Id, disk.Model, disk.Serial, media ? "Review media evidence" : active.Length > 0 ? "Review observed issue" : "Prepare ahead",
+            media ? "Review current disk evidence and recovery readiness, then confirm replacement compatibility and budget. No failure date can be inferred."
+                : active.Any(f => f.Rule == SelfTestFindings.Rule) ? "Review imported self-test failure details, current native evidence and independent recovery readiness. Historical failures do not establish when a drive will fail or mandate replacement."
+                : active.Any(f => f.Rule == "nvme-warning-v1") ? "Review device-reported NVMe warnings and recovery readiness before deciding on replacement. Warning flags alone are not a failure-date prediction."
+                : active.Any(f => f.Rule == "nvme-endurance-v1") ? "Review the manufacturer's endurance guidance, workload and spare budget. Rated usage is not a failure probability or an automatic replacement instruction."
+                : active.Length > 0 ? "Review the linked evidence and affected hardware path. A transport error alone does not establish failed media."
+                : "Confirm inventory and warranty records; consider spare stock and budget. This is a planning reminder, not a failure alert.",
+            disk.LastSeenUtc, disk.Present, disk.MappingConfidence, reasons.ToArray(), plans.Where(p => p.DiskId == disk.Id && p.Status != "complete").Select(p => p.Id).ToArray());
+    }
+
+    public static string? ValidatePlan(PlanningItem item)
+    {
+        if (string.IsNullOrWhiteSpace(item.Title) || item.Title.Length > 200 || item.Reason is null || item.Reason.Length > 20000) return "Enter a title (up to 200 characters) and evidence (up to 20,000 characters).";
+        if (item.Budget is < 0 or > 1000000000 || item.Currency is null || item.Currency.Length != 3 || item.Currency.Any(c => c is < 'A' or > 'Z')) return "Use a nonnegative budget up to one billion and a three-letter uppercase currency code.";
+        if (item.Owner is null || item.Owner.Length > 200) return "Owner must be at most 200 characters.";
+        if (item.DueUtc is {} due && (due.Kind != DateTimeKind.Utc || due < DateTime.UnixEpoch)) return "Review time must be a UTC timestamp ending in Z, no earlier than 1970.";
+        if (item.Status is not ("planned" or "ordered" or "complete")) return "Choose a supported plan status.";
+        return null;
+    }
+
+    public static void MapPlanning(this RouteGroupBuilder api)
+    {
+        api.MapGet("/planning/review", async (HomelabDb db) => {
+            var now = DateTime.UtcNow;
+            var settings = await db.Settings.AsNoTracking().SingleOrDefaultAsync() ?? new OperatingSettings();
+            var disks = await db.Disks.AsNoTracking().ToListAsync();
+            var findings = await db.Findings.AsNoTracking().Where(x => x.State != "resolved" && x.DiskId != null).ToListAsync();
+            var plans = await db.Plans.AsNoTracking().Where(x => x.Status != "complete").ToListAsync();
+            var reviews = disks.Select(d => Review(d, findings, plans, settings, now)).OfType<DriveReview>()
+                .OrderBy(x => x.Priority == "Review media evidence" ? 0 : x.Priority == "Review observed issue" ? 1 : 2).ThenBy(x => x.Serial).ToArray();
+            return new { generatedUtc = now, ruleVersion = RuleVersion, settings.DriveAgeReviewYears, settings.WarrantyNoticeDays,
+                reviews, trackedDriveCount = disks.Count(x => x.Lifecycle != "retired"),
+                spares = await db.Assets.AsNoTracking().Where(x => x.Type == "spare" && !x.Archived).Select(x => new { x.Id, x.Name, x.Quantity, x.UpdatedUtc, x.CompatibilityNotes, x.Verification, x.EstimatedUnitCost, x.Currency }).ToListAsync(),
+                budgets = plans.GroupBy(p => p.Currency).Select(g => new { currency = g.Key, total = g.Sum(p => p.Budget ?? 0), withoutEstimate = g.Count(p => p.Budget == null), count = g.Count() }) };
+        });
+    }
+}

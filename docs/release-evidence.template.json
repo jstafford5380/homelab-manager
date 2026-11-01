@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "status": "unverified",
+  "purpose": "Operator evidence for installed-environment release gates; this template is not a passing result.",
+  "privacy": "Use local evidence references and redacted host labels. Never include credentials, private keys, webhook URLs or raw private payloads.",
+  "application": {
+    "status": "unverified",
+    "imageDigest": null,
+    "sourceVersion": null,
+    "testReportReference": null,
+    "reviewedBy": null,
+    "reviewedUtc": null
+  },
+  "environment": {
+    "status": "unverified",
+    "nasVersion": null,
+    "controlHost": null,
+    "controlHostOs": null,
+    "cpu": null,
+    "memoryBytes": null,
+    "databaseStorage": null,
+    "controlHostDependsOnNasStorage": null,
+    "backupDestination": null,
+    "restoreHost": null,
+    "checkerHost": null,
+    "sharedFailureDomains": null,
+    "representativeDriveCount": null,
+    "representativeServiceCount": null
+  },
+  "nasContract": {
+    "status": "unverified",
+    "installedApiDocumentationReference": null,
+    "certificateIdentityVerifiedUtc": null,
+    "systemIdentityVerifiedUtc": null,
+    "permissionMatrix": [
+      {
+        "operation": "system.info",
+        "optional": false,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      },
+      {
+        "operation": "disk.query",
+        "optional": false,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      },
+      {
+        "operation": "pool.query",
+        "optional": false,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      },
+      {
+        "operation": "alert.list",
+        "optional": false,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      },
+      {
+        "operation": "pool.dataset.query",
+        "optional": true,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      },
+      {
+        "operation": "disk.temperatures (only_cached=true)",
+        "optional": true,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      },
+      {
+        "operation": "passive alert.list/pool.query/disk.query subscriptions",
+        "optional": false,
+        "serverRoleEvidence": null,
+        "actualCredentialPermissions": null,
+        "sanitizedFixtureReference": null,
+        "result": "unverified"
+      }
+    ]
+  },
+  "readOnlyReview": {
+    "status": "unverified",
+    "serverCredentialScopeReference": null,
+    "broadLegacyCredentialRequired": null,
+    "explicitOperatorEnrollmentReference": null,
+    "notes": null,
+    "fixedManifestReference": "docs/NAS_READ_MANIFEST.md"
+  },
+  "outageAndCoverage": {
+    "status": "unverified",
+    "exerciseUtc": null,
+    "evidenceReference": null,
+    "lastKnownDataRemainedAvailable": null,
+    "affectedSourcesBecameStale": null,
+    "findingsRemainedOpen": null,
+    "reconnectRefreshedSources": null,
+    "unsupportedAndDeniedSourcesRemainVisible": null,
+    "method": "Use a controlled interruption of the application connection; do not disrupt NAS workloads."
+  },
+  "notifications": {
+    "status": "unverified",
+    "receiverLabel": null,
+    "testAcceptedUtc": null,
+    "receiverEvidenceReference": null,
+    "identifierMaskingReviewed": null,
+    "openingEpisodeEvidenceReference": null,
+    "criticalObservedUtc": null,
+    "criticalAcceptedUtc": null,
+    "poolPollingSeconds": null,
+    "channelLatencySeconds": null,
+    "withinTwoSuccessfulPollCyclesPlusLatency": null,
+    "retryDeduplicationEvidenceReference": null
+  },
+  "externalChecker": {
+    "status": "unverified",
+    "separatePhysicalHostVerified": null,
+    "independentNotificationReceiverLabel": null,
+    "stopDetectedUtc": null,
+    "alertReceivedUtc": null,
+    "restartDetectedUtc": null,
+    "recoveryReceivedUtc": null,
+    "missedExecutionDetectionVerified": null,
+    "evidenceReference": null
+  },
+  "restore": {
+    "status": "unverified",
+    "separatePhysicalHostVerified": null,
+    "archiveReference": null,
+    "archiveRepresentedUtc": null,
+    "simulatedLossUtc": null,
+    "restoreStartedUtc": null,
+    "usableRestoredAppUtc": null,
+    "measuredRpoHours": null,
+    "measuredRtoHours": null,
+    "mappingAndHistoryCompared": null,
+    "privateRunbooksAvailableWithoutNas": null,
+    "collectorsAndNotificationsDisabledBeforeReenrollment": null,
+    "credentialsReenrolledSecurely": null,
+    "evidenceReference": null,
+    "rpoTargetHours": 24,
+    "rtoTargetHours": 4
+  },
+  "pilot": {
+    "status": "unverified",
+    "startedUtc": null,
+    "endedUtc": null,
+    "representativeWorkloadReference": null,
+    "retentionEvidenceReference": null,
+    "outageRecoveryEvidenceReference": null,
+    "approvedTargetRevision": null,
+    "requiredDays": 7,
+    "memoryTargetBytes": 536870912,
+    "telemetryStorageTargetBytes": 5368709120,
+    "measurements": [],
+    "measurementFields": [
+      "atUtc",
+      "appResidentMemoryBytes",
+      "telemetryStorageBytes",
+      "databaseBytes",
+      "walBytes",
+      "collectorBytesSent",
+      "collectorBytesReceived",
+      "nasLoadImpactEvidenceReference",
+      "coverageGaps",
+      "notes"
+    ],
+    "measurementRules": [
+      "Record sample interval, metric definitions and measurement source. A single memory reading does not establish steady-state use.",
+      "Separate collector traffic from UI/notifier/backup traffic. If separation is unavailable, mark collector traffic unknown and record the limitation.",
+      "Measure pre-existing NAS workload before attributing load changes to the collector. Never start SMART tests, scrubs or maintenance for this exercise.",
+      "Record whether the workload represents 32 drives and 20 services; a smaller setup is not proof at the target scale.",
+      "Preserve peaks, restart/outage intervals and missing samples. Record retention and outage-recovery evidence.",
+      "Use bytes consistently; retain daily measurements and source references."
+    ]
+  },
+  "decision": {
+    "releaseApproved": false,
+    "remainingGaps": [],
+    "reviewedBy": null,
+    "reviewedUtc": null
+  }
+}

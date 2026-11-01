@@ -1,0 +1,42 @@
+services:
+  homelab:
+    build: .
+    user: "${HOMELAB_UID:?Run scripts/prepare-local-deployment.py}:${HOMELAB_GID:?Run scripts/prepare-local-deployment.py}"
+    ports:
+      - "127.0.0.1:${HOMELAB_HTTPS_PORT:-8443}:8443"
+    environment:
+      ASPNETCORE_URLS: https://+:8443
+      Homelab__DataPath: /data
+      Homelab__BackupPath: /backups
+      Homelab__SetupTokenFile: /run/secrets/setup_token
+      Homelab__KeyCertificatePath: /run/secrets/key_certificate
+      Homelab__KeyCertificatePasswordFile: /run/secrets/key_password
+      Homelab__TlsCertificatePath: /run/secrets/tls_certificate
+      Homelab__TlsCertificatePasswordFile: /run/secrets/tls_password
+    volumes:
+      - ./data:/data
+      - ./backups:/backups
+    secrets:
+      - setup_token
+      - key_certificate
+      - key_password
+      - tls_certificate
+      - tls_password
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+secrets:
+  setup_token:
+    file: ./secrets/setup-token
+  key_certificate:
+    file: ./secrets/key-encryption.pfx
+  key_password:
+    file: ./secrets/key-encryption.password
+  tls_certificate:
+    file: ./secrets/tls.pfx
+  tls_password:
+    file: ./secrets/tls.password

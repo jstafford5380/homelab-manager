@@ -1,0 +1,17 @@
+**/node_modules
+**/bin
+**/obj
+**/data
+.git
+.env
+
+secrets
+backups
+**/test-results
+**/playwright-report
+**/__pycache__
+.codex
+src/Homelab.Api/wwwroot
+**/*.pfx
+**/*.password
+.DS_Store
