@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,29 @@ using Microsoft.EntityFrameworkCore;
 namespace Homelab.Api;
 public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvider protection, ILogger<Collector> logger, WriteCoordinator writes, INasReadClientFactory clients, IConfiguration? configuration = null) : BackgroundService
 {
+    public enum RefreshTarget { Storage, Hardware }
+    public enum CollectionResult { Completed, Busy, Unavailable }
+    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> collectionGates = new();
+
+    public async Task<IResult> RefreshNowAsync(Guid id, RefreshTarget target, CancellationToken ct)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<HomelabDb>();
+        var profile = await db.Connections.SingleOrDefaultAsync(x => x.Id == id, ct);
+        if (profile is null)
+            return Results.NotFound();
+        if (!profile.Enabled)
+            return Results.BadRequest(new { error = "Resume this connection in Settings before refreshing." });
+
+        var result = await CollectAsync(profile, db, ct, refresh: target);
+        return result switch
+        {
+            CollectionResult.Completed => Results.NoContent(),
+            CollectionResult.Busy => Results.Conflict(new { error = "This server is already collecting. Try again shortly." }),
+            _ => Results.Json(new { error = "The NAS did not return all requested readings. Any readings that succeeded have been saved." }, statusCode: 502)
+        };
+    }
+
     private readonly SemaphoreSlim manualPowerOnRun = new(1, 1);
     public async Task<IResult> RunPowerOnHoursNowAsync(CancellationToken ct)
     {
@@ -110,10 +134,27 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
         });
     }
 
-    public async Task CollectAsync(NasConnection profile, HomelabDb db, CancellationToken stop, bool forcePowerOnHours = false)
+    public async Task<CollectionResult> CollectAsync(NasConnection profile, HomelabDb db, CancellationToken stop,
+        bool forcePowerOnHours = false, RefreshTarget? refresh = null)
+    {
+        var gate = collectionGates.GetOrAdd(profile.Id, _ => new SemaphoreSlim(1, 1));
+        if (!await gate.WaitAsync(0, stop))
+            return CollectionResult.Busy;
+        try
+        {
+            return await CollectCoreAsync(profile, db, stop, forcePowerOnHours, refresh);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<CollectionResult> CollectCoreAsync(NasConnection profile, HomelabDb db,
+        CancellationToken stop, bool forcePowerOnHours, RefreshTarget? refresh)
     {
         if (!profile.Enabled)
-            return;
+            return CollectionResult.Unavailable;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop);
         timeout.CancelAfter(TimeSpan.FromSeconds(30));
         var ct = timeout.Token;
@@ -130,7 +171,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             // inventory read advances this clock; pool/alert polls cannot refresh disk evidence.
             var powerOnState = await db.ApiPowerOnStates.SingleOrDefaultAsync(x => x.ConnectionId == profile.Id, ct);
             var powerOnDue = settings.ReadApiPowerOnHours && (forcePowerOnHours || ApiPowerOnHours.Due(profile, powerOnState?.SnapshotJson, started));
-            var inventoryDue = powerOnDue || profile.NextAttemptUtc is null || inventory?.Status != "supported" || inventory.LastSuccessUtc is null || started - inventory.LastSuccessUtc.Value >= TimeSpan.FromSeconds(inventorySeconds);
+            var inventoryDue = refresh == RefreshTarget.Storage || powerOnDue || profile.NextAttemptUtc is null || inventory?.Status != "supported" || inventory.LastSuccessUtc is null || started - inventory.LastSuccessUtc.Value >= TimeSpan.FromSeconds(inventorySeconds);
             await using var client = clients.Create();
             await client.ConnectAsync(profile, protection.CreateProtector("nas-credentials").Unprotect(profile.ProtectedApiKey), ct);
             inventoryDue |= client.RequiresInventoryReconciliation;
@@ -139,7 +180,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 using var trustLease = await writes.EnterAsync(ct);
                 await db.Entry(profile).ReloadAsync(ct);
                 if (profile.ConfigurationRevision != revision || !profile.Enabled)
-                    return;
+                    return CollectionResult.Unavailable;
                 profile.CertificateSha256 = fingerprint;
                 profile.ConfigurationRevision = Guid.NewGuid();
                 db.Activity.Add(new() { Action = "NAS certificate identity enrolled", Detail = profile.Id + " SHA-256 " + fingerprint });
@@ -156,7 +197,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 using var unsupportedLease = await writes.EnterAsync(stop);
                 await db.Entry(profile).ReloadAsync(stop);
                 if (profile.ConfigurationRevision != revision || !profile.Enabled)
-                    return;
+                    return CollectionResult.Unavailable;
                 profile.Version = reportedVersion;
                 profile.ConfigurationRevision = Guid.NewGuid();
                 profile.Status = "Unsupported release — collection paused";
@@ -164,14 +205,14 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 profile.LastAttemptUtc = started;
                 await RecordCapabilities(db, profile, started, "unsupported", "No adapter validated for this release.", null, inventorySeconds, true, stop);
                 await db.SaveChangesAsync(stop);
-                return;
+                return CollectionResult.Unavailable;
             }
 
             using (var identityLease = await writes.EnterAsync(ct))
             {
                 await db.Entry(profile).ReloadAsync(ct);
                 if (profile.ConfigurationRevision != revision || !profile.Enabled)
-                    return;
+                    return CollectionResult.Unavailable;
                 profile.Version = reportedVersion;
                 var blocked = await NasIdentity.CheckAsync(db, profile, NasIdentity.ReadSerial(system), DateTime.UtcNow, ct);
                 if (blocked)
@@ -182,7 +223,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
 
                 await db.SaveChangesAsync(ct);
                 if (blocked)
-                    return;
+                    return CollectionResult.Unavailable;
             }
 
             var eventStatuses = await client.SubscribeEventsAsync(ct);
@@ -237,7 +278,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
 
             JsonElement? hardwareMetrics = null;
             var hardwareState = await db.HardwareServers.AsNoTracking().SingleOrDefaultAsync(s => s.ConnectionId == profile.Id, ct);
-            var hardwareDue = configuration?.GetValue<bool>("Homelab:HardwareMetricsEnabled") == true && (hardwareState?.NextAttemptUtc is null || hardwareState.ConfigurationRevision != revision || hardwareState.NextAttemptUtc <= started);
+            var hardwareDue = configuration?.GetValue<bool>("Homelab:HardwareMetricsEnabled") == true && (refresh == RefreshTarget.Hardware || hardwareState?.NextAttemptUtc is null || hardwareState.ConfigurationRevision != revision || hardwareState.NextAttemptUtc <= started);
             if (hardwareDue)
             {
                 try
@@ -271,18 +312,19 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             using var lease = await writes.EnterAsync(ct);
             await db.Entry(profile).ReloadAsync(ct);
             if (profile.ConfigurationRevision != revision || !profile.Enabled)
-                return;
+                return CollectionResult.Unavailable;
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             profile.CertificateSha256 ??= client.ServerCertificateSha256;
             profile.Version = Text(system, "version");
             var hardwareServer = await HardwareCollection.StageInventory(db, profile, system, started, ct);
             if (hardwareDue)
                 hardwareServer.NextAttemptUtc = started.AddMinutes(5);
+            var hardwareSampled = false;
             if (hardwareMetrics is { } hardwareData)
             {
                 try
                 {
-                    await HardwareCollection.StageMetrics(db, profile.Id, hardwareData, started, ct);
+                    hardwareSampled = await HardwareCollection.StageMetrics(db, profile.Id, hardwareData, started, ct);
                 }
                 catch (InvalidDataException)
                 { /* Invalid optional reporting does not discard successful inventory/storage reads. */
@@ -384,6 +426,13 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             await HardwareCollection.RecordStatuses(db, profile.Id, DateTime.UtcNow, configuration?.GetValue<bool>("Homelab:HardwareMetricsEnabled") == true, stop);
             await db.SaveChangesAsync(stop);
             await transaction.CommitAsync(stop);
+            var completed = refresh switch
+            {
+                RefreshTarget.Storage => inventoryRead.Status == "supported" && poolRead.Status == "supported",
+                RefreshTarget.Hardware => !hardwareDue || hardwareSampled,
+                _ => anyFresh
+            };
+            return completed ? CollectionResult.Completed : CollectionResult.Unavailable;
         }
         catch (Exception ex)when (!stop.IsCancellationRequested)
         {
@@ -393,7 +442,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             using var failureLease = await writes.EnterAsync(stop);
             profile = await db.Connections.SingleAsync(x => x.Id == id, stop);
             if (profile.ConfigurationRevision != revision || !profile.Enabled)
-                return;
+                return CollectionResult.Unavailable;
             profile.Status = ex is UnauthorizedAccessException ? "Authentication denied" : "Collection unavailable — check connection, trust, and permissions";
             profile.LastAttemptUtc = started;
             profile.ConsecutiveFailures++;
@@ -402,6 +451,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             await RecordCapabilities(db, profile, started, status, "Snapshot not committed; previous evidence retained.", null, inventorySeconds, true, stop, failedRead);
             logger.LogWarning("NAS {NasId} collection failed ({ErrorType}).", profile.Id, ex.GetType().Name);
             await db.SaveChangesAsync(stop);
+            return CollectionResult.Unavailable;
         }
     }
 

@@ -913,3 +913,21 @@ test("001.09 Watch explains the actual pending and uncorrectable sector alerts",
   await expect(page.locator(".storage-panel-mobile .storage-banner")).toContainText("5 Currently unreadable");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
+
+test("Storage Refresh polls the selected server and reloads its inventory", async ({ page }) => {
+  const data = fixture();
+  await setup(page, data);
+  await page.route(`**/api/v1/connections/${data.servers[0].id}/refresh`, async (route) => {
+    expect(route.request().method()).toBe("POST");
+    expect(route.request().postDataJSON()).toEqual({ target: "storage" });
+    await route.fulfill({ status: 204 });
+  });
+  await page.goto("/storage");
+  await expect(page.getByRole("heading", { name: data.servers[0].name, exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh now", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeVisible();
+  const reloaded = page.waitForRequest("**/api/v1/storage/overview");
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await reloaded;
+  await expect(page.getByText("NAS collection complete.")).toBeVisible();
+});

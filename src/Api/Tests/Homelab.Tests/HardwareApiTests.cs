@@ -23,6 +23,15 @@ public sealed class HardwareApiTests
                 (await client.PostAsJsonAsync("/api/v1/setup",new{username="owner",password="Hardware-fixture-only-123!",setupToken="hardware-fixture"})).EnsureSuccessStatusCode();
                 (await client.PostAsJsonAsync("/api/v1/login",new{username="owner",password="Hardware-fixture-only-123!"})).EnsureSuccessStatusCode();
                 (await client.GetAsync($"/api/v1/hardware/servers/{a.Id}?range=30d")).EnsureSuccessStatusCode(); // Deep links work before the tab list has initialized inventory.
+                var refreshPath = $"/api/v1/connections/{a.Id}/refresh";
+                Assert.Equal(HttpStatusCode.BadRequest,
+                    (await client.PostAsJsonAsync(refreshPath, new { target = "storage" })).StatusCode);
+                Assert.Equal(HttpStatusCode.BadRequest,
+                    (await client.PostAsJsonAsync(refreshPath, new { target = "invalid" })).StatusCode);
+                client.DefaultRequestHeaders.Remove("X-Homelab-Request");
+                Assert.Equal(HttpStatusCode.Forbidden,
+                    (await client.PostAsJsonAsync(refreshPath, new { target = "hardware" })).StatusCode);
+                client.DefaultRequestHeaders.Add("X-Homelab-Request", "1");
                 var list=await client.GetFromJsonAsync<JsonElement>("/api/v1/hardware/servers");Assert.Equal(2,list.GetProperty("servers").GetArrayLength());
                 var body=new HardwareComponentInput(null,"power-supply","PSU","model","650 W","owner note",99,DateTime.UtcNow.AddYears(-1),DateTime.UtcNow.AddYears(-1),null,false);
                 var created=await client.PostAsJsonAsync($"/api/v1/hardware/servers/{a.Id}/components",body);created.EnsureSuccessStatusCode();var cid=(await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

@@ -28,6 +28,27 @@ public sealed class HardwareTests
     }
     [Theory][InlineData(1,1,true)][InlineData(7,1,true)][InlineData(30,1,false)][InlineData(30,3,true)][InlineData(90,2,false)][InlineData(90,3,true)]
     public void CardThresholdsDependOnSelectedRange(int range,int above,bool expected) => Assert.Equal(expected,HardwareMetrics.Status(false,"processor",false,null,Metric(above),null,range).Label=="Near its limit");
+    [Fact]
+    public void HourlyReportingAcceptsBothEndpointsOfOneSecondSeries()
+    {
+        var end = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 300 * 300;
+        var data = JsonSerializer.SerializeToElement(new[]
+        {
+            new
+            {
+                name = "cpu",
+                legend = new[] { "time", "idle" },
+                data = Enumerable.Range(0, 3601).Select(i => new[] { (double)(end - 3600 + i), 75d })
+            }
+        });
+
+        var readings = HardwareCollection.Normalize(data, Guid.NewGuid(), Guid.NewGuid(),
+            DateTimeOffset.FromUnixTimeSeconds(end).UtcDateTime, null);
+
+        Assert.Equal(12, readings.Length);
+        Assert.All(readings, reading => Assert.Equal(25d, reading.CpuPercent));
+    }
+
     [Fact]public void EnteredDotsNeverAlterCollectedAveragesOrPreviousPeriod()
     {
         var rows=new[]{new HardwareReading{Source="collected",TakenUtc=Now.AddHours(-1),CpuPercent=10},new HardwareReading{TakenUtc=Now.AddHours(-2),CpuPercent=100},new HardwareReading{TakenUtc=Now.AddHours(-3),PowerWatts=42}};

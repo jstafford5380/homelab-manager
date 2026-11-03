@@ -137,7 +137,10 @@ export async function hardwareRequest(
   const response = await fetch("/api/v1/hardware" + path, {
     signal,
     method: body === undefined && method === "POST" ? "GET" : method,
-    headers: { "Content-Type": "application/json", "X-Homelab-Request": "1" },
+    headers: {
+      "X-Homelab-Request": "1",
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   if (!response.ok) {

@@ -1,3 +1,4 @@
+import type { ServerRefreshTarget } from "./RefreshServerButton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
@@ -426,11 +427,13 @@ export function StorageView({
   timezone,
   refresh,
   refreshRevision,
+  onRefreshTargetChange,
 }: {
   disks: unknown[];
   timezone: string;
   refresh: () => Promise<void>;
   refreshRevision: number | null;
+  onRefreshTargetChange: (target: ServerRefreshTarget | null) => void;
 }) {
   const [data, setData] = useState<StorageData | null>(null),
     [error, setError] = useState(""),
@@ -508,6 +511,14 @@ export function StorageView({
     diskServer ??
     data?.servers.find((s) => s.id === params.get("server")) ??
     data?.servers[0];
+  const refreshServerId = server?.id;
+  const refreshFreshness = server?.freshness;
+  useEffect(() => {
+    onRefreshTargetChange(refreshServerId && refreshFreshness !== "Paused" && refreshFreshness !== "Not connected"
+      ? { serverId: refreshServerId, target: "storage" }
+      : null);
+    return () => onRefreshTargetChange(null);
+  }, [onRefreshTargetChange, refreshServerId, refreshFreshness]);
   const drive =
     diskServer && allDrives(diskServer).find((d) => d.disk.id === diskId);
   const restoreFocus = () => {

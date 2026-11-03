@@ -32,44 +32,88 @@ public sealed class SynologyHardwareCollector(IServiceScopeFactory scopes, IConf
         }
     }
 
+    private readonly SemaphoreSlim collectionGate = new(1, 1);
+
     public async Task CollectDue(CancellationToken ct)
     {
-        if (!HardwareInventory.SynologyEnabled(config))
+        if (!HardwareInventory.SynologyEnabled(config) || !await collectionGate.WaitAsync(0, ct))
             return;
-        await using var scope = scopes.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<HomelabDb>();
-        var now = DateTime.UtcNow;
-        var servers = await db.HardwareServers.Where(s => s.Platform == "synology" && s.Connected && s.ProtectedCommunity != null && (s.NextAttemptUtc == null || s.NextAttemptUtc <= now)).ToArrayAsync(ct);
-        foreach (var s in servers)
+        try
         {
-            var revision = s.ConfigurationRevision;
-            IReadOnlyDictionary<string, string>? data = null;
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromSeconds(8));
-            try
-            {
-                data = await reader.ReadAsync(s.Host, protection.CreateProtector("synology-snmp").Unprotect(s.ProtectedCommunity!), timeout.Token);
-            }
-            catch (Exception)when (!ct.IsCancellationRequested)
-            {
-            }
-
-            using var lease = await writes.EnterAsync(ct);
-            await db.Entry(s).ReloadAsync(ct);
-            if (s.ConfigurationRevision != revision || !s.Connected)
-                continue;
-            s.NextAttemptUtc = DateTime.UtcNow.AddMinutes(5);
-            if (data is not null && data.TryGetValue("model", out var model) && !string.IsNullOrWhiteSpace(model))
-            {
-                s.Version = data.GetValueOrDefault("version");
-                s.LastSuccessUtc = DateTime.UtcNow;
-                await Stage(db, s, data, DateTime.UtcNow, ct);
-                await db.SaveChangesAsync(ct);
-                await HardwareCollection.RecordStatuses(db, s.Id, DateTime.UtcNow, true, ct);
-            }
-
-            await db.SaveChangesAsync(ct);
+            await using var scope = scopes.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<HomelabDb>();
+            var now = DateTime.UtcNow;
+            var servers = await db.HardwareServers.Where(s => s.Platform == "synology" && s.Connected &&
+                s.ProtectedCommunity != null && (s.NextAttemptUtc == null || s.NextAttemptUtc <= now)).ToArrayAsync(ct);
+            foreach (var server in servers)
+                await CollectAsync(db, server, ct);
         }
+        finally
+        {
+            collectionGate.Release();
+        }
+    }
+
+    public async Task<IResult> RefreshNowAsync(Guid id, CancellationToken ct)
+    {
+        if (!HardwareInventory.SynologyEnabled(config))
+            return Results.NotFound();
+        if (!await collectionGate.WaitAsync(0, ct))
+            return Results.Conflict(new { error = "Synology collection is already running. Try again shortly." });
+
+        try
+        {
+            await using var scope = scopes.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<HomelabDb>();
+            var server = await db.HardwareServers.SingleOrDefaultAsync(s => s.Id == id && s.Platform == "synology", ct);
+            if (server is null)
+                return Results.NotFound();
+            if (!server.Connected || server.ProtectedCommunity is null)
+                return Results.BadRequest(new { error = "Connect this server in Settings before refreshing." });
+            if (await CollectAsync(db, server, ct))
+                return Results.NoContent();
+            return Results.Json(new { error = "Synology did not return hardware inventory." }, statusCode: 502);
+        }
+        finally
+        {
+            collectionGate.Release();
+        }
+    }
+
+    private async Task<bool> CollectAsync(HomelabDb db, HardwareServer server, CancellationToken ct)
+    {
+        var revision = server.ConfigurationRevision;
+        IReadOnlyDictionary<string, string>? data = null;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(8));
+        try
+        {
+            data = await reader.ReadAsync(server.Host, protection.CreateProtector("synology-snmp")
+                .Unprotect(server.ProtectedCommunity!), timeout.Token);
+        }
+        catch (Exception) when (!ct.IsCancellationRequested)
+        {
+        }
+
+        using var lease = await writes.EnterAsync(ct);
+        await db.Entry(server).ReloadAsync(ct);
+        if (db.Entry(server).State == EntityState.Detached || server.ConfigurationRevision != revision || !server.Connected)
+            return false;
+        server.NextAttemptUtc = DateTime.UtcNow.AddMinutes(5);
+        if (data is null || !data.TryGetValue("model", out var model) || string.IsNullOrWhiteSpace(model))
+        {
+            await db.SaveChangesAsync(ct);
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        server.Version = data.GetValueOrDefault("version");
+        server.LastSuccessUtc = now;
+        await Stage(db, server, data, now, ct);
+        await db.SaveChangesAsync(ct);
+        await HardwareCollection.RecordStatuses(db, server.Id, now, true, ct);
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     public static async Task Stage(HomelabDb db, HardwareServer s, IReadOnlyDictionary<string, string> data, DateTime now, CancellationToken ct)

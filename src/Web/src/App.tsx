@@ -1,3 +1,4 @@
+import { RefreshServerButton, type ServerRefreshTarget } from "./RefreshServerButton";
 import { BrandIcon } from "./BrandIcon";
 import { ActivityHistory } from "./ActivityHistory";
 import { validScanReports } from "./ScanOverview";
@@ -141,6 +142,7 @@ export default function App() {
   >("checking");
   const [refreshError, setRefreshError] = useState("");
   const [lastRefresh, setLastRefresh] = useState<number | null>(null);
+  const [serverRefreshTarget, setServerRefreshTarget] = useState<ServerRefreshTarget | null>(null);
   const refreshController = useRef<AbortController | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const location = useLocation();
@@ -347,6 +349,17 @@ export default function App() {
         </Card>
       </div>
     );
+  const refreshButton = serverRefreshTarget && serverRefreshTarget.target === page.toLowerCase() ? (
+    <RefreshServerButton
+      key={serverRefreshTarget.serverId}
+      {...serverRefreshTarget}
+      onCollected={refresh}
+    />
+  ) : (
+    <Button variant="outline" onClick={() => void refresh()}>
+      <RefreshCw size={15} /> Refresh
+    </Button>
+  );
   return (
     <DisplayPreferencesContext.Provider value={snapshot.settings}>
       <div className="shell">
@@ -468,19 +481,15 @@ export default function App() {
               </div>
               {page === "Storage" ? <div className="storage-heading-actions">
                 <StorageExportButton />
-                <Button variant="outline" onClick={() => void refresh()}>
-                  <RefreshCw size={15} /> Refresh
-                </Button>
-              </div> : <Button variant="outline" onClick={() => void refresh()}>
-                <RefreshCw size={15} /> Refresh
-              </Button>}
+                {refreshButton}
+              </div> : refreshButton}
             </div>
             {error && (
               <div className="error" role="alert">
                 {error}
               </div>
             )}
-            {page === "Hardware" && <Suspense fallback={<p role="status">Loading hardware…</p>}><HardwareView refreshRevision={lastRefresh} /></Suspense>}
+            {page === "Hardware" && <Suspense fallback={<p role="status">Loading hardware…</p>}><HardwareView refreshRevision={lastRefresh} onRefreshTargetChange={setServerRefreshTarget} /></Suspense>}
             {page === "Page not found" && (
               <Card className="empty">
                 <h2>This page does not exist</h2>
@@ -527,6 +536,7 @@ export default function App() {
                 timezone={snapshot.settings.timezone}
                 refresh={refresh}
                 refreshRevision={lastRefresh}
+                onRefreshTargetChange={setServerRefreshTarget}
               />
             )}
             {page === "Inventory" && <InventoryView />}

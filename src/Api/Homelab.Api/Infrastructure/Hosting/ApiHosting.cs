@@ -42,7 +42,8 @@ public static class ApiHosting
         builder.Services.AddSingleton<WriteCoordinator>();
         builder.Services.AddSingleton<INasReadClientFactory, NasReadClientFactory>();
         builder.Services.AddSingleton<ISynologyHardwareReader, SynologyHardwareReader>();
-        builder.Services.AddHostedService<SynologyHardwareCollector>();
+        builder.Services.AddSingleton<SynologyHardwareCollector>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<SynologyHardwareCollector>());
         builder.Services.AddSingleton<Collector>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<Collector>());
         builder.Services.AddSingleton<ISmartSshTransport, SmartSshTransport>();

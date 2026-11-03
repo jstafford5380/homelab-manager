@@ -56,6 +56,7 @@ POST /api/v1/connections/{id:guid}/dataset-renames
 POST /api/v1/connections/{id:guid}/dataset-renames/{reviewId:long}/reverse
 POST /api/v1/connections/{id:guid}/identity-review
 POST /api/v1/connections/{id:guid}/identity-review/{assignmentId:guid}/revoke
+POST /api/v1/connections/{id:guid}/refresh
 POST /api/v1/disks/{id:guid}/hardware-paths
 POST /api/v1/disks/{id:guid}/identity-history/merge
 POST /api/v1/disks/{id:guid}/identity-history/{mergeId:guid}/reverse

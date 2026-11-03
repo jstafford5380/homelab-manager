@@ -78,6 +78,8 @@ public static class HardwareCollection
         var output = new Dictionary<long, HardwareReading>();
         var arc = new Dictionary<long, double>();
         var free = new Dictionary<long, double>();
+        // TrueNAS can return both endpoints of an hourly series at one-second resolution.
+        const int maxGraphPoints = 3601;
         foreach (var graph in data.EnumerateArray())
         {
             if (graph.ValueKind != JsonValueKind.Object)
@@ -85,7 +87,7 @@ public static class HardwareCollection
             var name = Text(graph, "name");
             if (name is not ("cpu" or "memory" or "arcsize" or "cputemp"))
                 continue;
-            if (!graph.TryGetProperty("legend", out var legend) || legend.ValueKind != JsonValueKind.Array || !graph.TryGetProperty("data", out var points) || points.ValueKind != JsonValueKind.Array || points.GetArrayLength() > 3000)
+            if (!graph.TryGetProperty("legend", out var legend) || legend.ValueKind != JsonValueKind.Array || !graph.TryGetProperty("data", out var points) || points.ValueKind != JsonValueKind.Array || points.GetArrayLength() > maxGraphPoints)
                 continue;
             var keys = legend.EnumerateArray().Select(v => v.ValueKind == JsonValueKind.String ? v.GetString() : null).ToArray();
             var buckets = new Dictionary<long, List<double>>();
@@ -154,7 +156,7 @@ public static class HardwareCollection
         return output.Values.Where(r => r.CpuPercent is not null || r.MemoryUsedBytes is not null || r.TemperatureC is not null).ToArray();
     }
 
-    public static async Task StageMetrics(HomelabDb db, Guid serverId, JsonElement data, DateTime now, CancellationToken ct)
+    public static async Task<bool> StageMetrics(HomelabDb db, Guid serverId, JsonElement data, DateTime now, CancellationToken ct)
     {
         var s = db.HardwareServers.Local.SingleOrDefault(s => s.Id == serverId) ?? await db.HardwareServers.SingleAsync(s => s.Id == serverId, ct);
         var memory = db.HardwareComponents.Local.FirstOrDefault(c => c.ServerId == serverId && c.Kind == "memory") ?? await db.HardwareComponents.FirstOrDefaultAsync(c => c.ServerId == serverId && c.Kind == "memory" && c.RetiredUtc == null, ct);
@@ -167,6 +169,8 @@ public static class HardwareCollection
             s.CollectionStartedUtc ??= rows.Min(r => r.TakenUtc);
             s.LastMetricsUtc = rows.Max(r => r.TakenUtc);
         }
+
+        return rows.Length > 0;
     }
 
     public static async Task RecordStatuses(HomelabDb db, Guid serverId, DateTime now, bool metricsEnabled, CancellationToken ct)

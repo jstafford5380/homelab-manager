@@ -196,6 +196,7 @@ async function setup(
           }),
   );
   await page.route("**/api/v1/hardware/servers/*?range=*", async (r) => {
+    expect(r.request().headers()["content-type"]).toBeUndefined();
     const url = new URL(r.request().url()),
       id = url.pathname.split("/").at(-1),
       days =
@@ -551,4 +552,22 @@ test("002 range coverage and entered dots stay separate from collected averages"
   ).toBeVisible();
   await expect(page.getByText(/Previous 90/)).toHaveCount(0);
   await audit(page);
+});
+
+test("Hardware Refresh polls the selected server and reloads its readings", async ({ page }) => {
+  const d = detail();
+  await setup(page, d);
+  await page.route("**/api/v1/connections/a/refresh", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    expect(route.request().postDataJSON()).toEqual({ target: "hardware" });
+    await route.fulfill({ status: 204 });
+  });
+  await page.goto("/hardware?server=a");
+  await expect(page.getByRole("heading", { name: d.server.name, exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh now", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeVisible();
+  const reloaded = page.waitForRequest("**/api/v1/hardware/servers/a?range=30d");
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await reloaded;
+  await expect(page.getByText("NAS collection complete.")).toBeVisible();
 });

@@ -1,3 +1,4 @@
+import type { ServerRefreshTarget } from "./RefreshServerButton";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Plus } from "lucide-react";
@@ -30,8 +31,10 @@ import "./Hardware.css";
 type List = { hwmetrics: boolean; synology: boolean; servers: HwServer[] };
 export function HardwareView({
   refreshRevision,
+  onRefreshTargetChange,
 }: {
   refreshRevision?: number | null;
+  onRefreshTargetChange: (target: ServerRefreshTarget | null) => void;
 }) {
   const [params, setParams] = useSearchParams(),
     selected = params.get("server"),
@@ -112,6 +115,14 @@ export function HardwareView({
   }, [serverId, range, retry, refreshRevision]);
   // Server identity is checked before rendering cached data.
   const d = detail?.server.id === serverId ? detail : null;
+  const refreshServerId = d?.server.id;
+  const refreshFreshness = d?.server.freshness;
+  useEffect(() => {
+    onRefreshTargetChange(refreshServerId && refreshFreshness !== "Paused" && refreshFreshness !== "Not connected"
+      ? { serverId: refreshServerId, target: "hardware" }
+      : null);
+    return () => onRefreshTargetChange(null);
+  }, [onRefreshTargetChange, refreshServerId, refreshFreshness]);
   const rangePending =
     !!d &&
     d.coverage.days !== (range === "24h" ? 1 : Number(range.slice(0, -1)));
