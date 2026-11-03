@@ -1,3 +1,4 @@
+import { formatInvestment } from "./investment";
 import type { ServerRefreshTarget } from "./RefreshServerButton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -587,7 +588,7 @@ export function StorageView({
             style={{ height: 28, width: "45%" }}
           />
           <div className="storage-facts storage-loading-facts">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div className="storage-skeleton" key={i} />
             ))}
           </div>
@@ -716,6 +717,7 @@ export function StorageView({
                 ["Drives", server.driveCount],
                 ["Raw capacity", bytes(server.rawCapacityBytes)],
                 ["Needs a look", server.attentionCount ?? "Unknown"],
+                ["Total Investment", formatInvestment(data.investment)],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt>{label}</dt>

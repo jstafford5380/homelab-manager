@@ -37,7 +37,7 @@ public static class HardwareMetrics
             return new("Near its limit", "info", use.Source == "entered" ? $"{use.ReadingsAboveLevel} of {use.ReadingCount} entered readings were above your review level. Nothing here points to a fault; review whether this part has enough capacity." : $"Use exceeded your review level for the sustained duration on {use.DaysAboveLevel} days. Nothing here points to a fault; review whether this part has enough capacity.");
         if (use?.Source is "collected" or "entered" || heat?.Source is "collected" or "entered" || fanFailed == false)
             return new("Healthy", "ok", "Available measurements are within your review levels.");
-        return new("Not monitored", "neutral", kind == "cooling" ? "Fan speeds aren’t collected. CPU temperature is the best sign of how cooling is doing." : "Nothing measures this component.");
+        return new("Not monitored", "warn", kind == "cooling" ? "Fan speeds aren’t collected. CPU temperature is the best sign of how cooling is doing." : "Nothing measures this component.");
     }
 
     private static double? Average(IEnumerable<double?> values)
@@ -121,6 +121,9 @@ public static class HardwareMetrics
         var memory = M("memory", days);
         var temperature = M("temperature", days);
         var power = M("power", days);
+        var ups = metricsEnabled && connection is not null && connection.ConfigurationRevision == server.ConfigurationRevision
+            ? StoragePage.Read<UpsSnapshot>(server.UpsSnapshotJson)
+            : null;
         var views = components.Select(c =>
         {
             var partRows = rows.Where(r => (c.InstalledUtc is null || r.TakenUtc >= c.InstalledUtc) && (c.RetiredUtc is null || r.TakenUtc <= c.RetiredUtc)).ToArray();
@@ -133,13 +136,26 @@ public static class HardwareMetrics
             var entered = EnteredTotal(c);
             var missing = (server.Platform != "synology" || server.Connected) && c.DetectedTotalBytes is { } detected && entered is { } expected && detected < expected;
             var status = c.RetiredUtc is not null ? new HardwareStatus("Replaced", "neutral", "This component is retired; its history is preserved.") : Status(stale, c.Kind, missing, server.Platform == "synology" && !server.Connected ? null : c.FanFailed, useKey is null ? null : Part(useKey, 30), hasHeat ? Part("temperature", 30) : null, 30, c.LastStatus, c.LastWhy);
+            if (c.RetiredUtc is null && c.Kind == "ups" && c.UpsDeviceKey is { } upsKey)
+            {
+                var device = ups?.Devices?.SingleOrDefault(device => device.Key == upsKey);
+                var readings = new[] { device?.Load, device?.Charge, device?.Runtime }.OfType<UpsReading>().ToArray();
+                status = !metricsEnabled
+                    ? new("Not monitored", "warn", "Automatic hardware collection is off.")
+                    : readings.Any(reading => !stale && reading.ObservedUtc <= now && reading.ObservedUtc >= now.AddMinutes(-15))
+                        ? new("Reporting", "ok", "The linked UPS returned recent telemetry.")
+                        : readings.Length > 0
+                            ? new("Last known: reporting", "neutral", "The linked UPS has older telemetry.")
+                            : new("Readings unavailable", "neutral", "No readings are available for the linked UPS.");
+            }
+            if (c.RetiredUtc is null && c.Kind == "nas-unit" && c.DetectedKey is not null && status.Label == "Not monitored" &&
+                server.LastSuccessUtc is not null && (connection is { Enabled: true } && connection.ConfigurationRevision == server.ConfigurationRevision ||
+                    server.Platform == "synology" && server.Connected))
+                status = new("Reporting", "ok", "The NAS is reporting system inventory. Detected changes such as OS version are recorded in component history.");
             return new HardwareComponentView(c, string.IsNullOrWhiteSpace(c.Name) ? c.DetectedName ?? c.Kind : c.Name, c.DetectedName is null ? "You entered" : !string.IsNullOrEmpty(c.Name + c.Spec + c.Model + c.Notes) || entered is not null ? "Detected + entered" : "Detected", Group(c.Kind), status, entered, Slots(c), history.Where(e => e.ComponentId == c.Id).Take(100).ToArray(), partUse, partHeat);
         }).ToArray();
         var active = views.Where(c => c.Record.RetiredUtc == null).ToArray();
         var summary = new HardwareServerView(server.Id, connection?.Name ?? server.Name, connection is not null && Uri.TryCreate(connection.ApiUri, UriKind.Absolute, out var uri) ? uri.Host : server.Host, server.Platform, server.Version, fresh, stale && server.LastSuccessUtc is not null ? end : server.LastSuccessUtc, server.UptimeSeconds, active.Length, stale ? null : active.Count(c => c.Status.Label is "Watch" or "Act now"), stale ? null : active.Count(c => c.Status.Label == "Near its limit"));
-        var ups = metricsEnabled && connection is not null && connection.ConfigurationRevision == server.ConfigurationRevision
-            ? StoragePage.Read<UpsSnapshot>(server.UpsSnapshotJson)
-            : null;
         var monthlyPower = ups?.Devices is { Length: > 0 } devices
             ? await UpsMonthlyPower.Read(db, server.Id, components, devices, settings.ElectricityRateUsdPerKwh, now, ct)
             : [];

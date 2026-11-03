@@ -114,9 +114,9 @@
   color: var(--error-foreground);
 }
 .hw-ok {
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-  border-color: var(--border);
+  background: var(--tone-ok-bg);
+  color: var(--tone-ok);
+  border-color: var(--tone-ok-border);
 }
 .hw-neutral {
   background: var(--muted);
@@ -142,6 +142,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
+.hw-facts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .hw-facts > * {
   padding: 16px;
   gap: 4px;
@@ -331,7 +332,7 @@
   width: 26%;
 }
 .hw-inventory th:nth-child(3) {
-  width: 31%;
+  width: auto;
 }
 .hw-inventory th:nth-child(4) {
   width: 14%;
@@ -339,6 +340,8 @@
 .hw-inventory th:nth-child(5) {
   width: 13%;
 }
+.hw-inventory th.hw-component-actions { width: 56px; }
+.hw-inventory td.hw-component-actions { padding-inline: 8px; text-align: right; }
 .hw-inventory small,
 .hw-inventory td > span {
   display: block;
@@ -605,6 +608,8 @@
   .hw-inventory td:nth-child(5) {
     order: 4;
   }
+  .hw-inventory td.hw-component-actions { order: 5; padding: 0; }
+  .hw-inventory td.hw-component-actions button { min-width: 44px; min-height: 44px; }
   .hw-component-name {
     min-height: 44px;
     width: 100%;

@@ -25,7 +25,7 @@ public sealed class HardwareCollectorTests
         factory.Denied=false;factory.Malformed=true;s.NextAttemptUtc=DateTime.UtcNow.AddMinutes(-1);await db.SaveChangesAsync();
         await collector.CollectAsync(nas,db,default);Assert.Equal(3,factory.Calls);Assert.Equal(readings,await db.HardwareReadings.CountAsync());Assert.Equal(3,await db.HardwareComponents.CountAsync());
         config["Homelab:HardwareMetricsEnabled"]="false";var detail=await HardwareMetrics.Detail(db,s,DateTime.UtcNow,30,false);Assert.Equal("none",detail.Cpu.Source);
-        Assert.All(detail.Components,c=>Assert.Equal("Not monitored",c.Status.Label));Assert.Empty(await db.Observations.ToArrayAsync());Assert.Empty(await db.Findings.ToArrayAsync());
+        Assert.All(detail.Components,c=>Assert.Equal(c.Record.Kind == "nas-unit" ? "Reporting" : "Not monitored",c.Status.Label));Assert.Empty(await db.Observations.ToArrayAsync());Assert.Empty(await db.Findings.ToArrayAsync());
     }
     [Fact]
     public async Task ManualRefreshReadsTheRequestedSourceBeforeItsScheduledPoll()
@@ -70,6 +70,30 @@ public sealed class HardwareCollectorTests
         factory.Denied = true;
         Assert.Equal(Collector.CollectionResult.Unavailable,
             await collector.CollectAsync(nas, db, default, refresh: Collector.RefreshTarget.Hardware));
+    }
+
+    [Fact]
+    public async Task DetectedNasReportsInventoryAndRecordsOsVersionChanges()
+    {
+        using var sqlite = new SqliteConnection("Data Source=:memory:");
+        await sqlite.OpenAsync();
+        await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(sqlite).Options);
+        await db.Database.MigrateAsync();
+        var now = DateTime.UtcNow;
+        var nas = new NasConnection { LastSuccessUtc = now };
+        db.Connections.Add(nas);
+        await db.SaveChangesAsync();
+        var server = await HardwareCollection.StageInventory(db, nas,
+            JsonSerializer.SerializeToElement(new { system_product = "Fixture NAS" }), now, default);
+        await db.SaveChangesAsync();
+        const string version = "TrueNAS-SCALE-24.10.2.4";
+        await HardwareCollection.StageInventory(db, nas,
+            JsonSerializer.SerializeToElement(new { system_product = "Fixture NAS", version }), now, default);
+        await db.SaveChangesAsync();
+        var part = Assert.Single((await HardwareMetrics.Detail(db, server, now, 1, false)).Components);
+        Assert.Equal("Reporting", part.Status.Label);
+        Assert.Equal("ok", part.Status.Tone);
+        Assert.Contains(part.History, item => item.Kind == "detected-change" && item.Text.Contains(version));
     }
 
     private sealed class Factory:INasReadClientFactory

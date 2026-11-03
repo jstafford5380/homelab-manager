@@ -1,3 +1,5 @@
+import { formatInvestment } from "./investment";
+import type { InvestmentTotal } from "./investment";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -80,6 +82,7 @@ export type Recovery = {
   restoreResult: string;
 };
 export type Snapshot = {
+  investment?: InvestmentTotal[];
   scanReports?: ScanReport[];
   recoveryAssessments: {
     policyId: string;
@@ -556,6 +559,13 @@ export function OverviewView({
               </li>
             );
           })}
+          <li>
+            <div className="ov-signal">
+              <span className="ov-signal-label">Total Investment</span>
+              <strong>{formatInvestment(snapshot.investment)}</strong>
+              <small>Active equipment</small>
+            </div>
+          </li>
         </ul>
       </section>
 

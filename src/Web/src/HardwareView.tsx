@@ -1,7 +1,8 @@
+import { formatInvestment } from "./investment";
 import type { ServerRefreshTarget } from "./RefreshServerButton";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,7 +54,7 @@ export function HardwareView({
   const [returnFocus, setReturnFocus] = useState<HTMLElement | null>(null),
     [panelFocus, setPanelFocus] = useState<HTMLElement | null>(null);
   const [asOf] = useState(Date.now);
-  const [editUpsId, setEditUpsId] = useState<string>();
+  const [editComponentId, setEditComponentId] = useState<string>();
   const [setupUpsKey, setSetupUpsKey] = useState<string>();
   const [formError, setFormError] = useState(""),
     [savingNote, setSavingNote] = useState(false);
@@ -133,14 +134,18 @@ export function HardwareView({
         (c) => c.record.id === componentId,
       )
     : undefined;
-  const formComponent = editUpsId ? d?.components.find(part => part.record.id === editUpsId) : component;
+  const formComponent = editComponentId ? d?.components.find(part => part.record.id === editComponentId) : component;
   const openForm = (value: typeof form, r?: HwReading) => {
     setReturnFocus(document.activeElement as HTMLElement);
     setReading(r);
     setSetupUpsKey(undefined);
-    setEditUpsId(undefined);
+    setEditComponentId(undefined);
     setFormError("");
     setForm(value);
+  };
+  const editComponent = (id: string) => {
+    openForm("edit");
+    setEditComponentId(id);
   };
   const closeForm = () => {
     setForm(null);
@@ -353,6 +358,7 @@ export function HardwareView({
                         ),
                     stale ? "Server out of date" : "Components",
                   ],
+                  ["Total Investment", formatInvestment(d.investment), "Active hardware"],
                 ].map(([label, value, caption]) => (
                   <Card key={label}>
                     <dt>{label}</dt>
@@ -416,7 +422,7 @@ export function HardwareView({
                         stale={stale}
                         onReading={() => openForm("reading")}
                         onSetupUps={key => { openForm("component"); setSetupUpsKey(key); }}
-                        onEditUps={id => { openForm("edit"); setEditUpsId(id); }}
+                        onEditUps={editComponent}
                       />
                     ),
                   )}
@@ -462,6 +468,7 @@ export function HardwareView({
                                 ].map((h) => (
                                   <th key={h}>{h}</th>
                                 ))}
+                                <th className="hw-component-actions"><span className="sr-only">Actions</span></th>
                               </tr>
                             </thead>
                             <tbody>
@@ -520,6 +527,13 @@ export function HardwareView({
                                     {c.record.installedUtc
                                       ? `${Math.max(0, Math.floor((asOf - new Date(c.record.installedUtc).getTime()) / 86400000 / 30.44))} months${c.record.datesEstimated ? " · estimated" : ""}`
                                       : "Not recorded"}
+                                  </td>
+                                  <td className="hw-component-actions">
+                                    <Button type="button" variant="ghost" size="icon"
+                                      aria-label={`Edit component ${c.title}`}
+                                      onClick={() => editComponent(c.record.id)}>
+                                      <Pencil size={14} aria-hidden="true" />
+                                    </Button>
                                   </td>
                                 </tr>
                               ))}
@@ -721,7 +735,7 @@ function HardwareLoading() {
     >
       <div className="hw-loading-tabs" />
       <div className="hw-facts">
-        {[1, 2, 3, 4].map((n) => (
+        {[1, 2, 3, 4, 5].map((n) => (
           <div key={n} />
         ))}
       </div>

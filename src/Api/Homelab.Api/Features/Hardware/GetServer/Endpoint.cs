@@ -40,7 +40,15 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, WriteCoordinat
         }
 
         var s = await Server(id, db, config);
-        await Send.ResultAsync(s is null ? Results.NotFound() : Results.Ok(await HardwareMetrics.Detail(db, s, DateTime.UtcNow, range == "24h" ? 1 : range == "7d" ? 7 : range == "90d" ? 90 : 30, MetricsEnabled(config) || s.Platform == "synology", ct)));
-        return;
+        if (s is null)
+        {
+            await Send.ResultAsync(Results.NotFound());
+            return;
+        }
+
+        var detail = await HardwareMetrics.Detail(db, s, DateTime.UtcNow,
+            range == "24h" ? 1 : range == "7d" ? 7 : range == "90d" ? 90 : 30,
+            MetricsEnabled(config) || s.Platform == "synology", ct);
+        await Send.ResultAsync(Results.Ok(detail with { Investment = await InvestmentTotal.Hardware(db, ct) }));
     }
 }

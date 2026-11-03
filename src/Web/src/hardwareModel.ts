@@ -1,3 +1,4 @@
+import type { InvestmentTotal } from "./investment";
 export type HwStatus = { label: string; tone: string; why: string };
 export type HwPoint = {
   atUtc: string;
@@ -120,6 +121,7 @@ export type HwUpsMonthlyPower = {
   estimatedCostUsd: number | null;
 };
 export type HwDetail = {
+  investment?: InvestmentTotal[];
   upsMonthlyPower?: HwUpsMonthlyPower[];
   electricityRateUsdPerKwh?: number | null;
   ups?: HwUps | null;

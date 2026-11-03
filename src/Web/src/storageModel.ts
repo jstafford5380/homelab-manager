@@ -1,3 +1,4 @@
+import type { InvestmentTotal } from "./investment";
 export type Status = { label: string; tone: string; why: string | null };
 export type StorageDisk = {
   id: string;
@@ -112,6 +113,7 @@ export type Server = {
   looseDrives: Drive[];
 };
 export type StorageData = {
+  investment?: InvestmentTotal[];
   smartEnabled: boolean;
   servicePlanYears: number;
   servers: Server[];

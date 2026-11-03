@@ -385,9 +385,13 @@ test("001 server switching, pool context, datasets, alert chip, modal focus and 
   page,
 }) => {
   const data = fixture();
+  data.investment = [{ currency: "USD", amount: 500 }, { currency: "CAD", amount: 200 }];
   await setup(page, data);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/storage");
+  const investment = page.locator(".storage-facts > div").filter({ hasText: "Total Investment" });
+  await expect(investment).toContainText(/USD\s+500.00/);
+  await expect(investment).toContainText(/CAD\s+200.00/);
   await expect(
     page.getByRole("heading", { name: "TrueNAS", exact: true }),
   ).toBeVisible();

@@ -87,28 +87,6 @@ aside {
 [data-theme="dark"] .brand-icon .brand-icon-light { display: none; }
 [data-theme="dark"] .brand-icon .brand-icon-dark { display: block; }
 
-.workspace {
-  margin: 35px 0 28px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.workspace strong {
-  font-size: 12px;
-}
-.workspace small {
-  display: block;
-  font-size: 11px;
-}
-.workspace-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--muted-foreground);
-}
 .nav-label,
 .eyebrow {
   font-size: 11px;
@@ -117,6 +95,7 @@ aside {
   color: var(--text-secondary);
 }
 .nav-label {
+  margin-top: 28px;
   padding-left: 12px;
   margin-bottom: 12px;
 }
@@ -147,22 +126,8 @@ nav a.active {
   padding: 0 6px;
   border-radius: 4px;
 }
-.aside-bottom {
-  margin-top: auto;
-  border-top: 1px solid var(--border);
-  padding-top: 22px;
-  display: flex;
-  gap: 10px;
-  color: var(--muted-foreground);
-}
-.aside-bottom strong {
-  font-size: 11px;
-}
-.aside-bottom small {
-  display: block;
-  font-size: 11px;
-}
 .logout {
+  margin-top: auto;
   border: 0;
   background: none;
   display: flex;
@@ -379,9 +344,7 @@ main {
   .main {
     margin: 0;
   }
-  .workspace,
-  .nav-label,
-  .aside-bottom {
+  .nav-label {
     display: none;
   }
   nav {

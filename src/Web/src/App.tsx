@@ -453,14 +453,6 @@ export default function App() {
               homelab<span className="brand-light"> / control</span>
             </span>
           </Link>
-          <div className="workspace">
-            <span className="workspace-dot" />
-            <div>
-              <strong>My homelab</strong>
-              <small>Personal workspace</small>
-            </div>
-            <ChevronRight size={15} />
-          </div>
           <p className="nav-label">WORKSPACE</p>
           <nav aria-label="Main navigation">
             {nav.map((item) => (
@@ -485,13 +477,6 @@ export default function App() {
               </Link>
             ))}
           </nav>
-          <div className="aside-bottom">
-            <ShieldCheck size={18} />
-            <div>
-              <strong>Read-only monitoring</strong>
-              <small>Your NAS stays in your control.</small>
-            </div>
-          </div>
           <button
             className="logout"
             onClick={() => void action(() => request("/logout", {}))}

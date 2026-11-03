@@ -143,6 +143,24 @@ public sealed class HardwareTests
         Assert.Equal("none",d.Cpu.Source);Assert.Equal("Not monitored",d.Components.Single(c=>c.Record.Kind=="cooling").Status.Label);
     }
     [Fact]
+    public async Task InvestmentExcludesRetiredHardwareAndDrivesOutsideInstalledInventory()
+    {
+        using var sqlite = new SqliteConnection("Data Source=:memory:");
+        await sqlite.OpenAsync();
+        await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(sqlite).Options);
+        await db.Database.MigrateAsync();
+        var server = new HardwareServer();
+        db.AddRange(server,
+            new HardwareComponent { ServerId = server.Id, PricePaid = 75 },
+            new HardwareComponent { ServerId = server.Id, PricePaid = 25, RetiredUtc = Now });
+        await db.SaveChangesAsync();
+        var drives = new[] { new Disk(), new Disk { Lifecycle = "retired" }, new Disk { Lifecycle = "spare" } };
+        var acquisitions = drives.Select(drive => new DriveAcquisition { DiskId = drive.Id, PurchaseCost = 100, Currency = "USD" });
+        Assert.Equal(new InvestmentTotal("USD", 100), Assert.Single(InvestmentTotal.Storage(drives, acquisitions)));
+        Assert.Equal(new InvestmentTotal("USD", 75), Assert.Single(await InvestmentTotal.Hardware(db, default)));
+    }
+
+    [Fact]
     public async Task MonthlyUpsCostUsesMedianAndOnlyTheLinkedDevicesRecentSamples()
     {
         using var sqlite = new SqliteConnection("Data Source=:memory:");
@@ -150,7 +168,7 @@ public sealed class HardwareTests
         await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(sqlite).Options);
         await db.Database.MigrateAsync();
         var nas = new NasConnection { LastSuccessUtc = Now };
-        var device = new UpsDevice("fixture-ups", "ups", null, true, 1500, null, null, null);
+        var device = new UpsDevice("fixture-ups", "ups", null, true, 1500, new UpsReading(30, Now), null, null);
         var server = new HardwareServer { ConnectionId = nas.Id, ConfigurationRevision = nas.ConfigurationRevision,
             UpsSnapshotJson = new UpsSnapshot("reporting", Devices: [device]).Serialize() };
         db.AddRange(nas, server, new OperatingSettings { ElectricityRateUsdPerKwh = 0.15 },
@@ -159,7 +177,9 @@ public sealed class HardwareTests
             ("fixture-ups", 3, 90), ("fixture-ups", 31, 1), ("another-ups", 1, 1) })
             db.UpsPowerSamples.Add(new() { ServerId = server.Id, DeviceKey = key, BucketUtc = Now.AddDays(-days), LoadPercent = load, NominalVa = 1500 });
         await db.SaveChangesAsync();
-        var result = Assert.Single((await HardwareMetrics.Detail(db, server, Now, 1, true)).UpsMonthlyPower!);
+        var detail = await HardwareMetrics.Detail(db, server, Now, 1, true);
+        Assert.Equal(new HardwareStatus("Reporting", "ok", "The linked UPS returned recent telemetry."), Assert.Single(detail.Components).Status);
+        var result = Assert.Single(detail.UpsMonthlyPower!);
         Assert.Equal(270, result.MedianWatts);
         Assert.Equal(3, result.SampleCount);
         Assert.Equal(29.16, result.EstimatedCostUsd!.Value, 2);

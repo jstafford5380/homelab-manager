@@ -246,8 +246,10 @@ for (const width of [1440, 900, 390])
     page,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await setup(page, detail());
+    await setup(page, { ...detail(), investment: [{ currency: "USD", amount: 289.5 }] });
     await page.goto("/hardware");
+    await expect(page.locator(".hw-facts").getByText("Total Investment")).toBeVisible();
+    await expect(page.locator(".hw-facts").getByText("$289.50")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "How it’s running", exact: true }),
     ).toBeVisible();
@@ -414,13 +416,9 @@ for (const width of [1440, 390])
       });
       await r.fulfill({ json: { id: "cpu" } });
     });
-    await page.goto("/hardware?server=a&component=cpu");
-    await expect(
-      width <= 700 ? page.locator(".hw-fullpage") : page.getByRole("dialog"),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: "Edit details", exact: true })
-      .click();
+    await page.goto("/hardware?server=a");
+    const cpu = page.locator("tbody tr").filter({ has: page.getByRole("button", { name: /^Edit component Intel Xeon/i }) });
+    await cpu.getByRole("button", { name: /^Edit component / }).click();
     await expect(
       page.getByText("Detected values stay unchanged.", { exact: false }),
     ).toBeVisible();
@@ -434,6 +432,7 @@ for (const width of [1440, 390])
     ).toBeVisible();
     expect(writes.at(-1)!.body.spec).toEqual("Socket LGA1151");
     expect(writes.at(-1)!.body).not.toHaveProperty("detectedName");
+    await page.goto("/hardware?server=a&component=cpu");
     await page.getByRole("button", { name: "Add note", exact: true }).click();
     await page.getByLabel("Note", { exact: true }).fill("Cleaned case filter");
     await page.getByRole("button", { name: "Save note" }).click();

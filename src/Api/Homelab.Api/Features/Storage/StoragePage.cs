@@ -111,6 +111,6 @@ public static class StoragePage
             servers.Add(new(c.Id, c.Name, Uri.TryCreate(c.ApiUri, UriKind.Absolute, out var uri) ? uri.Host : "Host unknown", fresh, c.LastSuccessUtc, pools.Length, drives.Length, drives.Length > 0 && drives.All(x => x.Disk.SizeBytes is not null) ? drives.Sum(x => x.Disk.SizeBytes) : null, stale || attention == 0 && (!inventoryCurrent || !poolsCurrent || pools.Any(p => p.UnmappedMembers > 0)) ? null : attention, localAlerts, pools, drives.Where(d => d.PoolGuid is null).ToArray()));
         }
 
-        return new(smartEnabled, settings.DriveAgeReviewYears, servers.ToArray());
+        return new(smartEnabled, settings.DriveAgeReviewYears, servers.ToArray(), InvestmentTotal.Storage(disks, acquisitions.Values));
     }
 }
