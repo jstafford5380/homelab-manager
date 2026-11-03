@@ -1,0 +1,5 @@
+{
+  "_comment": "Proposed per-section save: PATCH /api/v1/settings/monitoring with only that section's changed fields and the revision the form was loaded from.",
+  "revision": "r-41",
+  "changes": { "smartMinutes": 60 }
+}

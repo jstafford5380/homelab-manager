@@ -1,0 +1,14 @@
+{
+  "id": "c2",
+  "name": "Backup NAS",
+  "platform": "truenas",
+  "configurationRevision": 7,
+  "enabled": false,
+  "apiUri": "wss://backup.lan/websocket",
+  "tunnel": { "host": "127.0.0.1", "port": 8443 },
+  "pollSeconds": 300,
+  "state": "identity-changed",
+  "identity": { "savedSerial": "1234-ABCD-5678", "observedSerial": "9876-WXYZ-4321" },
+  "trust": { "certificateSha256": "4F:2A:9C:…:E1:07", "trustedCaPem": null },
+  "apiKey": { "replacedUtc": "2026-08-03T17:20:00Z" }
+}

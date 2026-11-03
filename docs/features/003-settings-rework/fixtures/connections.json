@@ -1,0 +1,9 @@
+{
+  "attentionCount": 1,
+  "connections": [
+    { "id": "c1", "name": "TrueNAS", "platform": "truenas", "apiUri": "wss://nas.local/websocket", "tunnel": null, "pollSeconds": 300, "state": "reporting", "lastSuccessUtc": "2026-11-02T16:02:00Z", "pausedUtc": null, "pausedBy": null },
+    { "id": "c2", "name": "Backup NAS", "platform": "truenas", "apiUri": "wss://backup.lan/websocket", "tunnel": { "host": "127.0.0.1", "port": 8443 }, "pollSeconds": 300, "state": "identity-changed", "lastSuccessUtc": "2026-10-31T09:10:00Z", "pausedUtc": "2026-10-31T09:10:00Z", "pausedBy": "system" },
+    { "id": "c3", "name": "Media box", "platform": "truenas", "apiUri": "wss://media.lan/websocket", "tunnel": null, "pollSeconds": 600, "state": "paused", "lastSuccessUtc": "2026-10-12T18:00:00Z", "pausedUtc": "2026-10-12T18:00:00Z", "pausedBy": "owner" },
+    { "id": "s1", "name": "DS920+", "platform": "synology", "host": "192.168.1.40", "pollSeconds": 300, "state": "stale", "lastSuccessUtc": "2026-11-02T13:00:00Z", "pausedUtc": null, "pausedBy": null }
+  ]
+}

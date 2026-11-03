@@ -1,0 +1,28 @@
+{
+  "revision": "r-41",
+  "display": { "timezone": "America/Phoenix", "capacityUnits": "binary" },
+  "monitoring": {
+    "inventoryMinutes": 15,
+    "smartMinutes": 90,
+    "readDatasets": true,
+    "readApiPowerOnHours": true,
+    "readCachedTemperatures": false,
+    "powerOnHoursLastRun": { "finishedUtc": "2026-11-02T15:04:00Z", "drivesRead": 11, "drivesEligible": 12, "outcome": "partial" }
+  },
+  "reviewLevels": {
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "temperatureReviewCelsius": 45,
+    "temperaturePolicyReason": "WD Red Plus datasheet, operating 0–65 °C; my own margin",
+    "hardwareCpuPercent": 80,
+    "hardwareMemoryPercent": 80,
+    "hardwareTemperatureC": 80,
+    "hardwareSustainedMinutes": 60
+  },
+  "data": {
+    "sampleRetentionDays": 90,
+    "backupsEnabled": true,
+    "backupDailyCopies": 7,
+    "backupWeeklyCopies": 4
+  }
+}

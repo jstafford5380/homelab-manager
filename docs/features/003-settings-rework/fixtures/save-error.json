@@ -1,0 +1,7 @@
+{
+  "_comment": "400 response for a section save. Field keys match the request so the UI can attach each message to its field. A stale revision returns 409 instead.",
+  "status": 400,
+  "errors": {
+    "smartMinutes": "Must be at least the disk inventory interval (15 min) and no more than 1440."
+  }
+}

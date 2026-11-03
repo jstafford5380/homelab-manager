@@ -1,0 +1,606 @@
+<!doctype html>
+<!--
+  003 · Settings rework. Visual spec; the brief (README.md) is the behavioural spec.
+  Tokens copied from src/Web/src/index.css (neutral-chrome palette). Mock-only chrome is .mock-toolbar.
+  Responsive rules use @container app; map them to the app's 700px and 1100px @media breakpoints.
+  "Add Synology hardware" renders only while the synology flag is on (see 002).
+  Section URL: ?section=connections|connection-detail|monitoring|review|notifications|data|display
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>003 Settings rework · Mock</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #ffffff; --foreground: #1f2933; --card: #ffffff; --card-foreground: #1f2933;
+      --primary: #24303d; --primary-foreground: #ffffff; --secondary: #eef1f4; --secondary-foreground: #2f3b48;
+      --muted: #f1f3f5; --muted-foreground: #56616d; --accent: #eef1f4; --destructive: #a8392b;
+      --border: #e1e5ea; --input: #7d8794; --ring: #3d5f86; --page: #f6f7f8; --surface-soft: #f3f5f7;
+      --text-secondary: var(--muted-foreground); --nav-active: #e9edf1; --nav-active-foreground: #1f2933;
+      --error-background: #fff0ed; --error-border: #f3d1c7; --error-foreground: #9e4938;
+      --warning-background: #fff6e8; --warning-border: #dfc9a0; --warning-foreground: #69471e;
+      --tone-ok: #1e6b45; --tone-ok-bg: #e7f4ec; --tone-ok-border: #bcdcc8;
+      --tone-warn: #7a4a0e; --tone-warn-bg: #fff4e0; --tone-warn-border: #e6c98f;
+      --tone-bad: #a1301f; --tone-bad-bg: #fdece8; --tone-bad-border: #efc0b5;
+      --tone-neutral: #56616d; --tone-neutral-bg: #f1f3f5; --tone-neutral-border: #8a95a1;
+      --tone-info: #3f6487; --link: #3d5f86;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --background: #14181c; --foreground: #e6e9ed; --card: #1a1f24; --card-foreground: #e6e9ed;
+      --primary: #dfe5ec; --primary-foreground: #14181c; --secondary: #262d35; --secondary-foreground: #dfe5ec;
+      --muted: #1f252b; --muted-foreground: #a7b0ba; --accent: #262d35; --destructive: #c0473a;
+      --border: #353d46; --input: #7f8a96; --ring: #9dbad8; --page: #0f1215; --surface-soft: #1f252b;
+      --nav-active: #262d35; --nav-active-foreground: #ffffff;
+      --error-background: #38221e; --error-border: #a46b5f; --error-foreground: #ffc1b5;
+      --warning-background: #34291b; --warning-border: #82683e; --warning-foreground: #f3d4a0;
+      --tone-ok: #8fd9b1; --tone-ok-bg: #142a20; --tone-ok-border: #2c5a43;
+      --tone-warn: #f3cf92; --tone-warn-bg: #33281a; --tone-warn-border: #6e5531;
+      --tone-bad: #ffb4a6; --tone-bad-bg: #3a201b; --tone-bad-border: #7a3f34;
+      --tone-neutral: #a7b0ba; --tone-neutral-bg: #1f252b; --tone-neutral-border: #56606b;
+      --tone-info: #9dbad8; --link: #9dbad8;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--foreground); background: var(--page); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: -1px; font-weight: 600; }
+    h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
+    h3 { font-size: 15px; font-weight: 600; }
+    small, .muted { color: var(--text-secondary); font-size: 12px; }
+    a { color: var(--link); }
+    .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 600; color: var(--text-secondary); }
+    .card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: 14px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground); white-space: nowrap; }
+    .btn.outline { background: var(--background); color: var(--foreground); border-color: var(--input); }
+    .btn.ghost { background: transparent; color: var(--foreground); }
+    .btn.sm { min-height: 32px; padding: 0 12px; font-size: 13px; }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    .btn svg { width: 15px; height: 15px; }
+    :where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .tone-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); }
+    .tone-warn { --tone: var(--tone-warn); --tone-bg: var(--tone-warn-bg); --tone-border: var(--tone-warn-border); }
+    .tone-bad { --tone: var(--tone-bad); --tone-bg: var(--tone-bad-bg); --tone-border: var(--tone-bad-border); }
+    .tone-neutral { --tone: var(--tone-neutral); --tone-bg: var(--tone-neutral-bg); --tone-border: var(--tone-neutral-border); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); white-space: nowrap; }
+    .pill.tone-neutral { border-style: dashed; }
+    .pill svg { width: 12px; height: 12px; }
+
+    #app { container: app / inline-size; margin: 0 auto; padding: 36px 38px 80px; max-width: 1280px; }
+    html[data-width="tablet"] #app { max-width: 900px; }
+    html[data-width="mobile"] #app { max-width: 390px; padding: 24px 16px 80px; }
+    html[data-width="tablet"] body, html[data-width="mobile"] body { background: var(--muted); }
+    html[data-width="tablet"] #app, html[data-width="mobile"] #app { background: var(--page); min-height: calc(100vh - 41px); box-shadow: 0 0 0 1px var(--border); }
+
+    .mock-toolbar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: #1b1f23; color: #e8ecef; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mock-toolbar strong { margin-right: auto; }
+    .mock-toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+    .mock-toolbar select { font: inherit; background: #2b3036; color: inherit; border: 1px solid #474f57; border-radius: 4px; padding: 3px 6px; }
+    [data-state][hidden], [data-section][hidden], [hidden] { display: none !important; }
+
+    /* Settings layout */
+    .page-head { margin-bottom: 28px; display: grid; gap: 8px; }
+    .settings { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; align-items: start; }
+    .subnav { position: sticky; top: 60px; display: grid; gap: 2px; }
+    .subnav button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 7px; background: none; color: var(--muted-foreground); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+    .subnav button:hover { color: var(--foreground); background: var(--surface-soft); }
+    .subnav button[aria-current="page"] { background: var(--nav-active); color: var(--nav-active-foreground); font-weight: 600; }
+    .subnav svg { width: 16px; height: 16px; flex: none; }
+    .subnav .flag { margin-left: auto; }
+    .dirty-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tone-warn); margin-left: auto; }
+
+    .section { display: grid; gap: 20px; min-width: 0; }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .section-head > div { display: grid; gap: 4px; max-width: 62ch; }
+    .section-head p { color: var(--text-secondary); }
+    .group { padding: 0; overflow: hidden; }
+    .group-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .group-head p { color: var(--text-secondary); font-size: 13px; margin-top: 2px; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 8px 32px; padding: 16px 20px; border-top: 1px solid var(--border); align-items: start; }
+    .group-head + .row, .row:first-child { border-top: 0; }
+    .row-label { display: grid; gap: 3px; }
+    .row-label label, .row-label .label { font-weight: 500; }
+    .row-label p { color: var(--text-secondary); font-size: 13px; }
+    .row-control { display: grid; gap: 6px; }
+    .row.wide { grid-template-columns: 1fr; }
+    input[type="text"], input[type="number"], input[type="url"], input[type="datetime-local"], select, textarea { width: 100%; min-height: 38px; padding: 7px 11px; border: 1px solid var(--input); border-radius: 6px; background: var(--background); color: var(--foreground); font: inherit; }
+    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .unit { display: flex; align-items: center; gap: 8px; }
+    .unit input { max-width: 120px; }
+    .unit span { color: var(--text-secondary); font-size: 13px; }
+    .field-error input { border-color: var(--tone-bad); box-shadow: 0 0 0 1px var(--tone-bad); }
+    .error-text { color: var(--tone-bad); font-size: 12px; display: flex; gap: 5px; align-items: center; }
+
+    .switch { position: relative; display: inline-flex; width: 40px; height: 24px; flex: none; }
+    .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+    .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--muted); border: 1px solid var(--input); transition: background .15s; pointer-events: none; }
+    .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted-foreground); transition: transform .15s; }
+    .switch input:checked + span { background: var(--primary); border-color: var(--primary); }
+    .switch input:checked + span::after { transform: translateX(16px); background: var(--primary-foreground); }
+    .switch input:focus-visible + span { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .toggle-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; padding: 16px 20px; border-top: 1px solid var(--border); align-items: start; }
+    .group-head + .toggle-row { border-top: 0; }
+    .toggle-row .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+    details.how { grid-column: 1 / -1; font-size: 13px; }
+    details.how summary { cursor: pointer; color: var(--link); width: fit-content; list-style: none; display: inline-flex; gap: 4px; align-items: center; }
+    details.how summary::-webkit-details-marker { display: none; }
+    details.how summary::before { content: "›"; display: inline-block; transition: transform .15s; }
+    details.how[open] summary::before { transform: rotate(90deg); }
+    details.how p { margin-top: 8px; color: var(--text-secondary); max-width: 75ch; }
+
+    .segmented { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; background: var(--muted); border: 1px solid var(--border); flex-wrap: wrap; }
+    .segmented label { position: relative; }
+    .segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .segmented span { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; color: var(--muted-foreground); }
+    .segmented input:checked + span { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+    .segmented input:focus-visible + span { outline: 2px solid var(--ring); outline-offset: 1px; }
+    .segmented svg { width: 14px; height: 14px; }
+
+    .callout { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--foreground); font-size: 13px; }
+    .callout > svg { color: var(--tone); flex: none; width: 18px; height: 18px; margin-top: 1px; }
+    .callout strong { display: block; margin-bottom: 2px; }
+    .callout.tone-neutral { border-style: dashed; }
+    .callout .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    .conn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 14px; padding: 16px 20px; border-top: 1px solid var(--border); align-items: center; }
+    .group-head + .conn, .conn:first-child { border-top: 0; }
+    .conn-icon { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: var(--muted); color: var(--muted-foreground); grid-row: span 2; }
+    .conn-icon svg { width: 18px; height: 18px; }
+    .conn-title { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .conn-meta { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; grid-column: 2; }
+    .conn .btn { grid-row: 1 / span 2; grid-column: 3; }
+
+    .steps { list-style: none; margin: 0; padding: 0; }
+    .step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 4px 14px; padding: 16px 20px; border-top: 1px solid var(--border); }
+    .step:first-child { border-top: 0; }
+    .step-num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; border: 1px solid var(--input); color: var(--muted-foreground); }
+    .step.done .step-num { background: var(--tone-ok-bg); border-color: var(--tone-ok-border); color: var(--tone-ok); }
+    .step-num svg { width: 14px; height: 14px; }
+    .step-body { display: grid; gap: 10px; }
+    .step-body > p { color: var(--text-secondary); font-size: 13px; }
+    .check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
+    .check input { margin-top: 3px; }
+
+    .history { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .history th { text-align: left; font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; padding: 10px 20px; background: var(--surface-soft); }
+    .history td { padding: 12px 20px; border-top: 1px solid var(--border); vertical-align: top; }
+    .history-wrap { overflow-x: auto; }
+    .empty-line { padding: 18px 20px; color: var(--text-secondary); font-size: 13px; }
+
+    .savebar { position: sticky; bottom: 16px; z-index: 5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px 12px 18px; border-radius: 12px; background: var(--card); border: 1px solid var(--input); box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+    .savebar .msg { margin-right: auto; display: flex; gap: 8px; align-items: center; font-size: 13px; }
+    .savebar .msg svg { width: 16px; height: 16px; color: var(--tone-warn); }
+    .savebar.error { border-color: var(--tone-bad-border); }
+    .savebar.error .msg svg { color: var(--tone-bad); }
+
+    .skeleton { border-radius: 8px; background: linear-gradient(90deg, var(--muted), var(--surface-soft), var(--muted)); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+    .detail-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .back { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 6px 0; font: inherit; font-size: 13px; color: var(--link); cursor: pointer; }
+    .back svg { width: 14px; height: 14px; }
+    .danger-zone .row-label label { color: var(--foreground); }
+
+    @container app (max-width: 1100px) {
+      .settings { grid-template-columns: 180px minmax(0, 1fr); gap: 24px; }
+      .row { grid-template-columns: 1fr; }
+    }
+    @container app (max-width: 700px) {
+      .settings { grid-template-columns: 1fr; gap: 16px; }
+      .subnav { position: static; display: flex; overflow-x: auto; gap: 4px; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; }
+      .subnav button { width: auto; flex: none; min-height: 40px; border: 1px solid var(--border); background: var(--card); }
+      .subnav button[aria-current="page"] { border-color: var(--primary); }
+      .subnav .dirty-dot { margin-left: 4px; }
+      h1 { font-size: 26px; }
+      .group-head, .row, .toggle-row, .conn, .step { padding-left: 16px; padding-right: 16px; }
+      .conn { grid-template-columns: auto minmax(0, 1fr); }
+      .conn .btn { grid-column: 1 / -1; grid-row: auto; justify-self: start; margin-top: 8px; }
+      .savebar { bottom: 8px; }
+      .savebar .btn { flex: 1; }
+      .history th, .history td { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-toolbar" role="region" aria-label="Mock controls (not part of the design)">
+    <strong>MOCK · 003 Settings rework</strong>
+    <label>State <select id="mock-state"></select></label>
+    <label>Width <select id="mock-width"><option value="desktop">Desktop</option><option value="tablet">Tablet 900</option><option value="mobile">Mobile 390</option></select></label>
+    <label>Theme <select id="mock-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0zM12 18v4"/></symbol>
+      <symbol id="i-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19a9 9 0 1 1 14.2 0M12 13l4-4"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+      <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="1"/><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+      <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+      <symbol id="i-ccheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></symbol>
+      <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16h.01"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5M12 17h.01"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+      <symbol id="i-retry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+    </defs>
+  </svg>
+
+  <main id="app">
+    <div class="page-head">
+      <p class="eyebrow">HOMELAB CONTROL</p>
+      <h1>Settings</h1>
+      <p class="muted" style="font-size:14px">How Homelab Control reads your systems, what it flags for review, and where it sends alerts.</p>
+    </div>
+
+    <div class="settings">
+      <nav class="subnav" aria-label="Settings sections">
+        <button type="button" data-go="connections"><svg><use href="#i-plug"/></svg>Connections<span class="flag" data-state="normal dirty error"><span class="pill tone-bad" title="1 connection needs review"><svg><use href="#i-alert"/></svg>1</span></span></button>
+        <button type="button" data-go="monitoring"><svg><use href="#i-pulse"/></svg>Monitoring<span class="dirty-dot" data-state="dirty error" aria-label="Unsaved changes"></span></button>
+        <button type="button" data-go="review"><svg><use href="#i-gauge"/></svg>Review levels</button>
+        <button type="button" data-go="notifications"><svg><use href="#i-bell"/></svg>Notifications</button>
+        <button type="button" data-go="data"><svg><use href="#i-archive"/></svg>Data &amp; backups</button>
+        <button type="button" data-go="display"><svg><use href="#i-monitor"/></svg>Display</button>
+      </nav>
+
+      <div>
+        <!-- LOADING -->
+        <div class="section" data-state="loading" aria-busy="true">
+          <div class="skeleton" style="height:28px;width:220px"></div>
+          <div class="skeleton" style="height:16px;width:60%"></div>
+          <div class="card group" style="padding:20px;display:grid;gap:16px">
+            <div class="skeleton" style="height:18px;width:40%"></div>
+            <div class="skeleton" style="height:38px"></div>
+            <div class="skeleton" style="height:38px"></div>
+            <div class="skeleton" style="height:38px;width:70%"></div>
+          </div>
+          <p class="muted" role="status">Loading settings…</p>
+        </div>
+
+        <!-- UNAVAILABLE -->
+        <div class="section" data-state="unavailable">
+          <div class="callout tone-bad" role="alert">
+            <svg><use href="#i-alert"/></svg>
+            <div>
+              <strong>Settings couldn’t be loaded</strong>
+              The Homelab Control server didn’t respond (request timed out). Monitoring keeps running with the last saved settings; nothing here has changed.
+              <div class="actions"><button class="btn outline sm" type="button"><svg><use href="#i-retry"/></svg>Try again</button></div>
+            </div>
+          </div>
+          <div class="callout tone-neutral">
+            <svg><use href="#i-monitor"/></svg>
+            <div><strong>Display settings still work</strong>Theme is stored in this browser and can be changed below.</div>
+          </div>
+        </div>
+
+        <!-- ============ CONNECTIONS ============ -->
+        <section class="section" data-section="connections" data-state="normal dirty error empty" aria-labelledby="h-conn">
+          <div class="section-head">
+            <div><h2 id="h-conn">Connections</h2><p>The systems Homelab Control reads from. Connections are read-only and never change NAS configuration.</p></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn outline" type="button"><svg><use href="#i-chip"/></svg>Add Synology hardware</button>
+              <button class="btn" type="button"><svg><use href="#i-plus"/></svg>Connect NAS</button>
+            </div>
+          </div>
+
+          <div class="card group" data-state="normal dirty error">
+            <div class="conn">
+              <span class="conn-icon"><svg><use href="#i-server"/></svg></span>
+              <div class="conn-title"><h3>TrueNAS</h3><span class="pill tone-ok"><svg><use href="#i-ccheck"/></svg>Reporting</span></div>
+              <p class="conn-meta">TrueNAS SCALE · wss://nas.local/websocket · last collected 2 min ago · every 5 min</p>
+              <button class="btn outline sm" type="button" data-manage>Manage</button>
+            </div>
+            <div class="conn">
+              <span class="conn-icon"><svg><use href="#i-server"/></svg></span>
+              <div class="conn-title"><h3>Backup NAS</h3><span class="pill tone-bad"><svg><use href="#i-alert"/></svg>Identity changed</span></div>
+              <p class="conn-meta">TrueNAS SCALE · via SSH tunnel 127.0.0.1:8443 · collection paused 2 days ago</p>
+              <button class="btn outline sm" type="button" data-manage>Review</button>
+            </div>
+            <div class="conn">
+              <span class="conn-icon"><svg><use href="#i-server"/></svg></span>
+              <div class="conn-title"><h3>Media box</h3><span class="pill tone-neutral"><svg><use href="#i-pause"/></svg>Paused</span></div>
+              <p class="conn-meta">TrueNAS SCALE · wss://media.lan/websocket · paused by you on Oct 12</p>
+              <button class="btn outline sm" type="button" data-manage>Manage</button>
+            </div>
+            <div class="conn">
+              <span class="conn-icon"><svg><use href="#i-chip"/></svg></span>
+              <div class="conn-title"><h3>DS920+</h3><span class="pill tone-warn"><svg><use href="#i-warn"/></svg>Out of date</span></div>
+              <p class="conn-meta">Synology hardware (SNMP) · 192.168.1.40 · last collected 3 h ago</p>
+              <button class="btn outline sm" type="button" data-manage>Manage</button>
+            </div>
+          </div>
+
+          <div class="card" data-state="empty" style="padding:40px 24px;display:grid;justify-items:center;text-align:center;gap:10px">
+            <span class="conn-icon" style="grid-row:auto"><svg><use href="#i-plug"/></svg></span>
+            <h3>No systems connected yet</h3>
+            <p class="muted" style="font-size:13px;max-width:52ch">Connect a TrueNAS system directly or through an SSH tunnel you already run. Until then, every health status stays unknown.</p>
+            <button class="btn" type="button" style="margin-top:6px"><svg><use href="#i-plus"/></svg>Connect NAS</button>
+          </div>
+        </section>
+
+        <!-- CONNECTION DETAIL -->
+        <section class="section" data-section="connection-detail" data-state="normal dirty error" aria-labelledby="h-detail">
+          <button class="back" type="button" data-go="connections"><svg><use href="#i-left"/></svg>All connections</button>
+          <div class="section-head">
+            <div>
+              <div class="detail-head"><h2 id="h-detail">Backup NAS</h2><span class="pill tone-bad"><svg><use href="#i-alert"/></svg>Identity changed</span></div>
+              <p>Changes here affect how Homelab Control reads this system. They don’t modify the NAS.</p>
+            </div>
+          </div>
+
+          <div class="callout tone-bad" role="status">
+            <svg><use href="#i-alert"/></svg>
+            <div>
+              <strong>This system reported a different serial</strong>
+              Saved serial 1234-ABCD-5678, observed 9876-WXYZ-4321. Collection is paused so evidence from two machines isn’t mixed. Historical evidence is kept either way.
+              <div class="actions"><button class="btn sm" type="button">Accept new baseline</button><button class="btn outline sm" type="button">Keep paused</button></div>
+            </div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Connection</h3></div><label class="check" style="align-items:center"><span class="switch"><input type="checkbox" aria-label="Collection enabled"><span></span></span>Collection enabled</label></div>
+            <div class="row"><div class="row-label"><label for="c-name">Name</label></div><div class="row-control"><input id="c-name" type="text" value="Backup NAS"></div></div>
+            <div class="row"><div class="row-label"><label for="c-uri">Logical NAS address</label><p>TLS is always validated against this hostname.</p></div><div class="row-control"><input id="c-uri" type="text" value="wss://backup.lan/websocket"></div></div>
+            <div class="row"><div class="row-label"><span class="label">SSH tunnel</span><p>Optional. Use when you already forward the NAS API through a tunnel.</p></div><div class="row-control" style="grid-template-columns:1fr 100px"><input aria-label="Tunnel host" type="text" value="127.0.0.1"><input aria-label="Tunnel port" type="number" value="8443"></div></div>
+            <div class="row"><div class="row-label"><label for="c-int">Collection interval</label><p>30 seconds to 60 minutes.</p></div><div class="row-control"><div class="unit"><input id="c-int" type="number" value="300"><span>seconds</span></div></div></div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Certificate trust</h3><p>Pinning and private CAs add checks. They never turn off hostname validation.</p></div></div>
+            <div class="row"><div class="row-label"><label for="c-pin">Enrolled certificate SHA-256</label><p>Recorded on the first trusted connection. For a planned certificate change, verify the new fingerprint yourself and paste it here.</p></div><div class="row-control"><input id="c-pin" type="text" value="4F:2A:9C:…:E1:07"></div></div>
+            <div class="row wide"><div class="row-label"><label for="c-ca">Trusted CA or self-signed certificate (PEM)</label><p>Leave blank to use the operating system’s trust store.</p></div><div class="row-control"><textarea id="c-ca" rows="4" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div></div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>API key</h3><p>Stored encrypted. It’s never shown again after saving.</p></div></div>
+            <div class="row"><div class="row-label"><label for="c-key">Replace API key</label><p>Last replaced Aug 3.</p></div><div class="row-control"><input id="c-key" type="text" placeholder="Paste a new read-only key"></div></div>
+          </div>
+
+          <div class="card group danger-zone">
+            <div class="row"><div class="row-label"><span class="label">Remove connection</span><p>Stops collection and removes saved credentials. Drive history and evidence stay in Homelab Control.</p></div><div class="row-control" style="justify-items:start"><button class="btn outline sm" type="button" style="color:var(--tone-bad);border-color:var(--tone-bad-border)">Remove…</button></div></div>
+          </div>
+        </section>
+
+        <!-- ============ MONITORING ============ -->
+        <section class="section" data-section="monitoring" data-state="normal dirty error empty" aria-labelledby="h-mon">
+          <div class="section-head"><div><h2 id="h-mon">Monitoring</h2><p>How often Homelab Control looks at drives, and which optional reads it makes. Every read is read-only.</p></div></div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Drive collection</h3></div></div>
+            <div class="row"><div class="row-label"><label for="m-inv">Disk inventory interval</label><p>Never faster than each connection’s own interval.</p></div><div class="row-control"><div class="unit"><input id="m-inv" type="number" value="15"><span>minutes</span></div></div></div>
+            <div class="row" data-error-field><div class="row-label"><label for="m-ev">Drive evidence review interval</label><p>Measurements become stale after three intervals without a new observation.</p></div>
+              <div class="row-control"><div class="unit"><input id="m-ev" type="number" value="90" data-dirty-value="20" aria-describedby="m-ev-err"><span>minutes</span></div>
+                <p class="error-text" id="m-ev-err" data-state="error"><svg width="13" height="13"><use href="#i-alert"/></svg>Must be at least the disk inventory interval (15 min) and no more than 1440.</p>
+                <p class="muted" data-state="dirty">Was 90 minutes</p>
+              </div></div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Optional NAS reads</h3><p>Off by default. Check compatibility with your TrueNAS 24.10 patch before turning one on.</p></div></div>
+
+            <div class="toggle-row">
+              <div class="row-label"><label for="t-ds">Dataset space usage</label><p>Latest names and space used for up to 256 datasets and volumes.</p></div>
+              <span class="switch"><input id="t-ds" type="checkbox" checked><span></span></span>
+              <details class="how"><summary>How this works</summary><p>Read on each connection cycle. It doesn’t scan files or change the NAS. Larger or unsupported responses keep the previous snapshot.</p></details>
+            </div>
+
+            <div class="toggle-row">
+              <div class="row-label"><label for="t-poh">Power-on hours</label><p>ATA SMART attributes through the TrueNAS API, every six hours, up to 64 drives per server.</p>
+                <div class="meta" data-state="normal dirty error"><span class="pill tone-ok"><svg><use href="#i-ccheck"/></svg>Last run 1 h ago · 11 of 12 drives</span><button class="btn ghost sm" type="button" style="color:var(--link);padding:0 4px">Run now</button></div>
+                <div class="meta" data-state="empty"><span class="pill tone-neutral"><svg><use href="#i-help"/></svg>Never run</span></div>
+              </div>
+              <span class="switch"><input id="t-poh" type="checkbox" checked data-state-checked="normal dirty error"><span></span></span>
+              <details class="how"><summary>How this works</summary><p>These reads can wake sleeping drives. They don’t start self-tests. NVMe and SAS drives aren’t supported by this API. Missing or ambiguous hour counters stay unknown, and permission failures are shown separately.</p></details>
+            </div>
+
+            <div class="toggle-row">
+              <div class="row-label"><label for="t-tc">NAS temperature cache</label><p>Reads temperatures the NAS has already cached. No fresh drive queries.</p></div>
+              <span class="switch"><input id="t-tc" type="checkbox"><span></span></span>
+              <details class="how"><summary>How this works</summary><p>Cached values have no observation time and no verified match to a physical drive, so they’re shown separately and never affect drive-health findings.</p></details>
+            </div>
+          </div>
+
+          <div class="savebar" data-state="dirty" role="region" aria-label="Unsaved changes">
+            <span class="msg"><svg><use href="#i-warn"/></svg>1 unsaved change in Monitoring</span>
+            <button class="btn outline sm" type="button">Discard</button>
+            <button class="btn sm" type="button">Save changes</button>
+          </div>
+          <div class="savebar error" data-state="error" role="alert">
+            <span class="msg"><svg><use href="#i-alert"/></svg>Not saved. Fix the highlighted field and try again.</span>
+            <button class="btn outline sm" type="button">Discard</button>
+            <button class="btn sm" type="button">Save changes</button>
+          </div>
+        </section>
+
+        <!-- ============ REVIEW LEVELS ============ -->
+        <section class="section" data-section="review" data-state="normal dirty error empty" aria-labelledby="h-rev">
+          <div class="section-head"><div><h2 id="h-rev">Review levels</h2><p>Your own levels for when something is worth a look. They aren’t failure predictions or manufacturer safety limits.</p></div></div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Drives</h3><p>Age and warranty levels create planning reminders only.</p></div></div>
+            <div class="row"><div class="row-label"><label for="r-age">Drive age review</label><p>Remind me to review a drive once it’s this old.</p></div><div class="row-control"><div class="unit"><input id="r-age" type="number" value="5"><span>years</span></div></div></div>
+            <div class="row"><div class="row-label"><label for="r-war">Warranty notice</label><p>Remind me before a recorded warranty ends.</p></div><div class="row-control"><div class="unit"><input id="r-war" type="number" value="90"><span>days before</span></div></div></div>
+            <div class="toggle-row">
+              <div class="row-label"><label for="r-tp">Local temperature policy</label><p>Flag imported drive temperatures above a limit you set, including historical reports.</p></div>
+              <span class="switch"><input id="r-tp" type="checkbox" checked><span></span></span>
+            </div>
+            <div class="row" style="border-top:0;padding-top:0"><div class="row-label"><label for="r-tl">Temperature limit</label></div><div class="row-control"><div class="unit"><input id="r-tl" type="number" value="45"><span>°C</span></div></div></div>
+            <div class="row" style="border-top:0;padding-top:0"><div class="row-label"><label for="r-tb">Basis for this limit</label><p>Required. Your operating policy or the manufacturer guidance you’re following.</p></div><div class="row-control"><input id="r-tb" type="text" value="WD Red Plus datasheet, operating 0–65 °C; my own margin"></div></div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Hardware</h3><p>Applies to charts and component statuses on Hardware. App memory use excludes cache.</p></div></div>
+            <div class="row"><div class="row-label"><label for="h-cpu">CPU use</label></div><div class="row-control"><div class="unit"><input id="h-cpu" type="number" value="80"><span>%</span></div></div></div>
+            <div class="row"><div class="row-label"><label for="h-mem">Memory use</label></div><div class="row-control"><div class="unit"><input id="h-mem" type="number" value="80"><span>%</span></div></div></div>
+            <div class="row"><div class="row-label"><label for="h-tmp">Component temperature</label></div><div class="row-control"><div class="unit"><input id="h-tmp" type="number" value="80"><span>°C</span></div></div></div>
+            <div class="row"><div class="row-label"><label for="h-sus">Sustained use</label><p>Flag only after a level is exceeded for this long in a day.</p></div><div class="row-control"><div class="unit"><input id="h-sus" type="number" value="60"><span>minutes per day</span></div></div></div>
+          </div>
+        </section>
+
+        <!-- ============ NOTIFICATIONS ============ -->
+        <section class="section" data-section="notifications" data-state="normal dirty error empty" aria-labelledby="h-not">
+          <div class="section-head">
+            <div><h2 id="h-not">Notifications</h2><p>Where findings are sent. Delivery turns on only after a successful test.</p></div>
+            <span class="pill tone-ok" data-state="normal dirty error"><svg><use href="#i-ccheck"/></svg>Delivering</span>
+            <span class="pill tone-neutral" data-state="empty"><svg><use href="#i-help"/></svg>Not set up</span>
+          </div>
+
+          <div class="card group">
+            <ol class="steps">
+              <li class="step done" data-state="normal dirty error"><span class="step-num"><svg><use href="#i-check"/></svg></span>
+                <div class="step-body">
+                  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h3>Destination</h3><button class="btn ghost sm" type="button" style="color:var(--link)">Change</button></div>
+                  <p>Telegram · chat ending 4417 · private details masked</p>
+                </div></li>
+              <li class="step" data-state="empty"><span class="step-num">1</span>
+                <div class="step-body">
+                  <h3>Choose a destination</h3>
+                  <div class="segmented" role="radiogroup" aria-label="Notification service">
+                    <label><input type="radio" name="svc" checked><span>Telegram</span></label>
+                    <label><input type="radio" name="svc"><span>HTTPS webhook</span></label>
+                  </div>
+                  <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+                    <div class="row-control"><label for="n-tok" style="font-weight:500">Bot token</label><input id="n-tok" type="text" placeholder="From BotFather"></div>
+                    <div class="row-control"><label for="n-chat" style="font-weight:500">Chat ID</label><input id="n-chat" type="text" placeholder="Numeric; groups may start with -"></div>
+                  </div>
+                  <label class="check"><input type="checkbox" checked>Mask hostnames, serials and private evidence in messages</label>
+                  <div><button class="btn sm" type="button">Save destination</button></div>
+                </div></li>
+              <li class="step" data-state="empty"><span class="step-num">2</span><div class="step-body"><h3 style="color:var(--text-secondary)">Send a test</h3><p>Available after the destination is saved.</p></div></li>
+              <li class="step" data-state="empty"><span class="step-num">3</span><div class="step-body"><h3 style="color:var(--text-secondary)">Turn on delivery</h3><p>Available after the receiver accepts a test.</p></div></li>
+              <li class="step done" data-state="normal dirty error"><span class="step-num"><svg><use href="#i-check"/></svg></span>
+                <div class="step-body"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h3>Test accepted</h3><button class="btn ghost sm" type="button" style="color:var(--link)">Send another</button></div><p>Telegram accepted a test on Oct 30. Accepted means received by Telegram, not read.</p></div></li>
+              <li class="step done" data-state="normal dirty error"><span class="step-num"><svg><use href="#i-check"/></svg></span>
+                <div class="step-body"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h3>Delivery on</h3><label class="check" style="align-items:center"><span class="switch"><input type="checkbox" checked aria-label="Delivery on"><span></span></span></label></div><p>Critical findings are always sent. Failed sends stop after five attempts.</p></div></li>
+            </ol>
+          </div>
+
+          <div class="card group" data-state="normal dirty error">
+            <div class="group-head"><div><h3>Quiet period</h3><p>Hold non-critical alerts during maintenance. Critical findings still go out.</p></div></div>
+            <div class="row"><div class="row-label"><label for="n-q">Hold non-critical until</label><p>In your display timezone (America/Phoenix).</p></div><div class="row-control"><input id="n-q" type="datetime-local"></div></div>
+          </div>
+
+          <div class="card group" data-state="normal dirty error">
+            <div class="group-head"><div><h3>Recent deliveries</h3></div></div>
+            <div class="history-wrap"><table class="history">
+              <thead><tr><th>Sent</th><th>Finding</th><th>Outcome</th></tr></thead>
+              <tbody>
+                <tr><td>Today 09:12</td><td>Self-test failed · sdd</td><td><span class="pill tone-ok"><svg><use href="#i-ccheck"/></svg>Accepted</span></td></tr>
+                <tr><td>Yesterday 22:40</td><td>Pool tank scrub finished</td><td><span class="pill tone-neutral"><svg><use href="#i-help"/></svg>Outcome unknown</span><br><small>The send was interrupted and may have arrived. Retrying could send it twice.</small></td></tr>
+                <tr><td>Oct 28 14:03</td><td>Backup NAS identity changed</td><td><span class="pill tone-bad"><svg><use href="#i-alert"/></svg>Failed after 5 attempts</span></td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </section>
+
+        <!-- ============ DATA & BACKUPS ============ -->
+        <section class="section" data-section="data" data-state="normal dirty error empty" aria-labelledby="h-data">
+          <div class="section-head"><div><h2 id="h-data">Data &amp; backups</h2><p>How long detailed history is kept, and backups of Homelab Control’s own data.</p></div></div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Monitoring history</h3></div></div>
+            <div class="row"><div class="row-label"><label for="d-hist">Keep detailed readings for</label><p>Older readings become daily summaries (ranges, peaks, counts) kept for two years. Manual evidence and incidents are never summarized.</p></div><div class="row-control"><div class="unit"><input id="d-hist" type="number" value="90"><span>days</span></div></div>
+              <details class="how" style="grid-column:1/-1"><summary>How cleanup works</summary><p>Cleanup runs hourly and makes a backup before removing details, even when daily backups are off. Without a working backup destination, cleanup waits and history keeps growing. Shortening the window applies at the next cleanup; lengthening it can’t bring back removed details.</p></details>
+            </div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Application backups</h3><p>Database snapshot with checksums. Includes encrypted credentials but not the keys to decrypt them.</p></div>
+              <button class="btn outline sm" type="button" data-state="normal dirty error"><svg><use href="#i-download"/></svg>Back up now</button></div>
+            <div class="row" data-state="normal dirty error"><div class="row-label"><span class="label">Destination</span><p>Set on the server with Homelab__BackupPath.</p></div><div class="row-control"><span style="font-family:ui-monospace,Menlo,monospace;font-size:13px;overflow-wrap:anywhere">/mnt/backups/homelab</span><span class="muted">Homelab Control can’t verify this is on separate hardware.</span></div></div>
+            <div class="row wide" data-state="empty" style="padding-top:16px">
+              <div class="callout tone-neutral"><svg><use href="#i-help"/></svg><div><strong>No backup destination configured</strong>Set <code>Homelab__BackupPath</code> on the server to a directory outside the live data directory, ideally on separate storage. Then restart Homelab Control.</div></div>
+            </div>
+            <div class="toggle-row"><div class="row-label"><label for="d-daily">Daily backups</label><p>Retries every five minutes after a failed attempt.</p></div><span class="switch"><input id="d-daily" type="checkbox" checked data-state-checked="normal dirty error"><span></span></span></div>
+            <div class="row"><div class="row-label"><span class="label">Keep</span></div><div class="row-control" style="grid-template-columns:1fr 1fr"><div class="unit"><input aria-label="Daily copies" type="number" value="7" style="max-width:80px"><span>daily</span></div><div class="unit"><input aria-label="Weekly copies" type="number" value="4" style="max-width:80px"><span>weekly</span></div></div></div>
+          </div>
+
+          <div class="card group">
+            <div class="group-head"><div><h3>Backup history</h3><p>Restoring clears integration credentials; you’ll re-enter API keys.</p></div></div>
+            <div class="history-wrap" data-state="normal dirty error"><table class="history">
+              <thead><tr><th>Created</th><th>File</th><th>Size</th><th>Result</th></tr></thead>
+              <tbody>
+                <tr><td>Today 03:00</td><td>homelab-20261102-0300.zip</td><td>18.4 MB</td><td><span class="pill tone-ok"><svg><use href="#i-ccheck"/></svg>Verified</span></td></tr>
+                <tr><td>Yesterday 03:05</td><td>homelab-20261101-0305.zip</td><td>18.3 MB</td><td><span class="pill tone-ok"><svg><use href="#i-ccheck"/></svg>Verified</span></td></tr>
+                <tr><td>Oct 27 03:00</td><td>homelab-20261027-0300.zip</td><td>18.1 MB</td><td><span class="pill tone-ok"><svg><use href="#i-ccheck"/></svg>Verified</span></td></tr>
+              </tbody>
+            </table></div>
+            <p class="empty-line" data-state="empty">No backups yet.</p>
+          </div>
+        </section>
+
+        <!-- ============ DISPLAY ============ -->
+        <section class="section" data-section="display" data-state="normal dirty error empty" aria-labelledby="h-disp">
+          <div class="section-head"><div><h2 id="h-disp">Display</h2><p>Theme applies right away in this browser. Timezone and units apply everywhere and save with the button below.</p></div></div>
+          <div class="card group">
+            <div class="row"><div class="row-label"><span class="label" id="l-theme">Theme</span><p>Saved in this browser only.</p></div>
+              <div class="row-control"><div class="segmented" role="radiogroup" aria-labelledby="l-theme">
+                <label><input type="radio" name="theme" checked><span><svg><use href="#i-monitor"/></svg>System</span></label>
+                <label><input type="radio" name="theme"><span><svg><use href="#i-sun"/></svg>Light</span></label>
+                <label><input type="radio" name="theme"><span><svg><use href="#i-moon"/></svg>Dark</span></label>
+              </div></div></div>
+            <div class="row"><div class="row-label"><label for="x-tz">Timezone</label><p>Used for every date and time shown.</p></div><div class="row-control"><select id="x-tz"><option>America/Phoenix (UTC−7)</option><option>America/Los_Angeles</option><option>UTC</option></select></div></div>
+            <div class="row"><div class="row-label"><span class="label" id="l-units">Capacity units</span></div>
+              <div class="row-control"><div class="segmented" role="radiogroup" aria-labelledby="l-units">
+                <label><input type="radio" name="units" checked><span>Binary (TiB)</span></label>
+                <label><input type="radio" name="units"><span>Decimal (TB)</span></label>
+              </div></div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const STATES = { normal: "Normal", dirty: "Unsaved changes", error: "Save failed", empty: "First run (nothing set up)", loading: "Loading", unavailable: "Unavailable" };
+    const params = new URLSearchParams(location.search);
+    const stateSelect = document.getElementById("mock-state");
+    const widthSelect = document.getElementById("mock-width");
+    const themeSelect = document.getElementById("mock-theme");
+    for (const [value, label] of Object.entries(STATES)) stateSelect.add(new Option(label, value));
+    let section = params.get("section") || "connections";
+
+    function apply(resetSection) {
+      const state = stateSelect.value;
+      if (resetSection) section = (state === "dirty" || state === "error") ? "monitoring" : section === "connection-detail" && state === "empty" ? "connections" : section;
+      document.querySelectorAll("#app [data-state]").forEach(el => { el.hidden = !el.dataset.state.split(" ").includes(state); });
+      const showSections = !["loading", "unavailable"].includes(state);
+      document.querySelectorAll("#app [data-section]").forEach(el => { if (!showSections || el.dataset.section !== section) el.hidden = true; });
+      const navTarget = section === "connection-detail" ? "connections" : section;
+      document.querySelectorAll(".subnav button").forEach(b => b.toggleAttribute("aria-current", b.dataset.go === navTarget) || b.removeAttribute("aria-current"));
+      document.querySelectorAll(".subnav button").forEach(b => { if (b.dataset.go === navTarget) b.setAttribute("aria-current", "page"); });
+      document.querySelectorAll("[data-state-checked]").forEach(el => { el.checked = el.dataset.stateChecked.split(" ").includes(state); });
+      const ev = document.getElementById("m-ev");
+      ev.value = state === "dirty" ? "60" : state === "error" ? "10" : "90";
+      document.querySelector("[data-error-field]").classList.toggle("field-error", state === "error");
+      ev.toggleAttribute("aria-invalid", state === "error");
+      document.querySelectorAll(".subnav button").forEach(b => b.disabled = state === "loading");
+      document.documentElement.dataset.width = widthSelect.value;
+      document.documentElement.dataset.theme = themeSelect.value;
+      try { history.replaceState(null, "", "?" + new URLSearchParams({ state, width: widthSelect.value, theme: themeSelect.value, section })); } catch { }
+    }
+    document.addEventListener("click", e => {
+      const go = e.target.closest("[data-go]");
+      if (go) { section = go.dataset.go; apply(false); window.scrollTo({ top: 0 }); }
+      if (e.target.closest("[data-manage]")) { section = "connection-detail"; apply(false); window.scrollTo({ top: 0 }); }
+    });
+    stateSelect.value = STATES[params.get("state")] ? params.get("state") : "normal";
+    widthSelect.value = params.get("width") || "desktop";
+    themeSelect.value = params.get("theme") === "dark" ? "dark" : "light";
+    stateSelect.addEventListener("change", () => apply(true));
+    [widthSelect, themeSelect].forEach(el => el.addEventListener("change", () => apply(false)));
+    apply(!params.get("section"));
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "destination": { "configured": true, "path": "/mnt/backups/homelab" },
+  "backups": [
+    { "id": "b3", "createdUtc": "2026-11-02T10:00:00Z", "fileName": "homelab-20261102-0300.zip", "sizeBytes": 18400000, "status": "verified" },
+    { "id": "b2", "createdUtc": "2026-11-01T10:05:00Z", "fileName": "homelab-20261101-0305.zip", "sizeBytes": 18300000, "status": "verified" },
+    { "id": "b1", "createdUtc": "2026-10-27T10:00:00Z", "fileName": "homelab-20261027-0300.zip", "sizeBytes": 18100000, "status": "verified" }
+  ]
+}
