@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api-disposable",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Api/Homelab.Api", "--no-build", "--no-launch-profile", "--urls", "http://127.0.0.1:5098"],
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Homelab__DataPath": "/private/tmp/claude-501/-Users-jstafford--claude-spares-spare-ItrLYv/2f32325d-5eb3-4b0a-90e7-7ac8b7e7adf2/scratchpad/apidata",
+        "Homelab__SetupToken": "browser-test-setup-only"
+      },
+      "port": 5098
+    },
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "src/Web", "run", "dev", "--", "--port", "5174", "--strictPort", "--host", "127.0.0.1"],
+      "env": { "API_URL": "http://127.0.0.1:5098" },
+      "port": 5174
+    },
+    {
+      "name": "gallery",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "gallery"],
+      "port": 4178
+    }
+  ]
+}

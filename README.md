@@ -2,32 +2,198 @@
 
 React + TypeScript + shadcn/ui, hosted by ASP.NET Core 10 and orchestrated with Aspire 13.6.4.
 
-## Development
+## Deploy from GitHub with Coolify
 
-Requires .NET 10 and Node.js 24 or later. Install frontend dependencies with `npm ci` in `src/Web`.
-Set `Homelab__SetupToken` to a strong temporary secret in your environment, then run:
+1. In Coolify, create an **Application** from the GitHub repository and select the **Docker Compose** build pack. Select your branch, use the repository root as the base directory, and set **Docker Compose Location** to `/compose.coolify.yaml`. Load the Compose file and use Coolify's managed deployment mode.
+2. In **Domains**, assign an HTTPS domain to the `homelab` service. Enter `https://homelab.example.com:8080`, replacing the hostname with yours. The suffix selects the container port. Open the deployed app at `https://homelab.example.com`. Point the hostname at your Coolify proxy and let it issue the public TLS certificate. [Coolify Compose and domains](https://coolify.io/docs/applications/builds/docker-compose)
+3. In **Environment Variables**, set the following runtime values. Store the token, PFX and password as secrets.
+
+   | Variable | Value |
+   | --- | --- |
+   | `HOMELAB_SETUP_TOKEN` | A strong random token for creating the first owner. Generate one with `openssl rand -hex 32`. |
+   | `HOMELAB_KEY_CERTIFICATE_BASE64` | A single-line Base64 encoding of the password-protected credential-encryption PFX. |
+   | `HOMELAB_KEY_CERTIFICATE_PASSWORD` | The password used to export that PFX. |
+   | `HOMELAB_TRUSTED_PROXY` | The Coolify proxy's IP address on the Docker network shared with this app, or that network's CIDR if every attached peer is trusted. |
+
+   Create the credential-encryption PFX once on your workstation, in a private working directory. Use a strong PFX password such as one generated with `openssl rand -hex 32`. Paste the final command's output into the Base64 variable and keep the matching password.
+
+   ```sh
+   umask 077
+   openssl req -x509 -newkey rsa:3072 -nodes -days 3650 -subj "/CN=Homelab credential protection" -keyout homelab-key.pem -out homelab-key.crt
+   openssl pkcs12 -export -inkey homelab-key.pem -in homelab-key.crt -out homelab-key.pfx
+   openssl base64 -A -in homelab-key.pfx
+   ```
+
+   The app accepts HTTPS forwarding headers from the configured proxy address or network. If the app network is created on the first deployment, deploy with this variable blank, then find the shared network and proxy address on the Coolify Docker host:
+
+   ```sh
+   docker inspect coolify-proxy --format '{{range $name, $net := .NetworkSettings.Networks}}{{println $name $net.IPAddress}}{{end}}'
+   ```
+
+   Use the entry for the network shared with the Homelab container, set the variable, and redeploy. Use a trusted network CIDR if the proxy IP changes on recreation. The API requires HTTPS and will reject requests through an unconfigured proxy. [ASP.NET Core proxy configuration](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-10.0)
+
+4. Select **Deploy**. Coolify builds the image and creates named volumes for `/data` and `/backups`. Open the HTTPS domain and create the owner using the setup token. Remove the token variable and redeploy after setup. Add the NAS in **Settings** using its API endpoint and certificate trust details.
+
+Redeploy the same Coolify application to keep its volumes. Preserve the PFX and password across deployments so the app can reopen its encrypted key ring. The backup volume starts on the Docker host. Copy backup archives to independent storage for recovery from host loss. For startup errors, check Coolify's **Deployment Logs** and **Runtime Logs**. If the page loads but API calls say HTTPS is required, check the domain's HTTPS configuration and the proxy address on the shared Docker network.
+
+## Local Docker Compose setup
+
+The included [compose.yaml](compose.yaml) builds one container that serves both the web interface and API. It uses SQLite; no separate database, Node.js installation, .NET installation or Aspire dashboard is needed on the Docker host.
+
+### Requirements
+
+- Docker Engine with the `docker compose` plugin, or Docker Desktop configured for Linux containers. Check `docker version` and `docker compose version` before starting.
+- Python 3 and OpenSSL on the host, plus `curl` for the readiness check. The preparation script needs an OpenSSL build supporting `req -addext` and `pkcs12 -export`.
+- A regular, non-root Linux/macOS user with Docker access. On Windows, run the preparation commands inside WSL2 with Docker integration enabled; the script uses Unix user/group IDs and file permissions.
+
+Run all commands below from the **repository root**. Run preparation as the same user who will manage the deployment, without `sudo`.
+
+### First start
+
+1. Prepare the local folders, certificates and setup token:
+
+   ```sh
+   python3 scripts/prepare-local-deployment.py
+   ```
+
+   This creates `.env`, `data/`, `backups/` and `secrets/`. `.env` records your `HOMELAB_UID` and `HOMELAB_GID` so the container can read its secret files and write its data as your user. The script refuses to run if `.env` or `secrets/` already exists. Do not create `.env` first, rerun preparation for upgrades, or delete existing secrets to get past this check.
+
+2. Optionally change the host port by adding `HOMELAB_HTTPS_PORT=9443` to the generated `.env`. The default is **8443**. Leave the generated UID/GID values intact unless you are deliberately changing file ownership.
+
+3. Validate the configuration, build and start:
+
+   ```sh
+   docker compose config --quiet
+   docker compose up -d --build
+   docker compose ps
+   ```
+
+   The first build downloads the Node/.NET build images and dependencies, builds the frontend, and publishes the API. The final container runs the combined application in Production mode. Subsequent builds can reuse Docker's cache.
+
+4. Check the generated certificate's fingerprint, then check readiness using that certificate:
+
+   ```sh
+   openssl x509 -in secrets/tls.crt -noout -sha256 -fingerprint
+   curl --cacert secrets/tls.crt https://localhost:8443/health/ready
+   ```
+
+   Readiness returns `{"status":"ready"}` after startup and database migrations finish. Substitute your chosen port if it is not 8443. Open **https://localhost:8443** in your browser. The generated certificate is self-signed: inspect its fingerprint and trust that specific local certificate before entering credentials. The public certificate is `secrets/tls.crt`; never import or share the PFX/password files as browser trust certificates. The default port is bound to **127.0.0.1**, so it is reachable only from the Docker host.
+
+5. Read the temporary setup token locally:
+
+   ```sh
+   cat secrets/setup-token
+   ```
+
+   Use it on the setup screen to create the owner username and password. The setup token is not your sign-in password. After successful account creation, clear the token's contents while keeping the file in place for the Compose secret mount:
+
+   ```sh
+   : > secrets/setup-token
+   ```
+
+   Future sign-ins use the owner account. Do not delete the token file while `compose.yaml` still references it. An existing owner prevents setup from being run again.
+
+6. In **Settings**, add your NAS using its logical `wss://nas.example/websocket` address, API key and public certificate trust material. The container must be able to resolve and reach the NAS. See [Connections](#connections) for TLS and tunnel details. Optional dataset, cached-temperature and power-on-hours reads are enabled separately in Settings; saving a connection does not enable every optional collector.
+
+### Persistent files
+
+| Host path | Container location | Purpose |
+| --- | --- | --- |
+| `data/` | `/data` | SQLite database, key ring in `data/keys`, and pre-migration database backups |
+| `backups/` | `/backups` | Application backup ZIP files when backups are configured/enabled in Settings |
+| `secrets/key-encryption.pfx` and `secrets/key-encryption.password` | `/run/secrets/key_certificate` and `/run/secrets/key_password` | Encrypt/decrypt the persisted credential-protection key ring |
+| `secrets/tls.pfx` and `secrets/tls.password` | `/run/secrets/tls_certificate` and `/run/secrets/tls_password` | Serve HTTPS |
+| `secrets/setup-token` | `/run/secrets/setup_token` | Initial owner enrollment; may be empty after setup |
+| `.env` | Used by Compose on the host | Host UID/GID and optional published HTTPS port |
+
+The certificates serve different purposes: replacing the HTTPS certificate does not require replacing the key-encryption certificate. The generated HTTPS certificate lasts one year; the generated key-encryption certificate lasts ten years. Keep the key ring and its matching key-encryption PFX/password available across container rebuilds. Follow [Production deployment security](#production-deployment-security) for certificate rotation.
+
+These are host bind mounts, so replacing the container preserves the folders. Keep their paths and ownership consistent when moving the checkout or host. Compose uses **root `data/`**; development normally uses **`src/Api/Homelab.Api/data/`**. Starting Compose does not automatically migrate a development database or its keys. Use the [backup/restore procedure](#application-backups-and-restore) when moving an existing installation; do not run two app instances against one database.
+
+The default `backups/` directory is on the same host. For independent backups, replace its volume source in `compose.yaml` with your mounted backup destination, for example `/mnt/independent/homelab-backups:/backups`, and give the configured UID/GID write access. Then configure retention and enable backups in Settings.
+
+### Access from another computer
+
+The supplied Compose file and generated certificate are for host-local HTTPS. To serve your LAN hostname:
+
+1. Supply a TLS PFX whose certificate covers that hostname, with its password in the configured secret file. Replace the TLS files only; retain the credential-encryption files and key ring.
+2. Change the published address in `compose.yaml` from `127.0.0.1` to the intended host LAN interface, and allow the chosen port through that host's firewall.
+3. Recreate the container with `docker compose up -d --force-recreate homelab` to reload the mounted certificate, then use `https://your-hostname:PORT` from clients that trust its certificate.
+
+`localhost` on another computer refers to that computer. A reverse proxy also needs a valid HTTPS connection to the app: the production API rejects plain HTTP requests. Keep the production settings rather than switching the container to Development to work around a certificate or networking problem.
+
+### Updates and routine commands
+
+Create an application backup before upgrading. Update your checkout to the desired revision, preserve `.env`, `data/`, `backups/` and `secrets/`, then run:
 
 ```sh
+docker compose up -d --build
+docker compose logs --tail=100 homelab
+```
+
+Startup backs up an existing database before applying pending migrations. A rollback needs the matching application version and database backup; an older image alone cannot undo a schema upgrade.
+
+```sh
+docker compose logs -f --tail=100 homelab
+docker compose stop homelab
+docker compose start homelab
+```
+
+Use `docker compose up -d` after changing Compose settings, ports or environment variables; `docker compose restart` alone does not apply a new container configuration. The source checkout defines the image, so rebuilding with `--build` is needed after application changes. Refer to [Docker's Compose command reference](https://docs.docker.com/reference/cli/docker/compose/up/) and [file-based secret documentation](https://docs.docker.com/compose/how-tos/use-secrets/) for those lifecycle and mount semantics.
+
+### Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Compose says `HOMELAB_UID` or `HOMELAB_GID` is missing | Run preparation once from the checkout, then run Compose from the repository root so it reads the generated `.env`. |
+| Preparation refuses existing `.env` or `secrets/` | Reuse a complete existing deployment. If an earlier preparation failed, inspect and preserve its files before repairing it; the script intentionally does not overwrite them. |
+| Container cannot read a secret or write `/data`/`/backups` | Check host ownership and permissions against `.env`. File-based Compose secrets retain host-file access restrictions. Avoid opening permissions broadly or running the service as root. |
+| Browser reports a certificate error | Check the TLS certificate's hostname, fingerprint, validity and client trust. The generated certificate covers only `localhost` and `127.0.0.1`. |
+| Container starts but readiness fails | Inspect `docker compose logs --tail=100 homelab` for certificate loading, volume access or database upgrade errors. Preserve migration backups before investigating a schema problem. |
+| Connection cannot reach the NAS or a host-owned tunnel | Test the NAS hostname's Docker DNS/network reachability. Inside the container, `localhost` is the container. For a host-owned tunnel use a reachable host endpoint such as the provided `host.docker.internal` mapping; the tunnel must listen on an interface reachable from Docker. TLS still validates the logical NAS hostname. |
+| Compose shows an empty inventory after using development | The two modes use different data directories. Move an existing installation through the backup/restore workflow. |
+
+The base Compose file does not configure optional SSH SMART access. That reader additionally needs an OpenSSH client in its image, restricted key/known-host mounts, and the NAS-side restrictions described in [SMART SSH setup](docs/SMART_SSH_SETUP.md). Development-only feature settings are not automatically enabled in Production; configure optional features explicitly for the deployment.
+
+## Development
+
+Requires .NET 10, Node.js 24 or later, and OpenSSL for the temporary-token command below. From the repository root:
+
+```sh
+npm run install:web
+dotnet dev-certs https --trust
+umask 077
+openssl rand -hex 32 > owner-setup-token.txt
+export Homelab__SetupTokenFile="$PWD/owner-setup-token.txt"
 npm run dev:aspire
 ```
 
-Open the web resource from the Aspire dashboard. Create the owner account using the setup token; remove the token after setup. You can instead set `Homelab__SetupTokenFile` to an absolute path containing a strong temporary token; restrict that file to your user. The default profile uses an HTTPS dashboard. The optional `--launch-profile http` profile explicitly permits unsecured Aspire transport for local development only; production HTTPS requirements remain unchanged. Aspire supplies the backend endpoint to Vite. The API persists local state under its `data` directory. Do not commit data or keys.
+Open **http://localhost:26264** for the UI and the dashboard address printed by Aspire for resource status/logs. Read `owner-setup-token.txt` locally and use it to create the owner account. After setup, clear the token file; it is ignored by Git. The default dashboard is HTTPS. For an HTTP dashboard, run `dotnet run --project src/Api/Homelab.AppHost --launch-profile http` instead. This AppHost profile explicitly permits unsecured Aspire transport for local development only; production HTTPS requirements remain unchanged. Aspire supplies the backend endpoint to Vite. The API persists state under `src/Api/Homelab.Api/data` by default. Do not commit data or keys. See [Stable development addresses](#stable-development-addresses) for port overrides and the distinction between fixed exposed addresses and internal process ports.
 
-For standalone hosting, build the frontend with `npm run build` in `src/Web`, then publish `src/Api/Homelab.Api`. Frontend output is written to `src/Web/dist`; the API build copies it into its generated `wwwroot`.
+For standalone hosting, build and publish in this order:
+
+```sh
+npm run build:web
+dotnet publish src/Api/Homelab.Api -c Release -o artifacts/publish
+```
+
+Frontend output is written to `src/Web/dist`; the API build copies it into its generated `wwwroot`. Publishing creates the deployable files; a production launch still requires persistent data paths, HTTPS and the [credential-protection certificate configuration](#production-deployment-security).
 
 ## Connections
 
 Use a logical `wss://nas.example/websocket` address. For an externally managed SSH tunnel, additionally supply the TCP connection host and forwarded port. TLS still validates the logical NAS hostname. Use OS certificate trust or paste the NAS public CA/self-signed certificate during enrollment (or later in Settings → Manage connection). Both modes validate the logical hostname; no insecure certificate bypass exists. A Docker container's localhost refers to the container; use an explicitly reachable host endpoint for host-owned tunnels.
 
-Only TrueNAS 24.10 is currently targeted. The installed patch must be checked against its own API docs and sanitized contract fixtures before claiming compatibility. No live NAS has been tested. The collector explicitly labels incomplete SMART/recovery coverage.
+The NAS adapter accepts the TrueNAS 24.10 patch family; other releases are paused as unsupported. The current installed target is 24.10.2.4, with its bounded source comparison documented in [the NAS read manifest](docs/NAS_READ_MANIFEST.md). Validate the installed patch and credential permissions before relying on a deployment. The collector keeps incomplete SMART/recovery coverage explicit; local use and synthetic tests do not complete the independent-host restore or reference-host pilot release gates.
 
 ## Verification
 
+From the repository root after installing frontend dependencies. For the first browser run, install Chromium as described in [Browser checks](#browser-checks).
+
 ```sh
-dotnet test src/Api/Homelab.sln
-cd src/Web
 npm run build
+npm test
 npm run lint
+npm run test:web
 ```
 
 ## Current implementation status
@@ -58,13 +224,13 @@ Archives contain a consistent SQLite snapshot and a checksum/migration manifest.
 python3 scripts/restore-backup.py /independent/backups/homelab-....zip /new-host/homelab-data
 ```
 
-The destination must not already exist. Start the application with that path as `Homelab__DataPath`, sign in with the original owner account, review history, configure a new backup destination, and rotate/re-enroll each NAS credential before collecting. Use Settings → Edit connection → Rotate credential & resume. API clients must first read `/api/v1/connections`, then send an authenticated `PUT /api/v1/connections/{id}/credentials` with `{ "apiKey": "...", "configurationRevision": "the-current-revision" }` and the required `X-Homelab-Request: 1` header. A stale or omitted revision returns 409 without changing the key or enabling collection.
+The destination must not already exist. For standalone hosting, start the application with that path as `Homelab__DataPath`. For Compose, use the restored directory as the host source of the `/data` bind mount and keep `Homelab__DataPath=/data` inside the container. Sign in with the original owner account, review history, configure a new backup destination, and rotate/re-enroll each NAS credential before collecting. Use Settings → Edit connection → Rotate credential & resume. API clients must first read `/api/v1/connections`, then send an authenticated `PUT /api/v1/connections/{id}/credentials` with `{ "apiKey": "...", "configurationRevision": "the-current-revision" }` and the required `X-Homelab-Request: 1` header. A stale or omitted revision returns 409 without changing the key or enabling collection.
 
 A same-machine isolated-directory restore is automated in the test suite. A real independent-host restore and measured RPO/RTO still require an operator exercise; the proposed targets remain 24-hour RPO and four-hour RTO.
 
 ## NAS safety contract
 
-The NAS integration is monitor-and-advise only. Its immutable, exact-match read allowlist is enforced both at the collector entry point and before RPC transmission. Authentication is the sole additional RPC used to establish a session. There is no shell execution or maintenance command interface. Scrubs, SMART self-tests, disk offline/replace/wipe, error clearing, configuration changes, permission changes, upgrades and reboots are prohibited. Local notes, planning, recovery records and finding acknowledgments affect only this application's database. Acknowledgment never dismisses a native TrueNAS alert.
+The NAS integration is monitor-and-advise only. Its fixed read methods and arguments are enforced both at the collector entry point and before RPC transmission. Authentication establishes the session. A separately enabled, typed ATA SMART-attribute read obtains power-on hours and can wake sleeping drives; it cannot start tests or accept arbitrary command arguments. The WebSocket integration has no shell or maintenance interface. An optional, default-off SMART reader adds a separate restricted SSH channel with exactly two read-only commands, enforced by a forced server-side wrapper and narrow sudo permissions; see [SMART SSH setup](docs/SMART_SSH_SETUP.md). It never starts tests or retries without the standby guard. Scrubs, SMART self-tests, disk offline/replace/wipe, error clearing, configuration changes, permission changes, upgrades and reboots are prohibited. Local notes, planning, recovery records and finding acknowledgments affect only this application's database. Acknowledgment never dismisses a native TrueNAS alert.
 
 Use the narrowest NAS-side account/key permissions supported and validated for the installed release. Legacy credentials may have broader server-side authority; application enforcement remains necessary and must not be described as proof that the credential itself is read-only. No production NAS permission audit has been performed yet.
 
@@ -86,9 +252,9 @@ Download the inventory JSON from the Inventory page for use while the NAS or app
 
 ## Production deployment security
 
-Production requires HTTPS for API access and an external certificate to encrypt the Data Protection key ring. `Homelab__KeyCertificatePath` points to a password-protected PFX, with `Homelab__KeyCertificatePasswordFile` stored outside the database/key directory. `Homelab__KeyRingPath` can relocate the encrypted key ring. Keep the certificate and password in separate secure custody from backups. Development mode permits an unencrypted development key ring; never reuse it for production credentials.
+Production requires HTTPS for API access and a certificate to encrypt the Data Protection key ring. For Coolify, supply the PFX as `Homelab__KeyCertificateBase64` and its password as `Homelab__KeyCertificatePassword` through the Compose runtime variables above. `Homelab__KeyCertificatePath` points to a password-protected PFX, with `Homelab__KeyCertificatePasswordFile` stored outside the database/key directory. `Homelab__KeyRingPath` can relocate the encrypted key ring. Keep the certificate and password in separate secure custody from backups. Development mode permits an unencrypted development key ring; never reuse it for production credentials.
 
-For a local Compose deployment, run `python3 scripts/prepare-local-deployment.py`, then `docker compose up --build`. The preparation command creates private files without overwriting existing secrets and records the host UID/GID so the non-root container can access its volumes. Open `https://localhost:8443` (set `HOMELAB_HTTPS_PORT` in `.env` to change the loopback host port). The generated TLS certificate is for local use only; inspect and trust its certificate before entering credentials. For access from other computers, use a certificate for the intended hostname. The included backup directory is initially local and must be moved/mounted to independent storage before relying on recovery targets.
+Use the [Local Docker Compose setup](#local-docker-compose-setup) above for first-run commands, persistent folders, local/LAN TLS, upgrades and troubleshooting. Compose mounts certificates and passwords as files; it does not put their contents into image layers or the Compose environment.
 
 Rotate the key-encryption certificate by preserving the previous PFX/password in secure custody, installing the new PFX, and setting `Homelab__PreviousKeyCertificates__0` to the prior PFX during transition. Previous certificates currently use the configured key-certificate password; rewrap them to the same transition password offline if needed. Retain old decryptors until all encrypted records/backups that require them have expired or been securely re-enrolled. Never delete the old key ring casually. Setup tokens may be provided via `Homelab__SetupTokenFile` and removed after account creation.
 
@@ -183,7 +349,7 @@ Settings → **Read existing NAS temperature cache** enables `disk.temperatures`
 
 Storage → NAS → **View cached temperatures** shows the last normalized cache, its fetch time, API availability, and unknown/missing entries. Names are reported device labels, not verified physical-drive matches. The source omits observation timestamps, so these readings never enter physical-drive trends, finding-resolution rules or replacement advice. A successful empty response replaces the prior cache with an explicit empty state; a denied/malformed read preserves the old snapshot and marks the capability accordingly. Only the latest bounded snapshot is stored, so this feature adds no unbounded telemetry history. Turning it off stops future cache reads and retains the last saved evidence.
 
-The [read manifest and source review](docs/NAS_READ_MANIFEST.md) document the pinned TrueNAS 24.10.2 contract, exact arguments, prohibited alternatives and live-validation gates. The source cache-only branch does not issue fresh drive queries; the SMART attribute API does and is deliberately excluded. No live NAS or power-state validation has been performed.
+The [read manifest and source review](docs/NAS_READ_MANIFEST.md) document the pinned TrueNAS 24.10.2 contract, exact arguments, prohibited alternatives and live-validation gates. The source cache-only branch does not issue fresh drive queries and does not populate the cache. The separate **Read power-on hours through the TrueNAS API** option performs active ATA attribute reads every six hours and offers **Run now**; those reads can wake sleeping drives. Unsupported types, denied reads and unknown counters remain explicit. The restricted SSH reader is a different optional setup; installed-hardware power-state behavior still needs operator verification.
 
 ### Updating a replacement or review plan
 
@@ -641,3 +807,7 @@ Build the application image with `docker build -f src/Api/Homelab.Api/Dockerfile
 ### Stable development addresses
 
 `npm run dev:aspire` explicitly selects the HTTPS AppHost profile. Default addresses are UI `http://localhost:26264`, Aspire dashboard `https://localhost:17247` (HTTP listener `http://localhost:15037`), API HTTP `http://localhost:5253` and API HTTPS `https://localhost:7213`. The UI port can be overridden with `Web__Port`. These exposed ports remain fixed across starts; a conflicting listener must be stopped rather than expecting an alternative port. Aspire can assign different internal process ports, and the dashboard login token can change between runs. Use the dashboard URL printed during startup to authenticate.
+
+### Complete storage inventory CSV
+
+Storage’s **Export CSV** button downloads all retained storage inventory and storage evidence for every NAS server, with stable IDs, exact record values, schema metadata and integrity checks. [Format and offline restore instructions](docs/STORAGE_CSV_EXPORT.md) describe restoring the CSV into a new application data directory. Integration credentials and owner accounts are excluded, and restored collectors start disabled. NAS pool configuration and files are outside this application-inventory export.

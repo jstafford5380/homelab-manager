@@ -13,6 +13,7 @@ RUN dotnet publish src/Api/Homelab.Api -c Release -o /out
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /out .
+RUN mkdir -p /data /backups && chown app:app /data /backups
 USER app
 ENV ASPNETCORE_URLS=https://+:8443
 ENV Homelab__DataPath=/data

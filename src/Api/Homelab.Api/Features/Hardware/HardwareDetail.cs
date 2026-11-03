@@ -1,0 +1,2 @@
+namespace Homelab.Api;
+public record HardwareDetail(HardwareServerView Server, HardwareCoverage Coverage, HardwareMetric Cpu, HardwareMetric Memory, HardwareMetric Temperature, HardwareMetric Power, double? TotalBytes, HardwareComponentView[] Components, HardwareReading[] Readings, double CpuLevel, double MemoryLevel, double TemperatureLevel, int SustainedMinutes, HardwareComponentView[]? RetiredComponents = null);

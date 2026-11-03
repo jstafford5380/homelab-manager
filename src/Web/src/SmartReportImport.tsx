@@ -143,12 +143,16 @@ function ReportDetails({ report }: { report: Preview }) {
 export function SmartReportImport({
   disk,
   onImported,
+  initiallyOpen = false,
+  onClose,
 }: {
   disk: { id: string; serial: string; model: string };
   onImported: () => Promise<void>;
+  initiallyOpen?: boolean;
+  onClose?: () => void;
 }) {
   const { time } = useDisplayFormat();
-  const [open, setOpen] = useState(false),
+  const [open, setOpen] = useState(initiallyOpen),
     [json, setJson] = useState(""),
     [continuity, setContinuity] = useState("");
   const [ataConfirmed, setAtaConfirmed] = useState(false),
@@ -256,7 +260,7 @@ export function SmartReportImport({
   }
   return (
     <div style={{ margin: "20px 0" }}>
-      <Button
+      {!initiallyOpen && <Button
         variant="outline"
         onClick={() => {
           setJson("");
@@ -268,7 +272,7 @@ export function SmartReportImport({
         }}
       >
         Import existing SMART report
-      </Button>
+      </Button>}
       {message && (
         <p role="status" className="muted">
           {message}
@@ -277,7 +281,7 @@ export function SmartReportImport({
       <Dialog
         open={open}
         onOpenChange={(value) => {
-          if (!busy) setOpen(value);
+          if (!busy) { setOpen(value); if (!value) onClose?.(); }
         }}
       >
         <DialogContent

@@ -40,6 +40,8 @@ def restore(archive, destination):
             # New host has a new key ring. Require explicit credential re-enrollment before collection.
             db.execute("UPDATE Connections SET ProtectedApiKey='', Enabled=0, Status='Restored — re-enroll credentials before enabling'")
             db.execute("UPDATE Settings SET BackupsEnabled=0")
+            if db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name='HardwareServers'").fetchone()[0]:
+                db.execute("UPDATE HardwareServers SET ProtectedCommunity=NULL, Connected=0, NextAttemptUtc=NULL WHERE Platform='synology'")
             if db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name='NotificationChannels'").fetchone()[0]:
                 db.execute("UPDATE NotificationChannels SET Enabled=0, TestedUtc=NULL, ProtectedUrl=''")
                 db.execute("UPDATE Deliveries SET Status='cancelled-after-restore' WHERE Status='pending'")

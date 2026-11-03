@@ -22,6 +22,7 @@ public sealed class BackupTests
             db.Plans.Add(new() { Title = "Spare purchase", Budget = 250 });
             db.Settings.Add(new() { BackupsEnabled = true });
             db.Connections.Add(new() { Name = "NAS", ProtectedApiKey = "encrypted-reference", Enabled = true });
+            db.HardwareServers.Add(new() { Name = "Synology", Platform = "synology", ProtectedCommunity = "encrypted-snmp-reference", Connected = true });
             await db.SaveChangesAsync();
             var service = new BackupService(config);
             var record = await service.CreateAsync(db, CancellationToken.None);
@@ -47,6 +48,8 @@ public sealed class BackupTests
             Assert.False((await restoreDb.Connections.SingleAsync()).Enabled);
             Assert.Equal("", (await restoreDb.Connections.SingleAsync()).ProtectedApiKey);
             Assert.False((await restoreDb.Settings.SingleAsync()).BackupsEnabled);
+            var synology = await restoreDb.HardwareServers.SingleAsync();
+            Assert.False(synology.Connected); Assert.Null(synology.ProtectedCommunity);
         } finally { Directory.Delete(root, true); }
     }
     [Fact] public async Task BackupRejectsDestinationInsideLiveData()

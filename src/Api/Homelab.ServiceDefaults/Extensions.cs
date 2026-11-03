@@ -46,10 +46,19 @@ public static class Extensions
 
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        builder.Logging.AddSimpleConsole(console =>
+        {
+            console.IncludeScopes = true;
+            console.SingleLine = true;
+            console.UseUtcTimestamp = true;
+            console.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ ";
+        });
+
         builder.Logging.AddOpenTelemetry(logging =>
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
+            logging.ParseStateValues = true;
         });
 
         builder.Services.AddOpenTelemetry()

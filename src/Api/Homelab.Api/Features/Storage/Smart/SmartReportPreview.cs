@@ -1,0 +1,3 @@
+
+namespace Homelab.Api;
+public record SmartReportPreview(string ReportHash, string Protocol, string ToolVersion, string Serial, string Model, DateTime? ObservedUtc, int ExitStatus, bool AtaCounterUnitsConfirmed, string ContinuityGroup, string SourceSchema, ReportReading[] Readings, AtaReportAttribute[] Attributes, string[] Warnings, string? LegacyReportHash = null, string? PreviousReportHash = null, OverallSmartResult? OverallSmart = null, string? BeforeOverallReportHash = null, string? ScsiV1ReportHash = null, ReportDeviceInfo? DeviceInfo = null, string? BeforeDeviceInfoHash = null, AtaSelfTestLog[]? AtaSelfTests = null, string? BeforeSelfTestsHash = null);

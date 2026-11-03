@@ -2,7 +2,7 @@
 
 Owner-reported installed target: **TrueNAS 24.10.2.4**. The application release guard accepts this patch family. The official `TS-24.10.2.4` tag resolves to `dee0b599f18b9d158bd0eef9ca8276b954bf941f`. Ten selected files covering the fixed read implementations, dataset projection, authentication, WebSocket dispatcher and disk event registration are byte-for-byte identical to the reviewed 24.10.2 baseline. [The source-comparison record](truenas-24.10.2.4-source-comparison.json) includes immutable source links and SHA-256 hashes. This is a bounded source comparison, not a complete dependency audit or live API/permission validation.
 
-This application is monitor-and-advise only. `TrueNasClient.ReadMethods` is a frozen exact-match allowlist, checked at the public reader and immediately before WebSocket transmission. Read arguments are fixed in code and verified again at the RPC boundary. There is no configurable method, shell command, arbitrary parameter, test, scrub, repair or drive-control surface.
+This application is monitor-and-advise only. `TrueNasClient.ReadMethods` is a frozen exact-match allowlist, checked at the public reader and immediately before WebSocket transmission. Read arguments are fixed in code and verified again at the RPC boundary. There is no configurable API method, arbitrary RPC parameter, test, scrub, repair or drive-control surface. A separate optional restricted SSH SMART reader adds a narrow command channel and is off by default; see below.
 
 | Method | Fixed arguments | Purpose |
 | --- | --- | --- |
@@ -11,9 +11,10 @@ This application is monitor-and-advise only. `TrueNasClient.ReadMethods` is a fr
 | `pool.query` | `[]` | Pool state, curated topology and capacity/scan snapshots |
 | `alert.list` | `[]` | Native alert evidence; no acknowledgment sent to the NAS |
 | `pool.dataset.query` | Fixed bounded projection below | Optional dataset usage; off by default |
+| `disk.smart_attributes` | `[inventoryDeviceName]` only, no options | Optional ATA power-on hours every six hours; off by default; may wake drives |
 | `disk.temperatures` | `[[], {"only_cached": true}]` | Optional existing temperature cache; off by default |
 
-`auth.login_with_api_key` is the sole extra RPC, used to establish a session. TLS validates the logical endpoint hostname even through an externally managed tunnel. Version/identity guards run before the storage reads. API keys are not logged or returned by application APIs.
+`auth.login_with_api_key` establishes a session. A separate typed `ReadSmartAttributesAsync` method now permits `disk.smart_attributes` with exactly one validated inventory device name; it cannot be invoked through the generic reader. TLS validates the logical endpoint hostname even through an externally managed tunnel. Version/identity guards run before the storage reads. API keys are not logged or returned by application APIs.
 
 ## Cache-only temperature contract
 
@@ -21,7 +22,7 @@ The reviewed reference is TrueNAS middleware commit `ab87b14d2e721ec6fe6f917be02
 
 The wire-level TLS/WebSocket test verifies those arguments, and a private-boundary regression test rejects missing arguments, `only_cached=false`, extra power-mode options and caller-selected device lists. Read-method tests reject `disk.smart_attributes`, `disk.smartctl`, `disk.temperature` and SMART test methods before network use.
 
-This distinction matters: the reference [disk_/smart_attributes.py](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/disk_/smart_attributes.py) invokes `disk.smartctl` with `-A -j`; it is not a cache-only read and does not expose a no-wake option. It remains excluded. The generic/private `disk.smartctl` surface accepts command arguments and also remains excluded. Do not broaden the manifest to obtain metrics without reviewing side effects and argument restrictions.
+This distinction matters: the reference [disk_/smart_attributes.py](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/disk_/smart_attributes.py) invokes `disk.smartctl` with `-A -j`; it is not a cache-only read and does not expose a no-wake option. It is now explicitly authorized only through the opt-in power-on hours reader below. The generic/private `disk.smartctl` surface accepts command arguments and also remains excluded. Do not broaden the manifest to obtain metrics without reviewing side effects and argument restrictions.
 
 Cache data is a map from reported device name to integer Celsius temperature or null. The app accepts at most 256 unique bounded device names and retains only the latest normalized snapshot. Invalid/missing readings stay unknown. Values outside the supported integer range of -273 through 1000 Celsius are not interpreted. An empty cache is not zero-filled. Fetch time is recorded separately; source observation times and durable physical-drive identity are absent. Consequently these readings are not inserted into physical-drive observations, used to resolve findings, or used for replacement advice. The cache is not proof of current temperatures or full SMART coverage.
 
@@ -40,3 +41,46 @@ Curated parsed byte values are nonnegative safe integers or unknown. Zero quota 
 ## Release gates
 
 Source inspection and synthetic contract fixtures are not a live compatibility claim. Before enabling either optional dataset or cache read, verify the installed 24.10 patch's method/argument semantics and least-privilege permissions, collect sanitized real payloads, and verify that missing/disabled/denied/stale behavior matches the UI. Do not grant a broader credential just to turn an unavailable capability green. Live traffic, NAS load, drive power-state behavior, and the seven-day reference-host pilot remain unverified. No API call in this manifest starts a SMART test or NAS maintenance task.
+
+
+## Optional restricted SSH SMART reader (001.17)
+
+This is a separate boundary from the read-only WebSocket allowlist. With `Homelab:SmartEnabled` off, no SSH reads occur. With it on and a per-server entry configured, the app sends only `smartctl --scan` and `smartctl --json -x -n standby /dev/<disk>` over key-only SSH every 6–12 hours. The device must occur in scan output. Server-side forced command and narrow sudo restrictions are required; [setup and limitations](SMART_SSH_SETUP.md). No NAS settings are changed by the app.
+
+The application disables PTY and forwarding, requires host-key validation, bounds response size and runtime, and validates drive identity before saving. Sleeping drives are skipped; failed reads retain old evidence with its timestamp. No retry omits the standby guard. Raw ATA units and counter continuity are never guessed. Local tests validate the grammar and skip handling; hardware power-state and installed-patch setup checks remain required before activation.
+
+`disk.query` now also retains reported size, type, rotation rate and nullable enclosure/slot. These use the existing read and add no RPC methods. Cached temperatures shown in the drive panel are labelled as NAS cache values with fetch time; they never become stable-identity observations or resolve findings.
+
+## Optional API power-on hours (001.18)
+
+Owner requested API collection after reviewing its active-read/no-standby-guard behavior. `ReadApiPowerOnHours` defaults false and has a separate Settings checkbox explaining that reads may wake drives. It is independent of the SSH feature flag and the cache-only temperature setting. It never starts tests or changes the NAS.
+
+`disk.smart_attributes` is callable only through a typed method with one bounded device name and no options. Both the session lease and final RPC boundary validate the name; the generic method reader still rejects this endpoint. A current `disk.query` supplies names before each batch, with a second inventory checking serial/model/WWN and name after reads. Collection is limited to 64 inventory rows per server, once every six hours. Changed identities, missing identifiers and ambiguous names are discarded. Latest curated readings are tied to the connection revision and matched drive identity, with no insertion into health observations or findings.
+
+The reviewed endpoint supports ATA only. NVMe names are skipped explicitly. The exact ATA-only server rejection is shown as unsupported; generic errors and permission denials remain distinct. A successful attribute response without a usable hour counter is not reported as unsupported. Only attribute 9 explicitly labelled `Power_On_Hours` with equal nonnegative safe-integer raw numeric and plain decimal-string values is displayed. Alternate/vendor-specific units and composite time formats remain unknown. Read times are fetch times. Older-than-18-hour or paused readings are labelled last known, and disabled collection hides prior values. Existing SSH readings remain available independently.
+
+Tests cover fixed RPC arguments, raw unit validation, unsupported/denied states, replaced-device rejection, opt-in scheduling, revision isolation, API-only display, and light/dark accessibility for each card state. Live credential permission and actual-drive payload compatibility are not established by fixture tests.
+
+The owner-requested “Run now” button uses authenticated `POST /api/v1/storage/power-on-hours/run` with the required request header. It requires the saved API setting, immediately runs the guarded collection cycle for enabled connections and bypasses only the six-hour power-on-hours schedule. It adds no NAS methods, arguments, privilege changes or tests. One manual batch can run at a time; the existing session lease serializes reads per server with background collection. Results distinguish unavailable batches from completed snapshots and report actual per-drive outcome counts.
+
+## Optional hardware reporting (002.08)
+
+`Homelab__HardwareMetricsEnabled` defaults false. `reporting.netdata_get_data` is accessible only through the typed hardware reader, never through the generic read allowlist. The final RPC boundary accepts exactly four graph names (`cpu`, `memory`, `arcsize`, `cputemp`), no identifiers, and `{ unit: "HOUR", page: 1, aggregate: false }`; the initial backfill uses `unit: "DAY"` with the same other arguments. No caller-selected graphs, times, disk sensors, UPS graphs, or other reporting methods are allowed. Reads run at most once per five minutes per connection revision. Unsupported reporting retains inventory and entered readings.
+
+Reviewed against pinned middleware commit `ab87b14d2e721ec6fe6f917be02090c7e98a52df`: [reporting RPC and REPORTING_READ role](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/reporting/graphs.py), [graph names and units](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/reporting/netdata/graphs.py), [bounded graph export](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/reporting/netdata/graph_base.py), and [query interval translation](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/reporting/utils.py). These graphs read the existing Netdata history; disk-temperature and UPS plugins are excluded.
+
+CPU use is `100 - idle`. Memory dimensions and ARC are MiB, converted with 1,048,576 bytes/MiB. Apps = reported physical memory − free − ARC; missing ARC/free or an inconsistent split leaves memory unknown. CPU temperature retains the hottest reported core/sample within each complete five-minute interval; the page's temperature average is the average of those interval maxima. Future, incomplete, oversized and mismatched rows are rejected. Overlapping reporting responses cannot duplicate complete intervals. TrueNAS's graph layer uses `null2zero`; zero temperatures are discarded, but upstream missing CPU/memory points represented as zero cannot always be distinguished from observed zero. Coverage therefore counts returned reporting intervals, not an assertion of continuous sensor operation.
+
+Initial backfill is deliberately limited to one day to retain five-minute precision within the server's 2,999-point graph limit. Longer history accumulates locally. No permission escalation is attempted for denied reporting. The default flag remains off pending merge and installed-patch validation; synthetic contract tests do not establish live sensor, privilege, or payload compatibility.
+
+The existing [system.info implementation](https://github.com/truenas/middleware/blob/ab87b14d2e721ec6fe6f917be02090c7e98a52df/src/middlewared/middlewared/plugins/system/info.py) supplies CPU model, physical/logical core counts, physical memory, system product/manufacturer, OS version and uptime without new NAS access. System product is labelled as a NAS unit, never misrepresented as a motherboard. Raw system responses and credentials are not retained in hardware inventory.
+
+## Optional Synology hardware (002.17)
+
+`Homelab__SynologyEnabled` defaults false. When off, enrollment endpoints return 404, Synology rows/settings are absent, and no SNMP traffic occurs. Synology servers live separately from TrueNAS connections and never appear on Storage. Enrolling without a connection supports entered components/readings.
+
+The adapter uses SNMP v2c scalar GET requests to the saved IP address, UDP port 161, with an eight-second cancellation deadline and a five-minute cadence. It sends exactly the ten OIDs in `SynologyHardwareReader.Oids`: model, DSM version, system temperature, two fan states, UCD CPU idle, total/free/buffer/cached memory. There are no SETs, walks, shell commands, DSM logins, disk/SMART reads, arbitrary OIDs, or configurable ports. The community is protected with application data protection and never returned by an API. SNMP v2c itself is unencrypted: configure a read-only community on a trusted management network and restrict source access in DSM. The app does not enable or reconfigure SNMP on the NAS.
+
+Boundary reference: [Synology's official SNMP MIB Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Firmware/DSM/All/enu/Synology_DiskStation_MIB_Guide.pdf), System MIB and Useful OIDs. CPU = 100 − UCD idle; memory dimensions are KiB and apps = total − free − buffers − cached. The UI labels buffers + cached as File cache. Missing dimensions leave apps/cache/free unknown. Fan value 2 is failed, 1 is normal, everything else unknown. The sensor is system temperature, not CPU temperature. Power is always entered. The fixed scalar set does not expose a portable CPU model or host uptime; those remain unknown/entered. SNMP agent uptime is deliberately not passed off as server uptime. These scalar reads provide current values; the app records its own history, without making a broader claim that DSM has no history API.
+
+This is a tested adapter boundary, not live DSM model validation. The default flag remains off pending merge and reference-device checks.

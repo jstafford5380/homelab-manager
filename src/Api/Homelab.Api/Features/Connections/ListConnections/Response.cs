@@ -1,0 +1,2 @@
+namespace Homelab.Api.Features.Connections.ListConnections;
+public sealed record ResponseItem(Guid Id, Guid ConfigurationRevision, string Name, string ApiUri, string? ConnectHost, int? ConnectPort, int PollSeconds, bool Enabled, string? TrustedCaPem, string? CertificateSha256, string Status, string? Version, DateTime? LastSuccessUtc, string? SystemSerial, string? ObservedSystemSerial, string SystemIdentityState, DateTime? SystemIdentityCheckedUtc);

@@ -26,22 +26,22 @@ public sealed class ConnectionSettingsTests
             "tunnel-long" => Valid with { ConnectHost = new string('x', 254), ConnectPort = 443 },
             _ => Valid with { ConnectHost = "localhost\n", ConnectPort = 443 }
         };
-        Assert.NotNull(ConnectionEndpoints.Validate(input));
+        Assert.NotNull(ConnectionRules.Validate(input));
     }
     [Fact]
     public void DirectAndTunnelConnectionsKeepLogicalTlsIdentity()
     {
-        Assert.Null(ConnectionEndpoints.Validate(Valid));
-        Assert.Null(ConnectionEndpoints.Validate(Valid with { ConnectHost = "127.0.0.1", ConnectPort = 8443 }));
-        Assert.Null(ConnectionEndpoints.Validate(Valid with { ApiUri = "wss://[::1]:8443/websocket" }));
-        Assert.NotNull(ConnectionEndpoints.Validate(Valid with { ConnectPort = 8443 }));
+        Assert.Null(ConnectionRules.Validate(Valid));
+        Assert.Null(ConnectionRules.Validate(Valid with { ConnectHost = "127.0.0.1", ConnectPort = 8443 }));
+        Assert.Null(ConnectionRules.Validate(Valid with { ApiUri = "wss://[::1]:8443/websocket" }));
+        Assert.NotNull(ConnectionRules.Validate(Valid with { ConnectPort = 8443 }));
     }
     [Fact]
     public void EnrollmentAndRotationShareBoundedOpaqueCredentialValidation()
     {
         foreach (var key in new string?[] { null, "", "   ", "key\nsecret", "key\0secret", new('k', 8193) })
-            Assert.NotNull(ConnectionEndpoints.ValidateApiKey(key));
-        Assert.Null(ConnectionEndpoints.ValidateApiKey(new string('k', 8192)));
-        Assert.Null(ConnectionEndpoints.ValidateApiKey("opaque_key+/=:-.123"));
+            Assert.NotNull(ConnectionRules.ValidateApiKey(key));
+        Assert.Null(ConnectionRules.ValidateApiKey(new string('k', 8192)));
+        Assert.Null(ConnectionRules.ValidateApiKey("opaque_key+/=:-.123"));
     }
 }

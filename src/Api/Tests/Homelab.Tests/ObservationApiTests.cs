@@ -112,12 +112,17 @@ public sealed class ObservationApiTests
             var credentials = new { username = "evidence-owner", password = "fixture-9", setupToken = "isolated-api-fixture-token" };
             Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("/api/v1/setup", credentials)).StatusCode);
             client.DefaultRequestHeaders.Add("X-Homelab-Request", "1");
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/v1/storage/power-on-hours/run", null)).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/v1/setup", new { username = credentials.username, password = "12345678", setupToken = credentials.setupToken })).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/setup", credentials)).StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync("/api/v1/setup", credentials)).StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/v1/login", new { username = credentials.username, password = "wrong" })).StatusCode);
             var login = await client.PostAsJsonAsync("/api/v1/login", credentials);
             Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync("/api/v1/storage/power-on-hours/run", null)).StatusCode);
+            client.DefaultRequestHeaders.Remove("X-Homelab-Request");
+            Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/storage/power-on-hours/run", null)).StatusCode);
+            client.DefaultRequestHeaders.Add("X-Homelab-Request", "1");
             var cookie = string.Join(";", login.Headers.GetValues("Set-Cookie"));
             Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase); Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
             using (var rsa = System.Security.Cryptography.RSA.Create(2048)) {
@@ -855,7 +860,32 @@ public sealed class ObservationApiTests
             Assert.Equal(HttpStatusCode.OK,(await client.PostAsJsonAsync(revokePath,new DiscoveryRevokeInput("Physical identity needs another review"))).StatusCode);
             Assert.DoesNotContain(assignmentInput.Evidence,await client.GetStringAsync("/api/v1/inventory/export?redacted=true"));Assert.Contains(assignmentInput.Evidence,await client.GetStringAsync("/api/v1/inventory/export?redacted=false"));
             await using(var check=new HomelabDb(options)){var profile=await check.Connections.SingleAsync(x=>x.Id==nas.Id);profile.Enabled=false;await check.SaveChangesAsync();var assignedDisk=await check.Disks.SingleAsync(x=>x.Id==assigned.DiskId);Assert.Equal("ambiguous",assignedDisk.MappingConfidence);Assert.False(assignedDisk.Present);Assert.False(assignedDisk.BayVerified);Assert.Equal(1,await check.DiscoveryAssignments.CountAsync());}
+            // 001: exercise the actual storage routes and database, including rejected
+            // drafts, local-only writes, identity confirmation and replacement dating.
+            var storageDisk = new Disk { ConnectionId=nas.Id, Serial="STORAGE-ONE", Model="WDC model", IdentityKey="storage-one", Alias="sde" };
+            var storageNew = new Disk { ConnectionId=nas.Id, Serial="STORAGE-TWO", Model="WDC model", IdentityKey="storage-two", Alias="sdf" };
+            await using(var check=new HomelabDb(options)){check.Disks.AddRange(storageDisk,storageNew);await check.SaveChangesAsync();}
+            var storageBase=$"/api/v1/storage/drives/{storageDisk.Id}";
+            var draft=new StorageProfileInput(null,"Owner name",123.45m,DateTime.UtcNow.AddYears(-1),DateTime.UtcNow.AddMonths(-6),DateTime.UtcNow.AddYears(2),true,"Local note");
+            Assert.Equal(HttpStatusCode.BadRequest,(await client.PutAsJsonAsync(storageBase+"/profile",draft with {PurchaseCost=-1})).StatusCode);
+            Assert.Equal(HttpStatusCode.OK,(await client.PutAsJsonAsync(storageBase+"/profile",draft)).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict,(await client.PutAsJsonAsync(storageBase+"/profile",draft with {Notes="stale draft"})).StatusCode);
+            Assert.Equal(HttpStatusCode.OK,(await client.PutAsJsonAsync(storageBase+"/nickname",new StorageNicknameInput("Renamed drive"))).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest,(await client.PutAsJsonAsync(storageBase+"/location",new StorageLocationInput("Bay 3","WRONG","Checked label"))).StatusCode);
+            Assert.Equal(HttpStatusCode.OK,(await client.PutAsJsonAsync(storageBase+"/location",new StorageLocationInput("Bay 3","STORAGE-ONE","Checked label"))).StatusCode);
+            var note=new StorageNoteInput(Guid.NewGuid(),"Inspected physical bay label.");
+            Assert.Equal(HttpStatusCode.OK,(await client.PostAsJsonAsync(storageBase+"/notes",note)).StatusCode);
+            Assert.Equal(HttpStatusCode.OK,(await client.PostAsJsonAsync(storageBase+"/notes",note)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound,(await client.GetAsync(storageBase+"/trends")).StatusCode);
+            var storagePageData=await client.GetFromJsonAsync<StoragePageData>("/api/v1/storage/overview");Assert.False(storagePageData!.SmartEnabled);
+            var savedDrive=storagePageData.Servers.Single(x=>x.Id==nas.Id).LooseDrives.Single(x=>x.Disk.Id==storageDisk.Id);
+            Assert.Equal("Renamed drive",savedDrive.Title);Assert.True(savedDrive.BayConfirmed);Assert.Equal(123.45m,savedDrive.Acquisition!.PurchaseCost);Assert.Equal("Local note",savedDrive.Disk.Notes);
+            var storageHistory=await client.GetFromJsonAsync<StorageHistoryItem[]>(storageBase+"/history");Assert.Single(storageHistory!,x=>x.Text==note.Text);
+            var replacementTime=DateTime.UtcNow;
+            Assert.Equal(HttpStatusCode.OK,(await client.PostAsJsonAsync("/api/v1/replacements",new ReplacementInput(storageDisk.Id,storageNew.Id,replacementTime,"documented","","Membership unknown","Owner replacement","Physical labels compared","STORAGE-ONE","STORAGE-TWO"))).StatusCode);
+            await using(var check=new HomelabDb(options)){Assert.Equal(replacementTime,(await check.DriveAcquisitions.SingleAsync(x=>x.DiskId==storageNew.Id)).InstalledUtc);}
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/logout", new { })).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/api/v1/storage/overview")).StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync($"/api/v1/disks/{disk.Id}/observations")).StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync($"/api/v1/disks/{disk.Id}/observation-history?metric=temperature&days=7")).StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync($"/api/v1/disks/{disk.Id}/maintenance")).StatusCode);

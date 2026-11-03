@@ -1,0 +1,26 @@
+services:
+  homelab:
+    build:
+      context: .
+      dockerfile: src/Api/Homelab.Api/Dockerfile
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      Homelab__DataPath: /data
+      Homelab__BackupPath: /backups
+      Homelab__SetupToken: ${HOMELAB_SETUP_TOKEN:-}
+      Homelab__KeyCertificateBase64: ${HOMELAB_KEY_CERTIFICATE_BASE64:?Set the credential-protection PFX in Coolify}
+      Homelab__KeyCertificatePassword: ${HOMELAB_KEY_CERTIFICATE_PASSWORD:?Set the PFX password in Coolify}
+      Homelab__TrustedProxy: ${HOMELAB_TRUSTED_PROXY:-}
+    volumes:
+      - homelab-data:/data
+      - homelab-backups:/backups
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  homelab-data:
+  homelab-backups:

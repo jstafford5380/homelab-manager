@@ -20,6 +20,9 @@ public class TransportTlsTests
         await client.ReadAsync("disk.query", timeout.Token);
         await client.ReadAsync("disk.temperatures", timeout.Token);
         await client.ReadAsync("pool.dataset.query", timeout.Token);
+        await client.ReadSmartAttributesAsync("sda", timeout.Token);
+        Assert.Equal("[\"sda\"]", Assert.Single(server.SmartArguments));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => client.ReadSmartAttributesAsync("sda;reboot", timeout.Token));
         using var datasetArguments = JsonDocument.Parse(Assert.Single(server.DatasetArguments));
         var datasetOptions = datasetArguments.RootElement[1];
         Assert.Equal(257, datasetOptions.GetProperty("limit").GetInt32());
@@ -34,7 +37,7 @@ public class TransportTlsTests
         Assert.True(cacheArguments.RootElement[1].GetProperty("only_cached").GetBoolean());
         Assert.Single(cacheArguments.RootElement[1].EnumerateObject());
         await Assert.ThrowsAsync<InvalidOperationException>(() => client.ReadAsync("pool.scrub", timeout.Token));
-        Assert.Equal(new[] { "auth.login_with_api_key", "disk.query", "disk.temperatures", "pool.dataset.query" }, server.Methods.ToArray());
+        Assert.Equal(new[] { "auth.login_with_api_key", "disk.query", "disk.temperatures", "pool.dataset.query", "disk.smart_attributes" }, server.Methods.ToArray());
         Assert.Equal(server.Certificate.GetCertHashString(HashAlgorithmName.SHA256), client.ServerCertificateSha256);
     }
     [Fact] public async Task IdleHeartbeatIsAnsweredAndConcurrentReadsStayCorrelated()
@@ -134,7 +137,7 @@ public class TransportTlsTests
         await Assert.ThrowsAnyAsync<Exception>(() => client.ConnectAsync(profile, "fixture-key", timeout.Token));
         Assert.Empty(server.Methods);
     }
-    private sealed class FixtureServer(WebApplication app, X509Certificate2 certificate, ConcurrentQueue<string> methods, ConcurrentQueue<string> temperatureArguments, ConcurrentQueue<string> datasetArguments, Func<string?> host, TaskCompletionSource<string?> pong, ConcurrentQueue<string> subscriptions) : IAsyncDisposable
+    private sealed class FixtureServer(WebApplication app, X509Certificate2 certificate, ConcurrentQueue<string> methods, ConcurrentQueue<string> temperatureArguments, ConcurrentQueue<string> datasetArguments, ConcurrentQueue<string> smartArguments, Func<string?> host, TaskCompletionSource<string?> pong, ConcurrentQueue<string> subscriptions) : IAsyncDisposable
     {
         public TaskCompletionSource<string?> Pong => pong;
         public ConcurrentQueue<string> Subscriptions => subscriptions;
@@ -142,6 +145,7 @@ public class TransportTlsTests
         public ConcurrentQueue<string> Methods => methods;
         public ConcurrentQueue<string> TemperatureArguments => temperatureArguments;
         public ConcurrentQueue<string> DatasetArguments => datasetArguments;
+        public ConcurrentQueue<string> SmartArguments => smartArguments;
         public string? Host => host();
         public NasConnection Profile() => new() { ApiUri = "wss://nas.fixture/websocket", ConnectHost = "127.0.0.1", ConnectPort = new Uri(app.Urls.Single()).Port, TrustedCaPem = certificate.ExportCertificatePem() };
         public static async Task<FixtureServer> Start(bool idlePing=false, bool disconnectAfterPong=false, bool stallDisk=false, bool eventBurst=false, bool loseSubscription=false)
@@ -155,7 +159,7 @@ public class TransportTlsTests
             builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, 0, listener => listener.UseHttps(certificate)));
             var subscriptions = new ConcurrentQueue<string>();
             var pong = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var app = builder.Build(); app.UseWebSockets(); var methods = new ConcurrentQueue<string>(); var temperatureArguments = new ConcurrentQueue<string>(); var datasetArguments = new ConcurrentQueue<string>(); string? host = null;
+            var app = builder.Build(); app.UseWebSockets(); var methods = new ConcurrentQueue<string>(); var temperatureArguments = new ConcurrentQueue<string>(); var datasetArguments = new ConcurrentQueue<string>(); var smartArguments = new ConcurrentQueue<string>(); string? host = null;
             app.Map("/websocket", async context => {
                 host = context.Request.Host.Host;
                 if (!context.WebSockets.IsWebSocketRequest) { context.Response.StatusCode = 400; return; }
@@ -183,7 +187,7 @@ public class TransportTlsTests
                         }
                         object response;
                         if (root.GetProperty("msg").GetString() == "connect") response = new { msg = "connected", session = "fixture" };
-                        else { var method = root.GetProperty("method").GetString()!; methods.Enqueue(method); if (method == "disk.temperatures") temperatureArguments.Enqueue(root.GetProperty("params").GetRawText()); if (method == "pool.dataset.query") datasetArguments.Enqueue(root.GetProperty("params").GetRawText()); response = new { msg = "result", id = root.GetProperty("id").GetString(), result = method == "auth.login_with_api_key" ? (object)true : Array.Empty<object>() }; }
+                        else { var method = root.GetProperty("method").GetString()!; methods.Enqueue(method); if (method == "disk.smart_attributes") smartArguments.Enqueue(root.GetProperty("params").GetRawText()); if (method == "disk.temperatures") temperatureArguments.Enqueue(root.GetProperty("params").GetRawText()); if (method == "pool.dataset.query") datasetArguments.Enqueue(root.GetProperty("params").GetRawText()); response = new { msg = "result", id = root.GetProperty("id").GetString(), result = method == "auth.login_with_api_key" ? (object)true : Array.Empty<object>() }; }
                         if (loseSubscription && root.TryGetProperty("method",out var unsubscribedRead) && unsubscribedRead.GetString()=="alert.list")
                             await socket.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new {msg="nosub",id=alertSubscriptionId}).AsMemory(),WebSocketMessageType.Text,true,context.RequestAborted);
                         if (stallDisk && root.TryGetProperty("method",out var stalled) && stalled.GetString() == "disk.query") continue;
@@ -195,7 +199,7 @@ public class TransportTlsTests
                     }
                 } catch (Exception) when (socket.State != WebSocketState.Open || context.RequestAborted.IsCancellationRequested) { }
             });
-            await app.StartAsync(); return new(app, certificate, methods, temperatureArguments, datasetArguments, () => host, pong, subscriptions);
+            await app.StartAsync(); return new(app, certificate, methods, temperatureArguments, datasetArguments, smartArguments, () => host, pong, subscriptions);
         }
         public async ValueTask DisposeAsync() { await app.StopAsync(); await app.DisposeAsync(); certificate.Dispose(); }
     }

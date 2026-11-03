@@ -1,567 +1,765 @@
-import { ObservationTrend } from "./ObservationTrend";
-import { DriveEvidenceView } from "./DriveEvidenceView";
-import { useSearchParams } from "react-router";
-import { lazy, Suspense, useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import {
+  HardDrive,
+  Check,
+  ChevronRight,
+  AlertTriangle,
+  CircleCheck,
+  TriangleAlert,
+  CircleAlert,
+  CircleHelp,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ReplacementHistory } from "./ReplacementHistory";
-import { TopologyView } from "./TopologyView";
-import { HardDrive, ArrowLeft, Plus, Save } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { useDisplayFormat } from "./displayPreferences";
+import { StorageDrivePanel } from "./StorageDrivePanel";
+import {
+  age,
+  allDrives,
+  driveKind,
+  relative,
+  storageRequest,
+  validStorageData,
+  type Drive,
+  type Pool,
+  type Status,
+  type StorageData,
+} from "./storageModel";
+import "./Storage.css";
 
-const SmartReportImport = lazy(() => import("./SmartReportImport").then(module => ({ default: module.SmartReportImport })));
-const IdentityHistoryView = lazy(() => import("./IdentityHistoryView").then(module => ({ default: module.IdentityHistoryView })));
-const DriveHardwareView = lazy(() => import("./DriveHardwareView").then(module => ({ default: module.DriveHardwareView })));
-const DriveAcquisitionView = lazy(() => import("./DriveAcquisitionView"));
-const DriveMaintenanceView = lazy(() => import("./DriveMaintenanceView").then(module => ({ default: module.DriveMaintenanceView })));
-
-type Disk = {
-  id: string;
-  connectionId: string;
-  lastSeenUtc: string;
-  serial: string;
-  model: string;
-  alias: string;
-  wwn: string | null;
-  mappingConfidence: string;
-  bay: string | null;
-  bayVerified: boolean;
-  bayEvidence: string | null;
-  present: boolean;
-  purchasedUtc: string | null;
-  warrantyEndUtc: string | null;
-  notes: string;
-  lifecycle: string;
-  purchaseDateConfidence: string;
+const pillIcon: Record<string, LucideIcon> = {
+  ok: CircleCheck,
+  warn: TriangleAlert,
+  bad: CircleAlert,
+  neutral: CircleHelp,
 };
-type Detail = {
-  disk: Disk;
-  aliases: {
-    id: number;
-    path: string;
-    firstSeenUtc: string;
-    endedUtc: string | null;
-  }[];
-  findings: { id: string; title: string; evidence: string; state: string }[];
-  plans: { id: string; title: string; status: string }[];
-};
-async function api(
-  path: string,
-  body?: unknown,
-  method = "POST",
-  signal?: AbortSignal,
-) {
-  const response = await fetch(
-    "/api/v1" + path,
-    body === undefined
-      ? { signal }
-      : {
-          method,
-          signal,
-          headers: {
-            "Content-Type": "application/json",
-            "X-Homelab-Request": "1",
-          },
-          body: JSON.stringify(body),
-        },
+export function StoragePill({ status }: { status: Status }) {
+  const Icon = pillIcon[status.tone] ?? CircleHelp;
+  return (
+    <Badge
+      variant="outline"
+      className={"storage-pill storage-tone-" + status.tone}
+    >
+      <Icon aria-hidden="true" />
+      {status.label}
+    </Badge>
   );
-  const result = await response.json().catch(() => null);
-  if (!response.ok)
-    throw new Error(
-      result?.error ||
-        (response.status === 404
-          ? "This drive could not be found in this installation."
-          : `Request failed (${response.status})`),
-    );
-  return result;
 }
-function Field({
-  name,
+export function StorageBar({
+  value,
   label,
-  type = "text",
-  value = "",
-  required = false,
-  step,
 }: {
-  name: string;
+  value: number | null;
   label: string;
-  type?: string;
-  value?: string;
-  required?: boolean;
-  step?: string;
 }) {
   return (
-    <div className="field">
-      <Label htmlFor={name}>{label}</Label>
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        step={step}
-        defaultValue={value}
-        required={required}
-      />
+    <div className="storage-bar" role="img" aria-label={label}>
+      <span style={{ width: Math.max(0, Math.min(100, value ?? 0)) + "%" }} />
     </div>
   );
 }
-const metrics = [
-  "ata.pending_sectors",
-  "ata.offline_uncorrectable",
-  "ata.reallocated_sectors",
-  "ata.crc_errors",
-  "nvme.media_errors",
-  "scsi.grown_defects",
-  "scsi.read_uncorrected_errors",
-  "scsi.write_uncorrected_errors",
-  "scsi.verify_uncorrected_errors",
-  "nvme.critical_warning",
-  "nvme.available_spare",
-  "nvme.available_spare_threshold",
-  "nvme.percentage_used",
-  "temperature",
-  "power_on_hours",
-  "power_cycles",
-];
+function scanLine(pool: Pool, stale: boolean) {
+  const s = pool.scan;
+  const progress =
+    s?.scanPercentage == null
+      ? "progress unknown"
+      : Math.round(s.scanPercentage) + "%";
+  const line = !s?.scanFunction
+    ? "No scrub recorded"
+    : s.scanState === "SCANNING" || s.scanState === "PAUSED"
+      ? (s.scanFunction === "RESILVER"
+          ? "Resilvering · "
+          : "Scrub in progress · ") +
+        progress +
+        (s.scanState === "PAUSED" ? " · paused" : "") +
+        (s.scanStartedUtc ? " · started " + relative(s.scanStartedUtc) : "")
+      : s.scanEndedUtc
+        ? (s.scanFunction === "SCRUB" ? "Last scrub " : "Last resilver ") +
+          relative(s.scanEndedUtc) +
+          " · " +
+          (s.scanErrors ?? "Unknown") +
+          " errors"
+        : "No scrub recorded";
+  return line + (stale ? " (last known)" : "");
+}
+function forecastLine(pool: Pool, stale: boolean, timezone: string) {
+  const o = pool.capacityOutlook,
+    threshold = Math.round((o?.thresholdFraction ?? 0.8) * 100);
+  if (stale || o?.status === "stale" || o?.status === "paused")
+    return "Forecast paused until this server reports again";
+  switch (o?.status) {
+    case "estimated":
+      return o.projectedDateAtThreshold
+        ? "At the current rate, " +
+            threshold +
+            "% full around " +
+            new Date(o.projectedDateAtThreshold).toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
+              timeZone: timezone,
+            })
+        : "No forecast available";
+    case "threshold-reached":
+      return "Already past " + threshold + "% full";
+    case "not-growing":
+      return "Not growing, so no fill date to show";
+    case "insufficient":
+      return "Not enough history yet for a forecast";
+    default:
+      return "No forecast available";
+  }
+}
+function DriveTable({
+  drives,
+  open,
+}: {
+  drives: Drive[];
+  open: (d: Drive, edit?: boolean) => void;
+}) {
+  const { bytes } = useDisplayFormat();
+  const grouped = drives.some((d) => d.group != null);
+  const buckets = new Map<
+    string,
+    { id: string; name: string | null; role: string; drives: Drive[] }
+  >();
+  for (const d of drives) {
+    const id = d.group ? "known:" + d.group.id : "unknown";
+    if (!buckets.has(id))
+      buckets.set(id, {
+        id,
+        name: d.group?.name ?? (grouped ? "Group unknown" : null),
+        role: d.group?.role ?? "unknown",
+        drives: [],
+      });
+    buckets.get(id)!.drives.push(d);
+  }
+  const roles = [
+    "data",
+    "special",
+    "dedup",
+    "log",
+    "cache",
+    "spare",
+    "unknown",
+  ];
+  const groups = Array.from(buckets.values()).sort((a, b) => {
+    const rank = (role: string) =>
+      roles.includes(role) ? roles.indexOf(role) : roles.length;
+    return (
+      rank(a.role) - rank(b.role) ||
+      (a.name ?? "").localeCompare(b.name ?? "", undefined, { numeric: true })
+    );
+  });
+  const groupHeading = (group: (typeof groups)[number]) => (
+    <div className="storage-group-label">
+      <strong>{group.name}</strong>
+      <span>
+        {group.role !== "unknown" && group.role + " · "}
+        {group.drives.length} {group.drives.length === 1 ? "drive" : "drives"}
+      </span>
+    </div>
+  );
+  return (
+    <>
+      <div className="storage-table">
+        <table>
+          <thead>
+            <tr>
+              {[
+                "Status",
+                "Drive",
+                "Capacity",
+                "Serial",
+                "Location",
+                "In service",
+              ].map((h) => (
+                <th scope="col" key={h}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {groups.map((group, index) => (
+            <tbody
+              key={group.id}
+              className={
+                grouped
+                  ? "storage-drive-group storage-group-" + (index % 2)
+                  : undefined
+              }
+            >
+              {group.name && (
+                <tr className="storage-group-heading">
+                  <th scope="rowgroup" colSpan={6}>
+                    {groupHeading(group)}
+                  </th>
+                </tr>
+              )}
+              {group.drives.map((d) => (
+                <tr key={d.disk.id}>
+                  <td>
+                    <StoragePill status={d.status} />
+                  </td>
+                  <td>
+                    <button
+                      className="storage-drive-link"
+                      data-drive-id={d.disk.id}
+                      onClick={() => open(d)}
+                    >
+                      {d.title}
+                    </button>
+                    <small>{driveKind(d)}</small>
+                  </td>
+                  <td>{bytes(d.disk.sizeBytes)}</td>
+                  <td className="storage-mono">{d.disk.serial || "Unknown"}</td>
+                  <td>
+                    <strong>{d.disk.bay || "Not recorded"}</strong>
+                    <small
+                      className={
+                        d.bayConfirmed
+                          ? "storage-confirmed"
+                          : "storage-unconfirmed"
+                      }
+                    >
+                      {d.bayConfirmed && <Check size={12} />}{" "}
+                      {d.bayConfirmed ? "Confirmed" : "Not confirmed"}
+                    </small>
+                    {d.disk.enclosure != null && d.disk.slot != null && (
+                      <small>
+                        Enclosure {d.disk.enclosure} · Slot {d.disk.slot}
+                      </small>
+                    )}
+                  </td>
+                  <td>
+                    {age(d.acquisition?.installedUtc) || (
+                      <button
+                        className="storage-link"
+                        onClick={() => open(d, true)}
+                      >
+                        Add install date
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+      <div className="storage-drive-cards">
+        {groups.map((group, index) => (
+          <div
+            key={group.id}
+            className={
+              grouped
+                ? "storage-drive-group storage-group-" + (index % 2)
+                : undefined
+            }
+          >
+            {group.name && (
+              <div className="storage-group-heading">{groupHeading(group)}</div>
+            )}
+            {group.drives.map((d) => (
+              <button
+                key={d.disk.id}
+                className="storage-drive-card"
+                data-drive-id={d.disk.id}
+                onClick={() => open(d)}
+              >
+                <strong>{d.title}</strong>
+                <StoragePill status={d.status} />
+                <span>
+                  {d.disk.bay || "Location unknown"} · {bytes(d.disk.sizeBytes)}{" "}
+                  · {d.disk.serial || "Serial unknown"}
+                </span>
+                <span>
+                  {d.bayConfirmed ? "Confirmed" : "Not confirmed"} ·{" "}
+                  {age(d.acquisition?.installedUtc) || "Add install date"}
+                </span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+function PoolCard({
+  pool,
+  stale,
+  timezone,
+  open,
+}: {
+  pool: Pool;
+  stale: boolean;
+  timezone: string;
+  open: (d: Drive, edit?: boolean) => void;
+}) {
+  const { bytes } = useDisplayFormat();
+  const percent =
+    pool.usedBytes != null && pool.sizeBytes != null && pool.sizeBytes > 0
+      ? (pool.usedBytes / pool.sizeBytes) * 100
+      : null;
+  const datasets = pool.datasets.slice(0, 6),
+    other = pool.datasets.slice(6);
+  if (other.length)
+    datasets.push({
+      name: "Other",
+      usedBytes: other.every((x) => x.usedBytes != null)
+        ? other.reduce((a, x) => a + x.usedBytes!, 0)
+        : null,
+    });
+  const max = Math.max(1, ...datasets.map((d) => d.usedBytes ?? 0));
+  return (
+    <Card className="storage-pool">
+      <div className="storage-pool-head">
+        <div className="storage-pool-meta">
+          <div className="storage-inline">
+            <h3>{pool.name}</h3>
+            <StoragePill status={pool.status} />
+          </div>
+          <p className="storage-secondary">
+            {pool.layout} · {pool.memberCount} drives
+            {pool.toleratedFailures != null
+              ? " · survives " +
+                pool.toleratedFailures +
+                " drive loss" +
+                (pool.toleratedFailures === 1 ? "" : "es")
+              : ""}
+          </p>
+          <p className="storage-scan">
+            <span
+              className={
+                "storage-dot storage-tone-" +
+                (stale ? "neutral" : pool.scan?.scanErrors ? "warn" : "ok")
+              }
+              aria-hidden="true"
+            />
+            {scanLine(pool, stale)}
+          </p>
+        </div>
+        <div className="storage-usage">
+          <div className="storage-between">
+            <span>
+              <strong>{bytes(pool.usedBytes)}</strong> used of{" "}
+              {bytes(pool.sizeBytes)}
+            </span>
+            <span className="storage-secondary">
+              {percent == null
+                ? "Usage unknown"
+                : Math.round(percent) + "% full"}
+            </span>
+          </div>
+          <StorageBar
+            value={percent}
+            label={
+              percent == null
+                ? "Pool usage unknown"
+                : Math.round(percent) + " percent used"
+            }
+          />
+          <small>{forecastLine(pool, stale, timezone)}</small>
+        </div>
+      </div>
+      {pool.unmappedMembers > 0 && (
+        <p className="storage-pool-note">
+          {pool.unmappedMembers} pool member
+          {pool.unmappedMembers === 1 ? "" : "s"} could not be matched to a
+          physical drive. Membership remains unknown.
+        </p>
+      )}
+      <details className="storage-datasets">
+        <summary>
+          <ChevronRight size={15} />
+          What's using space
+        </summary>
+        {pool.datasetStatus === "disabled" ? (
+          <p>
+            Dataset usage is turned off. Turn it on in{" "}
+            <Link to="/settings">Settings</Link>.
+          </p>
+        ) : (
+          <>
+            {pool.datasetStatus !== "supported" && (
+              <p>
+                {datasets.length
+                  ? "Last known dataset usage. Current usage is unavailable."
+                  : "Dataset usage is unavailable."}
+              </p>
+            )}
+            {pool.datasetStatus === "supported" && datasets.length === 0 && (
+              <p>TrueNAS returned no dataset usage.</p>
+            )}
+            {datasets.length === 1 && datasets[0].name === pool.name && (
+              <p>
+                Only the root dataset was returned. A folder-by-folder breakdown
+                isn't available from this read.
+              </p>
+            )}
+            <ul>
+              {datasets.map((d) => (
+                <li key={d.name}>
+                  <div className="storage-between">
+                    <span className="storage-mono">{d.name}</span>
+                    <span>{bytes(d.usedBytes)}</span>
+                  </div>
+                  <StorageBar
+                    value={
+                      d.usedBytes == null ? null : (d.usedBytes / max) * 100
+                    }
+                    label={d.name + " uses " + bytes(d.usedBytes)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </details>
+      <DriveTable drives={pool.drives} open={open} />
+    </Card>
+  );
+}
 export function StorageView({
-  disks,
   timezone,
   refresh,
   refreshRevision,
 }: {
-  disks: Disk[];
+  disks: unknown[];
   timezone: string;
   refresh: () => Promise<void>;
   refreshRevision: number | null;
 }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selected = searchParams.get("disk");
-  const setSelected = (id: string | null) =>
-    setSearchParams(id ? { disk: id } : {});
-  const [detail, setDetail] = useState<Detail | null>(null);
-  const [historyRevision, setHistoryRevision] = useState(0);
-  const [error, setError] = useState("");
-  const [importMetric, setImportMetric] = useState(metrics[0]);
-  const importUnit =
-    importMetric === "scsi.grown_defects" ? "defects" : importMetric === "nvme.critical_warning"
-      ? "bitmask"
-      : importMetric === "nvme.percentage_used"
-        ? "% rated endurance"
-        : importMetric === "nvme.available_spare" ||
-            importMetric === "nvme.available_spare_threshold"
-          ? "%"
-          : importMetric.startsWith("ata.") && importMetric !== "ata.crc_errors"
-            ? "sectors"
-            : importMetric === "temperature"
-              ? "°C"
-              : importMetric === "power_on_hours"
-                ? "hours"
-                : importMetric === "power_cycles"
-                  ? "cycles"
-                  : "errors";
-  const [metric, setMetric] = useState(metrics[0]);
-  const [days, setDays] = useState(7);
-  const [busy, setBusy] = useState(false);
-  async function load(id: string, signal?: AbortSignal) {
-    const record = await api("/disks/" + id, undefined, "GET", signal);
-    if (signal?.aborted) return;
-    setDetail(record);
-  }
-  useEffect(() => {
+  const [data, setData] = useState<StorageData | null>(null),
+    [error, setError] = useState(""),
+    [loaded, setLoaded] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams(),
+    [editing, setEditing] = useState(false);
+  const [mobile, setMobile] = useState(
+    () => window.matchMedia("(max-width: 700px)").matches,
+  );
+  const openedDisk = useRef<string | null>(null);
+  const opener = useRef<HTMLElement | null>(null),
+    request = useRef<AbortController | null>(null),
+    mounted = useRef(false);
+  const { bytes } = useDisplayFormat();
+  const load = useCallback(async () => {
+    request.current?.abort();
     const controller = new AbortController();
-    setError("");
-    if (selected)
-      void load(selected, controller.signal).catch((e) => {
-        if (!controller.signal.aborted) setError(String(e));
-      });
-    return () => controller.abort();
-  }, [selected, refreshRevision]);
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [selected]);
-  async function save(path: string, body: unknown, method = "POST") {
-    setBusy(true);
-    setError("");
+    request.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      await api(path, body, method);
-      if (selected) await load(selected);
-      if (path.endsWith("/observations")) setHistoryRevision(value => value + 1);
-      await refresh();
+      const next = await storageRequest(
+        "/storage/overview",
+        undefined,
+        "GET",
+        controller.signal,
+      );
+      if (!validStorageData(next))
+        throw new Error("The storage response could not be read safely.");
+      if (mounted.current && request.current === controller) {
+        setData(next);
+        setLoaded(new Date().toISOString());
+        setError("");
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (mounted.current && request.current === controller)
+        setError(
+          controller.signal.aborted
+            ? "The request timed out."
+            : e instanceof Error
+              ? e.message
+              : String(e),
+        );
     } finally {
-      setBusy(false);
+      clearTimeout(timeout);
     }
-  }
-  const timestamp = (value: string | null) =>
-    value
-      ? new Date(value).toLocaleString(undefined, { timeZone: timezone })
-      : "Unknown";
-  if (selected && (!detail || detail.disk.id !== selected))
-    return (
-      <section>
-        <Button variant="outline" onClick={() => setSelected(null)}>
-          <ArrowLeft size={15} /> All drives
-        </Button>
-        <p
-          className={error ? "error" : "muted"}
-          role={error ? "alert" : "status"}
-        >
-          {error || "Loading drive evidence…"}
-        </p>
-      </section>
-    );
-  if (!selected || !detail)
-    return (
-      <>
-        <TopologyView timezone={timezone} />
-        <div className="section-title">
-          <h2>Physical drives</h2>
-          <Badge variant="secondary">{disks.length} tracked</Badge>
-        </div>
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
-        <Card className="list-card">
-          {disks.length ? (
-            disks.map((d) => (
-              <div className="row" key={d.id}>
-                <HardDrive />
-                <div>
-                  <h3>{d.model || "Unknown model"}</h3>
-                  <small>
-                    Serial: {d.serial || "Unresolved"} · {d.alias}
-                  </small>
-                  <p className="muted">Last seen: {timestamp(d.lastSeenUtc)}</p>
-                </div>
-                <Badge variant="outline">
-                  {d.mappingConfidence === "ambiguous" ? "Bay needs identity review" : d.bayVerified ? d.bay : "Bay unverified"}
-                </Badge>
-                <Badge variant="secondary">
-                  {d.present ? "Present" : "Absent"}
-                </Badge>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setDetail(null);
-                    setSelected(d.id);
-                  }}
-                >
-                  View drive
-                </Button>
-              </div>
-            ))
-          ) : (
-            <div className="empty">
-              <HardDrive />
-              <h3>No disks discovered yet</h3>
-              <p>
-                Enroll a NAS to discover stable disk identifiers and preserve
-                their history.
-              </p>
-            </div>
-          )}
-        </Card>
-      </>
-    );
-  const disk = detail.disk;
+  }, []);
+  useEffect(() => {
+    mounted.current = true;
+    void load();
+    const timer = setInterval(() => void load(), 30000);
+    return () => {
+      mounted.current = false;
+      clearInterval(timer);
+      request.current?.abort();
+    };
+  }, [load]);
+  const lastRevision = useRef(refreshRevision);
+  useEffect(() => {
+    if (lastRevision.current !== refreshRevision) {
+      lastRevision.current = refreshRevision;
+      void load();
+    }
+  }, [refreshRevision, load]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const change = () => setMobile(media.matches);
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
+  const diskId = params.get("disk");
+  const diskServer = data?.servers.find((s) =>
+    allDrives(s).some((d) => d.disk.id === diskId),
+  );
+  const server =
+    diskServer ??
+    data?.servers.find((s) => s.id === params.get("server")) ??
+    data?.servers[0];
+  const drive =
+    diskServer && allDrives(diskServer).find((d) => d.disk.id === diskId);
+  const restoreFocus = () => {
+    if (opener.current?.isConnected) opener.current.focus();
+    else if (openedDisk.current)
+      Array.from(document.querySelectorAll<HTMLElement>("[data-drive-id]"))
+        .find(
+          (el) =>
+            el.dataset.driveId === openedDisk.current &&
+            el.offsetParent !== null,
+        )
+        ?.focus();
+  };
+  const close = () => {
+    setParams(server ? { server: server.id } : {});
+    setEditing(false);
+    requestAnimationFrame(restoreFocus);
+  };
+  const open = (d: Drive, edit = false) => {
+    opener.current = document.activeElement as HTMLElement;
+    openedDisk.current = d.disk.id;
+    setEditing(edit);
+    setParams({ server: d.disk.connectionId, disk: d.disk.id });
+  };
+  const saved = async () => {
+    await load();
+    await refresh();
+  };
   return (
-    <>
-      <Button
-        variant="outline"
-        onClick={() => {
-          setSelected(null);
-          setDetail(null);
-        }}
-      >
-        <ArrowLeft size={15} /> All drives
-      </Button>
-      <div className="section-title" style={{ marginTop: 24 }}>
-        <div>
-          <h2>
-            {disk.model} · {disk.serial}
-          </h2>
-          <p className="muted">
-            WWN: {disk.wwn || "Unavailable"} · Identity:{" "}
-            {disk.mappingConfidence}
-          </p>
-        </div>
-        <Badge variant="outline">
-          {disk.mappingConfidence === "ambiguous" ? "Bay needs identity review" : disk.bayVerified ? `Verified bay: ${disk.bay}` : "Bay unverified"}
-        </Badge>
-      </div>
+    <section className="storage-page" aria-label="Storage">
       {error && (
-        <p role="alert" className="error">
-          {error}
+        <div role="status" className="storage-banner storage-tone-bad">
+          <AlertTriangle size={20} />
+          <div>
+            <strong>Storage couldn't be loaded.</strong> {error}{" "}
+            {loaded
+              ? "Showing what was loaded " + relative(loaded) + "."
+              : "Nothing has been loaded yet."}
+          </div>
+          <Button variant="outline" onClick={() => void load()}>
+            Retry
+          </Button>
+        </div>
+      )}
+      {!data && !error && (
+        <div
+          role="region"
+          aria-busy="true"
+          aria-label="Loading storage"
+          className="storage-stack"
+        >
+          <div className="storage-loading-tabs">
+            <div className="storage-skeleton" />
+            <div className="storage-skeleton" />
+          </div>
+          <div
+            className="storage-skeleton"
+            style={{ height: 28, width: "45%" }}
+          />
+          <div className="storage-facts storage-loading-facts">
+            {[1, 2, 3, 4].map((i) => (
+              <div className="storage-skeleton" key={i} />
+            ))}
+          </div>
+          <div className="storage-skeleton storage-skeleton-pool" />
+        </div>
+      )}
+      {data && data.servers.length === 0 && (
+        <Card className="storage-empty">
+          <HardDrive size={32} />
+          <h2>No servers yet</h2>
+          <p>
+            Connect a NAS or server in Settings and its pools and drives will
+            appear here.
+          </p>
+          <Button asChild>
+            <Link to="/settings#connections">Go to Settings</Link>
+          </Button>
+        </Card>
+      )}
+      {data && server && !(mobile && drive) && (
+        <>
+          <nav className="storage-tabs" aria-label="Servers">
+            {data.servers.map((s) => (
+              <button
+                key={s.id}
+                aria-pressed={s.id === server.id}
+                onClick={() => setParams({ server: s.id })}
+              >
+                <span
+                  aria-hidden="true"
+                  className={
+                    "storage-dot storage-tone-" +
+                    (s.freshness !== "Reporting"
+                      ? "neutral"
+                      : s.attentionCount ||
+                          s.pools.some((p) => p.status.tone === "bad")
+                        ? "warn"
+                        : "ok")
+                  }
+                />
+                <span>
+                  <strong>{s.name}</strong>
+                  <small>
+                    {s.freshness === "Out of date"
+                      ? "Out of date · " + relative(s.lastSuccessUtc)
+                      : s.freshness !== "Reporting"
+                        ? s.freshness
+                        : s.driveCount +
+                          " drives · " +
+                          (s.attentionCount
+                            ? s.attentionCount + " to watch"
+                            : s.pools.some((p) => p.status.label === "Degraded")
+                              ? "pool needs a look"
+                              : allDrives(s).some(
+                                    (d) => d.status.label === "Unknown",
+                                  )
+                                ? "partly unknown"
+                                : "all healthy")}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </nav>
+          <section
+            className="storage-stack"
+            aria-labelledby="storage-server-title"
+          >
+            <div className="storage-server-head">
+              <h2 id="storage-server-title">{server.name}</h2>
+              <StoragePill
+                status={{
+                  label: server.freshness,
+                  tone: server.freshness === "Reporting" ? "ok" : "neutral",
+                  why: null,
+                }}
+              />
+              <p className="storage-secondary">
+                {server.host} · last collected {relative(server.lastSuccessUtc)}
+              </p>
+              {server.alerts.length > 0 && (
+                <details className="storage-alerts">
+                  <summary>
+                    <StoragePill
+                      status={{
+                        label: server.alerts.length + " NAS alerts",
+                        tone: "warn",
+                        why: null,
+                      }}
+                    />
+                  </summary>
+                  <ul>
+                    {server.alerts.map((a) => (
+                      <li key={a.id}>
+                        <strong>
+                          {a.class} · {a.level}
+                        </strong>
+                        <p>{a.message}</p>
+                        <small>
+                          {relative(a.lastSeenUtc)} · reported by TrueNAS
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+            {server.freshness === "Out of date" && (
+              <div role="status" className="storage-banner storage-tone-warn">
+                <AlertTriangle size={20} />
+                <p>
+                  <strong>Can't reach this server right now.</strong> Everything
+                  below is from the last successful check,{" "}
+                  {relative(server.lastSuccessUtc)}. Drive status may have
+                  changed since.
+                </p>
+              </div>
+            )}
+            {server.freshness === "Paused" && (
+              <p role="status" className="storage-banner storage-tone-neutral">
+                Collection is paused. Everything below is last known.
+              </p>
+            )}
+            <dl className="storage-facts">
+              {[
+                ["Pools", server.poolCount],
+                ["Drives", server.driveCount],
+                ["Raw capacity", bytes(server.rawCapacityBytes)],
+                ["Needs a look", server.attentionCount ?? "Unknown"],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {server.pools.map((p) => (
+              <PoolCard
+                key={server.id + p.guid}
+                pool={p}
+                stale={server.freshness !== "Reporting"}
+                timezone={timezone}
+                open={open}
+              />
+            ))}
+            {server.looseDrives.length > 0 && (
+              <Card className="storage-pool">
+                <div className="storage-pool-head">
+                  <div>
+                    <h3>Not in a pool</h3>
+                    <p className="storage-secondary">
+                      Spares, boot drives and anything unassigned
+                    </p>
+                  </div>
+                </div>
+                <DriveTable drives={server.looseDrives} open={open} />
+              </Card>
+            )}
+            {!server.pools.length && !server.looseDrives.length && (
+              <Card className="storage-empty">
+                <HardDrive />
+                <h3>No pools or drives collected yet</h3>
+                <p>
+                  This server's storage will appear after a successful
+                  collection.
+                </p>
+              </Card>
+            )}
+          </section>
+        </>
+      )}
+      {data && server && drive && (
+        <StorageDrivePanel
+          key={drive.disk.id + ":" + mobile}
+          drive={drive}
+          server={server}
+          data={data}
+          mobile={mobile}
+          editingInitially={editing}
+          close={close}
+          restoreFocus={restoreFocus}
+          saved={saved}
+        />
+      )}
+      {data && diskId && !drive && (
+        <p role="status">
+          This drive could not be found in this installation.{" "}
+          <button className="storage-link" onClick={close}>
+            Back to storage
+          </button>
         </p>
       )}
-      <DriveEvidenceView
-        key={`evidence:${disk.id}`}
-        diskId={disk.id}
-        revision={refreshRevision}
-      />
-      <div className="overview-grid">
-        <section>
-          <ObservationTrend key={`${disk.id}:${metric}:${days}:${historyRevision}`} diskId={disk.id} metric={metric} metrics={metrics} setMetric={setMetric} days={days} setDays={setDays} timezone={timezone} />
-          <Card className="list-card" style={{ marginTop: 20 }}>
-            <h2 style={{ marginTop: 16 }}>Findings & linked plans</h2>
-            {detail.findings.map((f) => (
-              <div className="row" key={f.id}>
-                <div>
-                  <h3>
-                    {f.title} · {f.state}
-                  </h3>
-                  <small>{f.evidence}</small>
-                </div>
-              </div>
-            ))}
-            {detail.plans.map((p) => (
-              <div className="row" key={p.id}>
-                <div>{p.title}</div>
-                <Badge variant="outline">{p.status}</Badge>
-              </div>
-            ))}
-            <form
-              style={{ padding: "20px 0" }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                const fields = Object.fromEntries(
-                  new FormData(e.currentTarget),
-                );
-                void save("/plans", {
-                  ...fields,
-                  diskId: disk.id,
-                  budget: fields.budget ? Number(fields.budget) : null,
-                  currency: "USD",
-                });
-              }}
-            >
-              <Field name="title" label="Replacement or spare plan" required />
-              <Field
-                name="reason"
-                label="Evidence and compatibility assumptions"
-                required
-              />
-              <Field name="budget" label="Budget (USD)" type="number" />
-              <Button disabled={busy}>
-                <Plus size={15} /> Add linked plan
-              </Button>
-            </form>
-          </Card>
-        <Suspense fallback={<p className="muted">Loading identity history…</p>}><IdentityHistoryView key={disk.id} diskId={disk.id} /></Suspense>
-        <Suspense fallback={<p className="muted">Loading shared hardware…</p>}><DriveHardwareView key={disk.id} disk={disk} /></Suspense>
-        <Suspense fallback={<p className="muted">Loading maintenance history…</p>}><DriveMaintenanceView key={disk.id} disk={disk} days={days} /></Suspense>
-        </section>
-        <section>
-          <Suspense fallback={<p>Loading acquisition notes…</p>}><DriveAcquisitionView key={disk.id} diskId={disk.id} timezone={timezone} /></Suspense>
-          <Card className="list-card">
-            <h2 style={{ marginTop: 16 }}>Drive notes & physical location</h2>
-            <form
-              key={disk.id + disk.bay + disk.bayVerified}
-              style={{ padding: "20px 0" }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                const f = Object.fromEntries(new FormData(e.currentTarget));
-                void save(
-                  `/disks/${disk.id}/metadata`,
-                  {
-                    ...f,
-                    bayVerified: f.bayVerified === "on",
-                    purchasedUtc: f.purchasedUtc
-                      ? new Date(String(f.purchasedUtc)).toISOString()
-                      : null,
-                    warrantyEndUtc: f.warrantyEndUtc
-                      ? new Date(String(f.warrantyEndUtc)).toISOString()
-                      : null,
-                  },
-                  "PUT",
-                );
-              }}
-            >
-              <Field name="bay" label="Bay label" value={disk.bay || ""} />
-              <label className="backup-checkbox">
-                <input
-                  type="checkbox"
-                  name="bayVerified"
-                  defaultChecked={disk.bayVerified}
-                />{" "}
-                I verified the bay against physical evidence
-              </label>
-              <Field
-                name="confirmedSerial"
-                label="Retype the physical serial to verify"
-              />
-              <Field
-                name="bayEvidence"
-                label="Verification evidence"
-                value={disk.bayEvidence || ""}
-              />
-              <Field
-                name="purchasedUtc"
-                label="Purchase date"
-                type="date"
-                value={disk.purchasedUtc?.slice(0, 10) || ""}
-              />
-              <div className="field">
-                <Label htmlFor="purchaseDateConfidence">
-                  Purchase-date confidence
-                </Label>
-                <select
-                  id="purchaseDateConfidence"
-                  name="purchaseDateConfidence"
-                  defaultValue={disk.purchaseDateConfidence}
-                >
-                  <option value="unknown">Unknown</option>
-                  <option value="estimated">Estimated</option>
-                  <option value="documented">Documented</option>
-                </select>
-              </div>
-              <Field
-                name="warrantyEndUtc"
-                label="Warranty end"
-                type="date"
-                value={disk.warrantyEndUtc?.slice(0, 10) || ""}
-              />
-              <div className="field">
-                <Label htmlFor="lifecycle">Lifecycle</Label>
-                <select
-                  id="lifecycle"
-                  name="lifecycle"
-                  defaultValue={disk.lifecycle}
-                >
-                  <option value="installed">Installed</option>
-                  <option value="spare">Spare</option>
-                  <option value="retired">Retired</option>
-                </select>
-              </div>
-              <Field name="notes" label="Notes" value={disk.notes} />
-              <Button disabled={busy}>
-                <Save size={15} /> Save metadata
-              </Button>
-            </form>
-          </Card>
-        </section>
-      </div>
-      <Card className="list-card">
-        <Suspense fallback={<p>Loading report imports…</p>}><SmartReportImport
-          disk={disk}
-          onImported={async () => {
-            await load(disk.id);
-            setHistoryRevision(value => value + 1);
-            await refresh();
-          }}
-        /></Suspense>
-        <h2 style={{ marginTop: 16 }}>Import an existing observation</h2>
-        <p className="muted">
-          Record existing SMART evidence. This does not run a test or execute a
-          command on the NAS.
-        </p>
-        <form
-          style={{ padding: "20px 0" }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = Object.fromEntries(new FormData(e.currentTarget));
-            setMetric(String(f.metric));
-            void save(`/disks/${disk.id}/observations`, {
-              ...f,
-              value: f.value === "" ? null : Number(f.value),
-              observedUtc: f.observedUtc
-                ? new Date(String(f.observedUtc)).toISOString()
-                : null,
-              quality:
-                f.value === ""
-                  ? "unknown"
-                  : f.observedUtc
-                    ? "observed"
-                    : "unverified",
-              sourceKey: crypto.randomUUID(),
-            });
-          }}
-        >
-          <div className="settings-grid">
-            <div className="field">
-              <Label htmlFor="metric">Observation metric</Label>
-              <select
-                id="metric"
-                name="metric"
-                value={importMetric}
-                onChange={(e) => setImportMetric(e.target.value)}
-              >
-                {metrics.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <Field
-              name="value"
-              label="Value (leave empty if unknown)"
-              type="number"
-              step={importUnit === "°C" || importUnit === "hours" ? "any" : "1"}
-            />
-            <div className="field">
-              <Label htmlFor="unit">Unit</Label>
-              <Input id="unit" name="unit" value={importUnit} readOnly />
-              <small>
-                Convert source units explicitly before importing. A value
-                without an observation time is recorded as unverified.
-              </small>
-            </div>
-            <Field
-              name="observedUtc"
-              label="Observation time (your browser timezone)"
-              type="datetime-local"
-            />
-            <Field name="source" label="Evidence source / reference" required />
-            <Field
-              name="sourceSchema"
-              label="Metric schema / vendor interpretation"
-              value="manual-v1"
-              required
-            />
-            <Field
-              name="resetEpoch"
-              label="Counter continuity group (leave blank if unknown)"
-            />
-            <p className="muted">
-              Use the same continuity group only when observations share the
-              same device, source, and counter baseline. Change it after a
-              reset/reboot or source change. Unknown continuity disables counter
-              comparisons and automatic media-finding resolution.
-            </p>
-            <Field name="missingReason" label="Reason if unknown" />
-          </div>
-          <Button disabled={busy}>Import evidence</Button>
-        </form>
-      </Card>
-      <ReplacementHistory
-        key={`replacements:${disk.id}`}
-        disk={disk}
-        disks={disks}
-        timezone={timezone}
-        onSelect={(id) => {
-          setDetail(null);
-          setSelected(id);
-        }}
-      />
-      <div className="section-title" style={{ marginTop: 24 }}>
-        <h2>Device alias history</h2>
-      </div>
-      <Card className="list-card">
-        {detail.aliases.map((a) => (
-          <div className="row" key={a.id}>
-            <strong>{a.path}</strong>
-            <div>
-              <small>
-                {timestamp(a.firstSeenUtc)} →{" "}
-                {a.endedUtc ? timestamp(a.endedUtc) : "Current"}
-              </small>
-            </div>
-          </div>
-        ))}
-      </Card>
-    </>
+    </section>
   );
 }

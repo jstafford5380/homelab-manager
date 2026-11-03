@@ -1,3 +1,4 @@
+import { BrandIcon } from "./BrandIcon";
 import { ActivityHistory } from "./ActivityHistory";
 import { validScanReports } from "./ScanOverview";
 import { OverviewView, type Snapshot } from "./OverviewView";
@@ -5,13 +6,14 @@ import { DisplayPreferencesContext } from "./displayPreferences";
 import { PlanEditor } from "./PlanEditor";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { FindingDetail } from "./FindingDetail";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   Activity,
   ArrowUpRight,
   Bell,
   Boxes,
   ChevronRight,
+  Cpu,
   Database,
   HardDrive,
   LayoutDashboard,
@@ -42,7 +44,10 @@ import { NotificationSettings } from "./NotificationSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { OperationsSettings } from "./OperationsSettings";
 import { PlanningReview } from "./PlanningReview";
+const HardwareView = lazy(() => import("./HardwareView").then(module => ({ default: module.HardwareView })));
+import { HardwareSettings } from "./HardwareSettings";
 import { StorageView } from "./StorageView";
+import { StorageExportButton } from "./StorageExportButton";
 
 const empty: Snapshot = {
   recoveryAssessments: [],
@@ -84,6 +89,7 @@ async function request(
 const nav = [
   { title: "Overview", path: "/", icon: LayoutDashboard },
   { title: "Storage", path: "/storage", icon: HardDrive },
+  { title: "Hardware", path: "/hardware", icon: Cpu },
   { title: "Recovery", path: "/recovery", icon: ShieldCheck },
   { title: "Planning", path: "/planning", icon: ShoppingBag },
   { title: "Inventory", path: "/inventory", icon: Boxes },
@@ -96,12 +102,14 @@ function Field({
   type = "text",
   required = true,
   placeholder,
+  defaultValue,
 }: {
   name: string;
   label: string;
   type?: string;
   required?: boolean;
   placeholder?: string;
+  defaultValue?: string;
 }) {
   return (
     <div className="field">
@@ -112,6 +120,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
+        defaultValue={defaultValue}
       />
     </div>
   );
@@ -141,6 +150,15 @@ export default function App() {
     nav.find((item) => item.path === location.pathname)?.title ??
     "Page not found";
   const findingId = page === "Overview" ? searchParams.get("finding") : null;
+  const focusedPlanId = page === "Planning" ? searchParams.get("plan") : null;
+  useEffect(() => {
+    if (!focusedPlanId) return;
+    const frame = requestAnimationFrame(() => {
+      const row = document.getElementById("plan-" + focusedPlanId);
+      row?.focus(); row?.scrollIntoView({ block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusedPlanId, snapshot.plans]);
   const setPage = (title: string) => {
     void navigate(nav.find((item) => item.title === title)?.path ?? "/");
   };
@@ -155,6 +173,7 @@ export default function App() {
   useEffect(() => {
     setModal(false);
   }, [location.pathname]);
+  useEffect(() => { if (page === "Planning" && searchParams.has("hardware")) setModal(true); }, [page, searchParams]);
   async function refresh() {
     refreshController.current?.abort();
     const controller = new AbortController();
@@ -280,9 +299,7 @@ export default function App() {
   if (!session.authenticated)
     return (
       <div className="login">
-        <div className="brand-icon">
-          <Database size={24} />
-        </div>
+        <BrandIcon />
         <p className="eyebrow">YOUR INFRASTRUCTURE, UNDERSTOOD</p>
         <h1>Homelab Control</h1>
         <p>A clearer picture of your storage. A plan for what comes next.</p>
@@ -342,9 +359,7 @@ export default function App() {
         </a>
         <aside>
           <Link className="brand" to="/">
-            <span className="brand-icon">
-              <Database size={20} />
-            </span>
+            <BrandIcon />
             <span>
               homelab<span className="brand-light"> / control</span>
             </span>
@@ -427,7 +442,7 @@ export default function App() {
                 </Button>
               </section>
             )}
-            <div className="page-heading">
+            <div className={page === "Storage" ? "page-heading storage-page-heading" : "page-heading"}>
               <div>
                 <p className="eyebrow">HOMELAB CONTROL</p>
                 <h1 ref={headingRef} tabIndex={-1}>
@@ -437,25 +452,35 @@ export default function App() {
                       ? "Your homelab, at a glance."
                       : page}
                 </h1>
-                <p className="muted">
+                <p className={page === "Storage" ? "storage-subtitle" : "muted"}>
                   {findingId
                     ? "Recorded evidence, source details, and review history."
                     : page === "Overview"
                       ? "What needs attention today, and what’s coming up."
+                      : page === "Hardware"
+                        ? "Components and how they’re running, one server at a time."
                       : page === "Planning"
                         ? "Turn observations into a practical replacement plan."
+                        : page === "Storage"
+                          ? "Pools and drives, one server at a time."
                         : "Evidence, history, and the details that matter."}
                 </p>
               </div>
-              <Button variant="outline" onClick={() => void refresh()}>
+              {page === "Storage" ? <div className="storage-heading-actions">
+                <StorageExportButton />
+                <Button variant="outline" onClick={() => void refresh()}>
+                  <RefreshCw size={15} /> Refresh
+                </Button>
+              </div> : <Button variant="outline" onClick={() => void refresh()}>
                 <RefreshCw size={15} /> Refresh
-              </Button>
+              </Button>}
             </div>
             {error && (
               <div className="error" role="alert">
                 {error}
               </div>
             )}
+            {page === "Hardware" && <Suspense fallback={<p role="status">Loading hardware…</p>}><HardwareView refreshRevision={lastRefresh} /></Suspense>}
             {page === "Page not found" && (
               <Card className="empty">
                 <h2>This page does not exist</h2>
@@ -628,11 +653,13 @@ export default function App() {
                             <Field
                               name="title"
                               label="What are you planning?"
+                              defaultValue={searchParams.get("title") ?? undefined}
                               placeholder="Purchase a compatible spare drive"
                             />
                             <Field
                               name="reason"
                               label="Evidence or reason"
+                              defaultValue={searchParams.get("reason") ?? undefined}
                               placeholder="No spare available; review model and capacity"
                             />
                             <Field
@@ -673,7 +700,7 @@ export default function App() {
                   {page === "Planning" ? (
                     snapshot.plans.length ? (
                       snapshot.plans.map((p) => (
-                        <div className="row" key={p.id}>
+                        <div className="row" key={p.id} id={"plan-" + p.id} tabIndex={-1}>
                           <ShoppingBag />
                           <div>
                             <h3>{p.title}</h3>
@@ -766,6 +793,7 @@ export default function App() {
               <>
                 <AppearanceSettings />
                 <ConnectionSettings timezone={snapshot.settings.timezone} />
+                <HardwareSettings />
                 <OperationsSettings
                   onSaved={(settings) => {
                     setSnapshot((current) => ({ ...current, settings }));

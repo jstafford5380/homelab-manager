@@ -66,12 +66,12 @@ public class InventoryTests
         }
     }
     [Theory] [InlineData("javascript:alert(1)")] [InlineData("file:///etc/passwd")] [InlineData("https://user:password@example.com/")]
-    public void ManagementLinksRejectExecutableSchemesAndCredentials(string url) => Assert.NotNull(InventoryEndpoints.ValidateAsset(new() { Name = "host", ManagementUrl = url }));
+    public void ManagementLinksRejectExecutableSchemesAndCredentials(string url) => Assert.NotNull(InventoryRules.ValidateAsset(new() { Name = "host", ManagementUrl = url }));
     [Fact] public void SparesRequireNonnegativeQuantityAndCost()
     {
-        Assert.NotNull(InventoryEndpoints.ValidateAsset(new() { Name = "Spare", Type = "spare", Quantity = -1 }));
-        Assert.NotNull(InventoryEndpoints.ValidateAsset(new() { Name = "Spare", Type = "spare", EstimatedUnitCost = -1 }));
-        Assert.Null(InventoryEndpoints.ValidateAsset(new() { Name = "Spare", Type = "spare", Quantity = 2, EstimatedUnitCost = 200 }));
+        Assert.NotNull(InventoryRules.ValidateAsset(new() { Name = "Spare", Type = "spare", Quantity = -1 }));
+        Assert.NotNull(InventoryRules.ValidateAsset(new() { Name = "Spare", Type = "spare", EstimatedUnitCost = -1 }));
+        Assert.Null(InventoryRules.ValidateAsset(new() { Name = "Spare", Type = "spare", Quantity = 2, EstimatedUnitCost = 200 }));
     }
     [Fact] public async Task DependencyCannotReferToMissingAsset()
     {

@@ -10,6 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Download, Save } from "lucide-react";
 
 type Settings = {
+  hardwareCpuPercent?: number;
+  hardwareMemoryPercent?: number;
+  hardwareTemperatureC?: number;
+  hardwareSustainedMinutes?: number;
   id: number;
   timezone: string;
   capacityUnits: "binary" | "decimal";
@@ -20,6 +24,7 @@ type Settings = {
   temperatureReviewCelsius?: number | null;
   temperaturePolicyReason?: string;
   readCachedTemperatures: boolean;
+  readApiPowerOnHours?: boolean;
   readDatasets?: boolean;
   sampleRetentionDays: number;
   rawRetentionDays: number;
@@ -45,11 +50,31 @@ export function OperationsSettings({
   const [backups, setBackups] = useState<Backup[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [savedPowerOnEnabled, setSavedPowerOnEnabled] = useState(false);
+  const [hoursBusy, setHoursBusy] = useState(false);
+  const [hoursMessage, setHoursMessage] = useState("");
+  async function runPowerOnHours() {
+    setHoursBusy(true);
+    setHoursMessage("Reading power-on hours…");
+    try {
+      const response = await fetch("/api/v1/storage/power-on-hours/run", {
+        method: "POST", headers: { "X-Homelab-Request": "1" },
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !Array.isArray(data?.servers)) throw new Error(data?.error || "Power-on hours could not be read. Try again.");
+      setHoursMessage(data.servers.map((s: { name: string; completed: boolean; hoursAvailable: number; unsupported: number; denied: number; unavailable: number }) =>
+        s.completed ? `${s.name}: finished. ${s.hoursAvailable} drives returned hours; ${s.unsupported} unsupported; ${s.denied} permission denied; ${s.unavailable} unavailable.` :
+          `${s.name}: no new reading was saved. Check the connection and collection status.`).join(" "));
+    } catch (error) {
+      setHoursMessage(error instanceof Error ? error.message : "Power-on hours could not be read. Try again.");
+    } finally { setHoursBusy(false); }
+  }
   async function load() {
     const response = await fetch("/api/v1/settings");
     if (!response.ok) throw new Error("Could not load settings");
     const data = await response.json();
     setSettings(data.settings);
+    setSavedPowerOnEnabled(data.settings.readApiPowerOnHours ?? false);
     setConfigured(data.backupDestinationConfigured);
     const history = await fetch("/api/v1/backups");
     if (!history.ok) throw new Error("Could not load backups");
@@ -86,6 +111,7 @@ export function OperationsSettings({
       if (path === "settings") {
         const saved: Settings = await response.json();
         setSettings(saved);
+        setSavedPowerOnEnabled(saved.readApiPowerOnHours ?? false);
         onSaved(saved);
         setMessage("Settings saved.");
       } else {
@@ -206,6 +232,16 @@ export function OperationsSettings({
               </div>
             ))}
           </div>
+          <fieldset id="hardware-review-levels" style={{ marginBlock: 16 }}>
+            <legend>Hardware review levels</legend>
+            <p className="muted">Use by apps excludes cache. These are your review levels, not predictions or manufacturer safety limits. Changes apply to charts and component statuses.</p>
+            <div className="settings-grid">{([
+              ["hardwareCpuPercent", "CPU review level (%)", 1, 100, 80],
+              ["hardwareMemoryPercent", "Memory review level (%)", 1, 100, 80],
+              ["hardwareTemperatureC", "Hardware temperature review level (°C)", -50, 200, 80],
+              ["hardwareSustainedMinutes", "Sustained use (minutes per day)", 5, 1440, 60],
+            ] as const).map(([key, label, min, max, fallback]) => <div className="field" key={key}><Label htmlFor={key}>{label}</Label><Input id={key} type="number" min={min} max={max} step={key === "hardwareSustainedMinutes" ? 1 : "any"} value={settings[key] ?? fallback} onChange={e => setSettings({ ...settings, [key]: Number(e.target.value) })} /></div>)}</div>
+          </fieldset>
           <fieldset style={{ marginBlock: 16 }}>
             <legend>Optional local temperature policy</legend>
             <p className="muted">Blank means disabled. This review limit applies to new imported temperature evidence for all tracked drives, including historical reports. It does not read sensors, change NAS settings, or define a universal safe temperature. Existing findings are retained when the policy changes.</p>
@@ -251,6 +287,26 @@ export function OperationsSettings({
             Saves the latest names and space usage, without scanning files or changing the NAS.
             Larger or unsupported responses retain the previous snapshot. Check compatibility
             with your installed TrueNAS 24.10 patch before enabling.
+          </p>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <label className="backup-checkbox">
+              <input type="checkbox" checked={settings.readApiPowerOnHours ?? false}
+                onChange={e => setSettings({ ...settings, readApiPowerOnHours: e.target.checked })} />{" "}
+              Read power-on hours through the TrueNAS API
+            </label>
+            <Button type="button" variant="outline" size="sm"
+              disabled={busy || hoursBusy || !savedPowerOnEnabled || !settings.readApiPowerOnHours}
+              onClick={() => void runPowerOnHours()}>
+              {hoursBusy ? "Running…" : "Run now"}
+            </Button>
+          </div>
+          {settings.readApiPowerOnHours && !savedPowerOnEnabled && <p className="muted">Save settings to enable Run now.</p>}
+          <p role="status" aria-live="polite" className="muted">{hoursMessage}</p>
+          <p className="muted" style={{ margin: "12px 0" }}>
+            Reads ATA SMART attributes every six hours, for up to 64 drives per server.
+            These reads can wake sleeping drives. They do not start self-tests.
+            NVMe and SAS drives are unsupported by this API. Missing or ambiguous
+            hour counters stay unknown, and permission failures are shown separately.
           </p>
           <label className="backup-checkbox">
             <input

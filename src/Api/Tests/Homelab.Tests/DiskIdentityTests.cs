@@ -39,10 +39,10 @@ public class DiskIdentityTests
     {
         var disk = new Disk { Serial = "A" };
         var input = new DiskMetadata("Bay 1", true, "B", "Physical label checked", null, "unknown", null, "", "installed");
-        Assert.NotNull(StorageEndpoints.ValidateMetadata(disk, input));
-        Assert.Null(StorageEndpoints.ValidateMetadata(disk, input with { ConfirmedSerial = "A" }));
+        Assert.NotNull(DiskMetadataRules.ValidateMetadata(disk, input));
+        Assert.Null(DiskMetadataRules.ValidateMetadata(disk, input with { ConfirmedSerial = "A" }));
         disk.MappingConfidence = "ambiguous";
-        Assert.NotNull(StorageEndpoints.ValidateMetadata(disk, input with { ConfirmedSerial = "A" }));
+        Assert.NotNull(DiskMetadataRules.ValidateMetadata(disk, input with { ConfirmedSerial = "A" }));
     }
     [Theory] [InlineData(null)] [InlineData("")] [InlineData("0000000000000000")] [InlineData("not-a-wwn")]
     public void InvalidWwnCannotBecomeDurableKey(string? value) => Assert.Null(IdentityCandidate.NormalizeWwn(value));

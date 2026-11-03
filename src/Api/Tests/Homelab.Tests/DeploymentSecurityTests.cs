@@ -13,7 +13,10 @@ public class DeploymentSecurityTests
         try { var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Production" }); Assert.Throws<InvalidOperationException>(() => DeploymentSecurity.Configure(builder, path)); }
         finally { if (Directory.Exists(path)) Directory.Delete(path, true); }
     }
-    [Fact] public void ProductionKeyRingIsEncryptedAndCanBeReopenedWithExternalCertificate()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ProductionKeyRingIsEncryptedAndCanBeReopenedWithExternalCertificate(bool useBase64)
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
         try {
@@ -25,7 +28,16 @@ public class DeploymentSecurityTests
             var data = Path.Combine(root, "data");
             WebApplicationBuilder Builder() {
                 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Production" });
-                builder.Configuration["Homelab:KeyCertificatePath"] = certPath; builder.Configuration["Homelab:KeyCertificatePasswordFile"] = passwordPath;
+                if (useBase64)
+                {
+                    builder.Configuration["Homelab:KeyCertificateBase64"] = Convert.ToBase64String(File.ReadAllBytes(certPath));
+                    builder.Configuration["Homelab:KeyCertificatePassword"] = "fixture-password";
+                }
+                else
+                {
+                    builder.Configuration["Homelab:KeyCertificatePath"] = certPath;
+                    builder.Configuration["Homelab:KeyCertificatePasswordFile"] = passwordPath;
+                }
                 DeploymentSecurity.Configure(builder, data); return builder;
             }
             string encrypted;

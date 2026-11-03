@@ -14,7 +14,7 @@ public class RecoveryTests
         var value = length < 0 ? null! : new string('x', length);
         if (field == "capacity") policy.DestinationCapacity = value;
         else policy.RestoreRequirements = value;
-        Assert.NotNull(RecoveryEndpoints.ValidatePolicy(policy));
+        Assert.NotNull(RecoveryRules.ValidatePolicy(policy));
     }
     [Fact]
     public void PlanningNotesDoNotEstablishRecoveryReadiness()

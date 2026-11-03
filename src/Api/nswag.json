@@ -1,0 +1,22 @@
+{
+  "runtime": "Net100",
+  "defaultVariables": "ApiUrl=http://127.0.0.1:5253,Output=../../artifacts/clients/HomelabApiClient.cs",
+  "documentGenerator": {
+    "fromDocument": {
+      "url": "$(ApiUrl)/openapi/v1.json"
+    }
+  },
+  "codeGenerators": {
+    "openApiToCSharpClient": {
+      "className": "HomelabApiClient",
+      "namespace": "Homelab.Client",
+      "jsonLibrary": "SystemTextJson",
+      "generateClientInterfaces": true,
+      "injectHttpClient": true,
+      "disposeHttpClient": false,
+      "useBaseUrl": false,
+      "generateNullableReferenceTypes": true,
+      "output": "$(Output)"
+    }
+  }
+}

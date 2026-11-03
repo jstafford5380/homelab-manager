@@ -1,6 +1,6 @@
 # 002 · Hardware
 
-- **Status:** ready · 2026-11-01
+- **Status:** in progress · 2026-11-01
 - **Mock:** [mock.html](mock.html). Use the toolbar to switch State, Width, Theme and the `hwmetrics` and `synology` flags.
 - **Shared preview:** https://claude.ai/artifact/Efch25rsx3RhY8akxSaMCc (the owner's design canvas, private unless shared)
 - **Affected screens:** a new **Hardware** page (`/hardware`, including `/hardware?server=<id>&component=<id>`), placed in the navigation next to Storage.
@@ -38,24 +38,24 @@ Rejected alternatives:
 
 | ID | Feature | Depends on | Flag | Status |
 | --- | --- | --- | --- | --- |
-| 002.01 | Server switcher (tabs with status dot and summary line) | — | — | ready |
-| 002.02 | Server header: connection mode, freshness, 4 facts; out-of-date, not-connected, collecting and unavailable banners | 002.01 | — | ready |
+| 002.01 | Server switcher (tabs with status dot and summary line) | — | — | in progress |
+| 002.02 | Server header: connection mode, freshness, 4 facts; out-of-date, not-connected, collecting and unavailable banners | 002.01 | — | in progress |
 | 002.03 | Servers added by hand with no platform | — | — | dropped |
-| 002.04 | Metric cards: CPU use, memory, temperature, power draw | 002.02 | — | ready |
-| 002.05 | Time range switch (24 h / 7 / 30 / 90 days) and sample coverage line | 002.04 | — | ready |
-| 002.06 | Memory split: apps / cache / free, with platform-specific cache label | 002.04 | — | ready |
-| 002.07 | Review levels: CPU %, memory %, temperature °C, editable in Settings; dashed line on charts; "above on n days" lines | 002.04 | — | ready |
-| 002.08 | TrueNAS metrics collector: CPU, memory split, CPU temperature from TrueNAS reporting (backend) | — | `hwmetrics` | ready |
-| 002.09 | Entered readings: "Add reading" form; readings drawn as dots | 002.04 | — | ready |
-| 002.10 | Component inventory grouped by kind (table on desktop, cards on phones) | 002.01 | — | ready |
-| 002.11 | Detected vs entered sources on every value; detected/entered mismatch | 002.10 | — | ready |
-| 002.12 | Component status rules (below) | 002.10 | — | ready |
-| 002.13 | Component panel: why box, How it's running, Details, Purchase, History, action bar | 002.10 | — | ready |
-| 002.14 | Memory slot map with upgrade room | 002.13 | — | ready |
-| 002.15 | Add / edit component (entered parts) | 002.10 | — | ready |
-| 002.16 | "Plan an upgrade" and "Mark as replaced" | 002.13 | — | ready |
-| 002.17 | Synology support: enrolment, connection, inventory and metrics collector (backend + minimal setup) | — | `synology` | ready |
-| 002.18 | Inventory from reads the app already makes (`system.info`): CPU model, cores, total memory, board, OS version, uptime | 002.10 | — | ready |
+| 002.04 | Metric cards: CPU use, memory, temperature, power draw | 002.02 | — | in progress |
+| 002.05 | Time range switch (24 h / 7 / 30 / 90 days) and sample coverage line | 002.04 | — | in progress |
+| 002.06 | Memory split: apps / cache / free, with platform-specific cache label | 002.04 | — | in progress |
+| 002.07 | Review levels: CPU %, memory %, temperature °C, editable in Settings; dashed line on charts; "above on n days" lines | 002.04 | — | in progress |
+| 002.08 | TrueNAS metrics collector: CPU, memory split, CPU temperature from TrueNAS reporting (backend) | — | `hwmetrics` | in progress |
+| 002.09 | Entered readings: "Add reading" form; readings drawn as dots | 002.04 | — | in progress |
+| 002.10 | Component inventory grouped by kind (table on desktop, cards on phones) | 002.01 | — | in progress |
+| 002.11 | Detected vs entered sources on every value; detected/entered mismatch | 002.10 | — | in progress |
+| 002.12 | Component status rules (below) | 002.10 | — | in progress |
+| 002.13 | Component panel: why box, How it's running, Details, Purchase, History, action bar | 002.10 | — | in progress |
+| 002.14 | Memory slot map with upgrade room | 002.13 | — | in progress |
+| 002.15 | Add / edit component (entered parts) | 002.10 | — | in progress |
+| 002.16 | "Plan an upgrade" and "Mark as replaced" | 002.13 | — | in progress |
+| 002.17 | Synology support: enrolment, connection, inventory and metrics collector (backend + minimal setup) | — | `synology` | in progress |
+| 002.18 | Inventory from reads the app already makes (`system.info`): CPU model, cores, total memory, board, OS version, uptime | 002.10 | — | in progress |
 
 `hwmetrics` and `synology` follow the usual rule: with a flag off, everything it powers is absent, with no placeholders. With `hwmetrics` off, TrueNAS servers still show inventory (002.18), uptime and entered readings. CPU, memory and temperature then come only from readings, or show the unsupported placeholder. With `synology` off, Synology servers don't appear at all.
 
@@ -224,25 +224,25 @@ Fixtures show a proposed shape. Codex owns the real contract, and may for exampl
 
 ## Acceptance checklist
 
-- [ ] Every state in the table is implemented and reachable.
-- [ ] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
-- [ ] No horizontal page scroll at 390px. The component table becomes cards rather than scrolling.
-- [ ] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
-- [ ] Unknown, stale, unsupported and entered data look different from collected, healthy data.
-- [ ] No claims beyond the evidence: no failure dates or probabilities, and no "Previous" figure for an unsampled period.
-- [ ] Every flagged feature is completely absent when its flag is off, and the page still reads correctly without it.
-- [ ] Feature-specific checks:
-  - [ ] 002.01 Switching servers never shows another server's metrics or components, even briefly.
-  - [ ] 002.02 An out-of-date server shows the banner, "last known" captions and "Unknown" for Needs a look.
-  - [ ] 002.05 The coverage line matches the data: partial history, gaps and downsampling are all stated.
-  - [ ] 002.06 Memory "used" excludes cache on both platforms; the cache label follows the platform.
-  - [ ] 002.07 Changing a review level updates the dashed lines, card lines and statuses.
-  - [ ] 002.08 Only read methods listed in `NAS_READ_MANIFEST.md` are called, with tests, and the flag stays off until merged and tested.
-  - [ ] 002.09 Readings are drawn as dots, labelled "entered by you", and never averaged into collected data.
-  - [ ] 002.11 Detected values can't be edited; a detected/entered mismatch produces the Act now status and the mismatch line.
-  - [ ] 002.12 The status rules table is implemented in order, with unit tests for each row and for both card-pill thresholds.
-  - [ ] 002.17 The Synology connection is read-only, with its boundary documented; Synology rows are absent with the flag off.
-  - [ ] `/hardware?server=<id>&component=<id>` deep links work.
+- [x] Every state in the table is implemented and reachable.
+- [x] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
+- [x] No horizontal page scroll at 390px. The component table becomes cards rather than scrolling.
+- [x] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
+- [x] Unknown, stale, unsupported and entered data look different from collected, healthy data.
+- [x] No claims beyond the evidence: no failure dates or probabilities, and no "Previous" figure for an unsampled period.
+- [x] Every flagged feature is completely absent when its flag is off, and the page still reads correctly without it.
+- [x] Feature-specific checks:
+  - [x] 002.01 Switching servers never shows another server's metrics or components, even briefly.
+  - [x] 002.02 An out-of-date server shows the banner, "last known" captions and "Unknown" for Needs a look.
+  - [x] 002.05 The coverage line matches the data: partial history, gaps and downsampling are all stated.
+  - [x] 002.06 Memory "used" excludes cache on both platforms; the cache label follows the platform.
+  - [x] 002.07 Changing a review level updates the dashed lines, card lines and statuses.
+  - [x] 002.08 Only read methods listed in `NAS_READ_MANIFEST.md` are called, with tests, and the flag stays off until merged and tested.
+  - [x] 002.09 Readings are drawn as dots, labelled "entered by you", and never averaged into collected data.
+  - [x] 002.11 Detected values can't be edited; a detected/entered mismatch produces the Act now status and the mismatch line.
+  - [x] 002.12 The status rules table is implemented in order, with unit tests for each row and for both card-pill thresholds.
+  - [x] 002.17 The Synology connection is read-only, with its boundary documented; Synology rows are absent with the flag off.
+  - [x] `/hardware?server=<id>&component=<id>` deep links work.
 
 ## Implementation notes
 
@@ -252,12 +252,86 @@ Guidance from design:
 - The mock adds three tokens: `--info-bg`, `--info-border` and `--cache`. The app has `--tone-info` for text only. Either add info background/border tokens to `index.css` (light and dark, AA-checked), or map Near its limit to an existing token pair with a visibly different lightness from Watch, and record the choice here.
 - The mock's data script is a renderer, not a contract. Follow the fixtures and this brief for the data shape.
 
+Implementation is complete in the working tree and verified locally. The package remains `in progress` until merge, as required by the handoff lifecycle. No merge or collector activation was performed. Validation: 828 backend tests passed across the solution, including the dedicated hardware/API/collector tests; all 26 browser tests passed, including light/dark axe, desktop/tablet/mobile and the existing Storage/owner workflows.
+
+Both flags default off: `Homelab__HardwareMetricsEnabled` (`hwmetrics`) and `Homelab__SynologyEnabled` (`synology`). Their backend paths are exercised in isolated tests; installed-device compatibility remains a separate activation check.
+
+Common implementation: `HardwareDomain.cs`, `HardwareMetrics.cs`, `HardwareEndpoints.cs`, `HardwareCollection.cs`, `HardwareRetention.cs`, `SynologyHardware.cs`, and one `Hardware` EF migration. Web components are `HardwareView`, `HardwareCharts`, `HardwareForms`, `HardwareSettings` and `hardwareModel`, with existing Card/Button/Input/Label/Dialog primitives. Hardware loads in its own browser bundle. `Hardware.css` uses application tokens and the 700px / 1100px media breakpoints. Added `--info-bg`, `--info-border`, `--hw-info-text`, and `--cache` light/dark tokens; axe verifies the blue and amber treatments.
+
 ### 002.01
 
-—
+Implemented locally. `GET /api/v1/hardware/servers` returns flags and server summaries (`id`, name, host, platform, version, freshness, last success, uptime, component/watch/near-limit counts). TrueNAS IDs equal their existing connection IDs. Only the selected server's detail is rendered; aborted responses cannot replace a later selection. Synology uses a separate server store and is excluded from Storage. Browser tests delay a server response and verify that the prior server's components disappear immediately.
+
+### 002.02
+
+Implemented locally. `GET /api/v1/hardware/servers/{id}?range=24h|7d|30d|90d` supplies server facts and range data. Freshness reuses Storage's TrueNAS window, also checks connection revisions and independently stale hardware samples; Synology expires after three five-minute intervals. Banners cover no connection, stale, collecting, and request failure. Failed reloads retain the selected server's cached data with neutral last-known pills and Unknown attention counts. Unknown uptime is explicit. The global Refresh button also reloads Hardware.
+
+### 002.04
+
+Implemented locally. Each metric has `source`, average/latest/peak/p95, optional previous average, threshold evidence, partial-history state and a bounded series. Collected series have at most 288 buckets; chart paths break across gaps. Entered values are independent dots. Power is never collected. Unsupported metrics use the provisional hatch treatment, without inventing support or values. The API's canonical units are bytes, percent, °C and watts.
+
+### 002.05
+
+Implemented locally. Range buttons drive the server detail request. Coverage includes distinct five-minute intervals, expected intervals, collection start, covered days, and gap boundaries; missing time before collection started is not a gap. Gaps require at least three missing intervals. Previous averages require a fully established previous range with at least 99% interval coverage. Older chart points are aggregated into buckets, while the backend additionally materializes hourly averages after 30 days and retains them for two years. Detailed readings are retained for 366 days to permit exact recalculation after review-level changes; expiry requires the existing successful-backup gate. Entered readings and component history never expire automatically. This deliberately retains more detail than the proposed 30-day minimum.
+
+### 002.06
+
+Implemented locally. TrueNAS apps = reported usable physical memory − free − ARC, with MiB reporting dimensions converted to bytes. Synology apps = total − free − buffers − cached, from KiB SNMP dimensions; buffers and cached form File cache. Missing/inconsistent dimensions stay unknown. RAM displays and entry fields explicitly use **GiB**, rather than the mock's ambiguous GB label: a nominal 32 GB module is entered as 32 GiB. This prevents decimal/binary unit mismatches. `system.info` reports usable memory from MemTotal, so even a small difference from nominal entered module capacity can require reconciliation; the why/mismatch copy explicitly mentions kernel/firmware reservations before suggesting a missing module.
+
+### 002.07
+
+Implemented locally. The existing `GET/PUT /api/v1/settings` now carries `hardwareCpuPercent`, `hardwareMemoryPercent`, `hardwareTemperatureC`, and `hardwareSustainedMinutes`, defaults 80/80/80/60. Settings validates bounds and finite values. The review-level link targets `#hardware-review-levels`. Server cards and component statuses recalculate from underlying measurements, without changing NAS settings. Unit tests change the threshold and verify the resulting rule and chart level.
+
+### 002.08
+
+Implemented locally, flag off pending merge/activation. The typed `ReadHardwareMetricsAsync` method requests only CPU, memory, ARC size and CPU temperature through fixed `reporting.netdata_get_data` arguments. The generic read allowlist does not accept the reporting method; the session lease and final transmission boundary preserve the typed restriction. Five-minute scheduling and overlapping interval deduplication are separate from pool/alert polling. Initial backfill is one day, preserving five-minute detail under TrueNAS's 2,999-point export limit; longer history accumulates locally. CPU temperature uses the hottest core/sample per interval, and the displayed average averages these interval maxima. All-zero reporting rows are treated as ambiguous because the upstream graph exporter uses null-to-zero conversion. Pinned source links, arguments, permissions, units and limitations are recorded in `docs/NAS_READ_MANIFEST.md`. Synthetic tests verify the grammar and normalization; no live compatibility claim is made.
+
+### 002.09
+
+Implemented locally. `POST /hardware/servers/{id}/readings`, `PUT /.../readings/{readingId}`, and `DELETE /.../readings/{readingId}?revision=...` support entry, listing via detail, editing and soft deletion. Inputs require at least one measurement, valid UTC time, bounded measurements and a duration for period averages. Source/server/revision fields are controlled by the API. Entered readings never alter a collected average. UI forms preserve blank measurements as null and identify memory as apps excluding cache. The readings list shows timestamps, measurement kind/duration, values, notes and edit/delete controls. API tests cover validation, revision conflicts, cross-server rejection, authentication and the required request header.
+
+### 002.10
+
+Implemented locally. Components are grouped as Compute, Power & cooling, and Expansion & chassis. The desktop/tablet table becomes individual cards below 700px; there is no horizontal page scroll at 390px. Sources and unknown installation dates remain visible. Real inventory is stored per server, rather than adapting the mock's fixture-only contract.
+
+### 002.11
+
+Implemented locally. Components retain separate detected name/spec/memory total/fan state and entered annotations. Add/edit payloads cannot write detected fields. Each detail value carries its source. Entered memory layouts are compared with the detected usable total; the below-entered rule produces Act now. Small differences are explicitly described as potentially reserved memory, not asserted failed hardware. Source labels and mismatch behavior have browser and backend coverage.
+
+### 002.12
+
+Implemented locally. Pure status rules evaluate stale saved status, missing-memory/failed-fan evidence, heat, sustained use, available monitored evidence, then Not monitored. Component rules always use 30 days; card rules use the selected range and its one-day/three-day thresholds. Entered-only pressure needs two above-level readings and at least half of all readings for that metric. Distinct five-minute buckets prevent duplicate polling from counting as sustained use, and gaps contribute no minutes. Status transitions are preserved in history. A replaced part cannot inherit earlier parts' measurements: component metrics are bounded by installation/retirement timestamps. Tests cover every rule, precedence, both card thresholds, entered rules, duplicate intervals, threshold edits, and replacement evidence isolation.
+
+### 002.13
+
+Implemented locally. `/hardware?server=<id>&component=<id>` opens the component panel. Desktop/tablet use the existing Radix modal with trapped focus; phones use a full-screen section and Back/Close. Opening focuses the heading and closing returns to the opener. The panel includes why, component-bounded use/heat, sourced details, owner-entered purchase records, preserved history and actions. History merges detected changes, entered edits/notes, status transitions and replacement events. OS changes appear on the system product's history; motherboard/BIOS information absent from the verified contract is not fabricated. Notes use `POST /.../components/{componentId}/notes`.
+
+### 002.14
+
+Implemented locally. Memory edit forms accept up to 64 named slots with nullable byte capacities, soldered capacity and an entered maximum. The panel labels the slot map and summarizes used/free slots, installed capacity, soldered memory and upgrade room. Channel configuration and model-specific maximums cannot be inferred from the available reads; advice therefore asks the owner to verify channel/module compatibility rather than asserting dual-channel support or a Synology model limit. Layout/mismatch states and source labels are tested.
+
+### 002.15
+
+Implemented locally. `POST /.../components` and `PUT /.../components/{componentId}` accept kind, entered name/model/spec/notes, USD price, dates and memory layout. Detected kinds are fixed; detected values can only be annotated. Updates require a matching revision and preserve edit history. Dates/price/lengths/layout are validated. Form saves announce Saved. Browser tests exercise forms and axe in desktop and mobile layouts.
+
+### 002.16
+
+Implemented locally. Plan an upgrade opens the **existing Planning form**, prefilled with title and server/component evidence plus a Hardware deep link; it uses the existing plan store. `POST /.../components/{componentId}/replace` retires the old record, keeps its history, creates the same-kind successor, reserves its detected slot identity for the next successful inventory (old detected values are not attributed to the successor), and defaults installation to the recorded replacement time. A same-server database constraint protects predecessor links. Replaced components remain inspectable in the page and through their old deep links. `/retired` and the server-scoped component `/history` endpoint also expose archived records/history. API/browser tests cover successor creation, preserved old notes/events, concurrency and Planning prefill.
+
+### 002.17
+
+Implemented locally, flag off pending merge/activation. Synology enrollment and edits use `/hardware/synology` and `/hardware/synology/{id}`; `/hardware/synology/settings` returns safe connection summaries. The minimal Settings form enrolls a named IP address either for entered-only use or automatic SNMP collection. The backend uses only ten fixed read-only scalar GETs on UDP 161, bounded to eight seconds and five-minute polling. Communities are protected at rest and omitted from every response. Default backup restore clears them and disables Synology collection; disconnected servers never reuse cached collected samples or fan states as current evidence. SNMP v2c is unencrypted; setup copy states the trusted-network/read-only-community boundary. There are no NAS mutations, walks, shell commands, disk reads, or caller-selected OIDs. CPU model/core counts and host uptime remain unknown because the fixed scalar set does not portably expose them; the detected Processor row identifies only the CPU whose use is measured. Fan state, model, version, system temperature and memory are normalized with missing values explicit. Scalar reads are current-only; the app records its own history without asserting that DSM has no other history API. Flag-off API tests verify hidden rows/endpoints, and the read boundary is documented in `docs/NAS_READ_MANIFEST.md`.
+
+### 002.18
+
+Implemented locally. Hardware inventory is staged within the existing successful, revision-checked TrueNAS collection transaction from the already-authorized `system.info` response. CPU model/physical and logical cores, usable memory, system product/manufacturer, version and uptime are curated; the raw response is not retained. The pinned method reports a **system product**, not a motherboard model, so it appears as a NAS unit. This is an intentional correction to the proposed motherboard fixture. Inventory remains available with `hwmetrics` off. Tests confirm that no motherboard model is invented.
 
 ## Change log
 
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-11-01 | Package created at lock-in | Claude |
+
+### Local validation follow-up · 2026-11-01
+
+The owner explicitly approved enabling `hwmetrics` for local validation before merge. `appsettings.Development.json` enables TrueNAS hardware metrics; production configuration remains opt-in and Synology remains off. Live reads on the installed TrueNAS 24.10.2.4 returned CPU, memory/ARC/free, and CPU temperature history; 288 five-minute intervals were saved and displayed. Power remains entered-only. Header wording now distinguishes an inventory check from measurements. A follow-up migration repairs only the original invalid all-zero review-setting tuple on existing databases, restoring 80/80/80/60; valid owner settings, including a 0 °C temperature threshold, are preserved. The current local settings were repaired through Settings.
