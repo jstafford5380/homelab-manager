@@ -171,22 +171,34 @@ export function HardwareMetricCard({
             d.totalBytes != null && (
               <>
                 <div
-                  className="hw-memory-bar"
+                  className="hw-memory-bar hw-memory-free"
                   role="img"
                   aria-label={`Apps ${gb(value)}, ${cache} ${gb(m.cacheAverage)}, free ${gb(m.freeAverage)}`}
                 >
                   <span
+                    className="hw-memory-apps"
                     style={{ width: `${((value ?? 0) / d.totalBytes) * 100}%` }}
                   />
                   <span
+                    className="hw-memory-cache"
                     style={{
                       width: `${(m.cacheAverage / d.totalBytes) * 100}%`,
                     }}
                   />
                 </div>
-                <p>
-                  Apps {gb(value)} · {cache} {gb(m.cacheAverage)} · Free{" "}
-                  {gb(m.freeAverage)}
+                <p className="hw-memory-legend">
+                  <span>
+                    <i className="hw-memory-apps" aria-hidden="true" />
+                    Apps {gb(value)}
+                  </span>
+                  <span>
+                    <i className="hw-memory-cache" aria-hidden="true" />
+                    {cache} {gb(m.cacheAverage)}
+                  </span>
+                  <span>
+                    <i className="hw-memory-free" aria-hidden="true" />
+                    Free {gb(m.freeAverage)}
+                  </span>
                 </p>
                 <p>
                   {d.server.platform === "truenas"

@@ -247,13 +247,30 @@
   height: 9px;
   border-radius: 6px;
   overflow: hidden;
-  background: var(--muted);
 }
-.hw-memory-bar span:first-child {
-  background: var(--primary);
+.hw-memory-apps {
+  background: var(--chart-point);
 }
-.hw-memory-bar span:nth-child(2) {
+.hw-memory-cache {
   background: var(--cache);
+}
+.hw-memory-free {
+  background: var(--chart-axis);
+}
+.hw-memory-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.hw-memory-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hw-memory-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
 }
 .hw-unmeasured-title {
   font-size: 1.1rem;
