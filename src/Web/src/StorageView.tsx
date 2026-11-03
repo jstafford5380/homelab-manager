@@ -52,13 +52,20 @@ export function StoragePill({ status }: { status: Status }) {
 export function StorageBar({
   value,
   label,
+  tone,
 }: {
   value: number | null;
   label: string;
+  tone?: "ok" | "warn" | "bad";
 }) {
   return (
     <div className="storage-bar" role="img" aria-label={label}>
-      <span style={{ width: Math.max(0, Math.min(100, value ?? 0)) + "%" }} />
+      <span
+        style={{
+          width: Math.max(0, Math.min(100, value ?? 0)) + "%",
+          backgroundColor: tone ? `var(--tone-${tone})` : undefined,
+        }}
+      />
     </div>
   );
 }
@@ -356,6 +363,7 @@ function PoolCard({
           </div>
           <StorageBar
             value={percent}
+            tone={percent == null ? undefined : percent >= 95 ? "bad" : percent >= 85 ? "warn" : "ok"}
             label={
               percent == null
                 ? "Pool usage unknown"

@@ -484,6 +484,13 @@ export function StorageDrivePanel({
                   </div>
                   <StorageBar
                     value={(years / data.servicePlanYears) * 100}
+                    tone={
+                      years >= data.servicePlanYears
+                        ? "bad"
+                        : years >= data.servicePlanYears - 1
+                          ? "warn"
+                          : "ok"
+                    }
                     label={
                       Math.round((years / data.servicePlanYears) * 100) +
                       "% of planned service life used"
