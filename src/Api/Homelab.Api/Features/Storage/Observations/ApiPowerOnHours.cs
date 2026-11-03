@@ -32,21 +32,32 @@ public static class ApiPowerOnHours
         return hours;
     }
 
-    private static string Text(JsonElement row, string key) => StorageInventory.Text(row, key);
-    private static bool Same(JsonElement row, ApiPowerOnReading reading) => Text(row, "name") == reading.Device && Text(row, "serial") == reading.Serial && Text(row, "model") == reading.Model && IdentityCandidate.NormalizeWwn(Text(row, "wwn")) == reading.Wwn;
-    // Only current inventory names are accepted, at most 64 disks per server. The second
-    // inventory rejects devices replaced or renamed while SMART reads were in progress.
-    public static async Task<ApiPowerOnSnapshot> CollectAsync(INasReadClient client, JsonElement inventory, Guid revision, CancellationToken ct, string? previousJson = null)
+    private static IdentityCandidate Identity(JsonElement row) => new(StorageInventory.Text(row, "serial"), StorageInventory.Text(row, "model"), StorageInventory.Text(row, "wwn"), StorageInventory.Text(row, "name"));
+    private static bool Same(IdentityCandidate row, ApiPowerOnReading reading) =>
+        row.Alias == reading.Device && row.Serial == reading.Serial && row.Model == reading.Model &&
+        IdentityCandidate.NormalizeWwn(row.Wwn) == reading.Wwn;
+
+    public static Task<ApiPowerOnSnapshot> CollectAsync(INasReadClient client, JsonElement inventory, Guid revision, CancellationToken ct, string? previousJson = null)
     {
         if (inventory.ValueKind != JsonValueKind.Array || inventory.GetArrayLength() > 64)
             throw new InvalidDataException();
+        return CollectAsync(client, inventory.EnumerateArray().Select(Identity).ToArray(), revision, ct, previousJson);
+    }
+
+    internal static Task<ApiPowerOnSnapshot> CollectAsync(INasReadClient client, DiskInventory[] inventory, Guid revision, CancellationToken ct, string? previousJson) =>
+        CollectAsync(client, inventory.Select(row => row.Identity).ToArray(), revision, ct, previousJson);
+
+    // The second inventory rejects devices replaced or renamed during the SMART reads.
+    private static async Task<ApiPowerOnSnapshot> CollectAsync(INasReadClient client, IdentityCandidate[] rows, Guid revision, CancellationToken ct, string? previousJson)
+    {
+        if (rows.Length > 64)
+            throw new InvalidDataException();
         var previous = Read(previousJson);
-        var rows = inventory.EnumerateArray().ToArray();
         var readings = new List<ApiPowerOnReading>();
         foreach (var row in rows)
         {
-            var device = Text(row, "name");
-            if (!TrueNasClient.ValidSmartDisk(device) || string.IsNullOrWhiteSpace(Text(row, "serial")) || string.IsNullOrWhiteSpace(Text(row, "model")) || rows.Count(x => Text(x, "name") == device) != 1)
+            var device = row.Alias;
+            if (!TrueNasClient.ValidSmartDisk(device) || string.IsNullOrWhiteSpace(row.Serial) || string.IsNullOrWhiteSpace(row.Model) || rows.Count(x => x.Alias == device) != 1)
                 continue;
             string status;
             long? hours = null;
@@ -69,7 +80,7 @@ public static class ApiPowerOnHours
                 }
             }
 
-            var reading = new ApiPowerOnReading(device, Text(row, "serial"), Text(row, "model"), IdentityCandidate.NormalizeWwn(Text(row, "wwn")), status, hours, hours is null ? null : DateTime.UtcNow);
+            var reading = new ApiPowerOnReading(device, row.Serial, row.Model, IdentityCandidate.NormalizeWwn(row.Wwn), status, hours, hours is null ? null : DateTime.UtcNow);
             if (status is "denied" or "unavailable" && previous?.Revision == revision)
             {
                 var old = previous.Readings.Where(r => Same(row, r)).ToArray();
@@ -87,7 +98,7 @@ public static class ApiPowerOnHours
         var after = await client.ReadAsync("disk.query", ct);
         if (after.ValueKind != JsonValueKind.Array)
             throw new InvalidDataException();
-        return new(revision, DateTime.UtcNow, readings.Where(r => after.EnumerateArray().Count(x => Same(x, r)) == 1).ToArray());
+        return new(revision, DateTime.UtcNow, readings.Where(r => after.EnumerateArray().Count(x => Same(Identity(x), r)) == 1).ToArray());
     }
 
     public static StoragePowerOnHours ForDrive(NasConnection nas, Disk disk, bool enabled, DateTime now, string? json)

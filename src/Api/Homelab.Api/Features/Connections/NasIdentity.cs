@@ -1,11 +1,10 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Homelab.Api;
 public static class NasIdentity
 {
-    public static bool SupportsRelease(string? version) => version is { Length: <= 128 } && Regex.IsMatch(version, @"\A(?:TrueNAS-SCALE-)?24\.10(?:\.[0-9]+){0,2}\z", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+    public static bool SupportsRelease(string? version) => TrueNasConnectionSettings.SupportsRelease(version);
     // system.info exposes nullable DMI system_serial in the 24.10.2 contract. It is
     // supplementary hardware evidence, not a cryptographic or guaranteed unique identity.
     public static string? UsableSerial(string? raw)

@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 namespace Homelab.Api;
-public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvider protection, ILogger<Collector> logger, WriteCoordinator writes, INasReadClientFactory clients, IConfiguration? configuration = null) : BackgroundService
+public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvider protection, ILogger<Collector> logger, WriteCoordinator writes, INasReadClientFactory clients, IConfiguration? configuration = null, ProviderRegistry? providers = null) : BackgroundService
 {
+    private readonly IStorageProvider provider = (providers ?? new ProviderRegistry([new TrueNasProvider(clients)])).Resolve<IStorageProvider>(TrueNasProvider.Id);
+
     public enum RefreshTarget { Storage, Hardware }
     public enum CollectionResult { Completed, Busy, Unavailable }
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> collectionGates = new();
@@ -102,8 +104,8 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             var db = scope.ServiceProvider.GetRequiredService<HomelabDb>();
             var now = DateTime.UtcNow;
             var active = await db.Connections.AsNoTracking().Where(x => x.Enabled).ToDictionaryAsync(x => x.Id, x => x.ConfigurationRevision, stop);
-            await clients.RetainAsync(active, stop);
-            var eventCandidates = clients.EventRefreshCandidates();
+            await provider.RetainAsync(active, stop);
+            var eventCandidates = provider.EventRefreshCandidates();
             var eventCutoff = now.AddSeconds(-30);
             due = await db.Connections.AsNoTracking().Where(x => x.Enabled && (x.NextAttemptUtc == null || x.NextAttemptUtc <= now || eventCandidates.Contains(x.Id) && x.ConsecutiveFailures == 0 && (x.LastAttemptUtc == null || x.LastAttemptUtc <= eventCutoff))).OrderBy(x => x.NextAttemptUtc).ThenBy(x => x.Id).Select(x => x.Id).ToArrayAsync(stop);
         }
@@ -118,7 +120,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 var profile = await db.Connections.SingleOrDefaultAsync(x => x.Id == id, ct);
                 if (profile is null || !profile.Enabled)
                     return;
-                var eventDue = clients.EventRefreshCandidates().Contains(id) && profile.ConsecutiveFailures == 0 && (profile.LastAttemptUtc == null || profile.LastAttemptUtc <= DateTime.UtcNow.AddSeconds(-30));
+                var eventDue = provider.EventRefreshCandidates().Contains(id) && profile.ConsecutiveFailures == 0 && (profile.LastAttemptUtc == null || profile.LastAttemptUtc <= DateTime.UtcNow.AddSeconds(-30));
                 if (profile.NextAttemptUtc > DateTime.UtcNow && !eventDue)
                     return;
                 await CollectAsync(profile, db, ct);
@@ -173,7 +175,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             var powerOnState = await db.ApiPowerOnStates.SingleOrDefaultAsync(x => x.ConnectionId == profile.Id, ct);
             powerOnDue = settings.ReadApiPowerOnHours && (forcePowerOnHours || ApiPowerOnHours.Due(profile, powerOnState?.SnapshotJson, started));
             var inventoryDue = refresh == RefreshTarget.Storage || powerOnDue || profile.NextAttemptUtc is null || inventory?.Status != "supported" || inventory.LastSuccessUtc is null || started - inventory.LastSuccessUtc.Value >= TimeSpan.FromSeconds(inventorySeconds);
-            await using var client = clients.Create();
+            await using var client = provider.CreateSession();
             await client.ConnectAsync(profile, protection.CreateProtector("nas-credentials").Unprotect(profile.ProtectedApiKey), ct);
             inventoryDue |= client.RequiresInventoryReconciliation;
             if (profile.CertificateSha256 is null && client.ServerCertificateSha256 is { } fingerprint)
@@ -189,11 +191,9 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 revision = profile.ConfigurationRevision;
             }
 
-            var systemReadStarted = DateTime.UtcNow;
-            var system = await client.ReadAsync("system.info", ct);
-            var systemReadFinished = DateTime.UtcNow;
-            var reportedVersion = Text(system, "version");
-            if (!NasIdentity.SupportsRelease(reportedVersion))
+            var system = await client.ReadSystemAsync(ct);
+            var reportedVersion = system.Version;
+            if (!system.SupportedRelease)
             {
                 using var unsupportedLease = await writes.EnterAsync(stop);
                 await db.Entry(profile).ReloadAsync(stop);
@@ -215,7 +215,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 if (profile.ConfigurationRevision != revision || !profile.Enabled)
                     return CollectionResult.Unavailable;
                 profile.Version = reportedVersion;
-                var blocked = await NasIdentity.CheckAsync(db, profile, NasIdentity.ReadSerial(system), DateTime.UtcNow, ct);
+                var blocked = await NasIdentity.CheckAsync(db, profile, system.Serial, DateTime.UtcNow, ct);
                 if (blocked)
                 {
                     profile.LastAttemptUtc = started;
@@ -230,12 +230,12 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             var eventStatuses = await client.SubscribeEventsAsync(ct);
             if (inventoryDue)
                 failedRead = "inventory";
-            var inventoryRead = inventoryDue ? await ReadArray(client, "disk.query", ct) : new SourceRead(null, "skipped");
+            var inventoryRead = inventoryDue ? await client.ReadDisksAsync(ct) : new SourceRead<DiskInventory[]>(null, "skipped");
             var disks = inventoryRead.Data;
             failedRead = "pools";
-            var poolRead = await ReadArray(client, "pool.query", ct);
+            var poolRead = await client.ReadPoolsAsync(ct);
             failedRead = "alerts";
-            var alertRead = await ReadArray(client, "alert.list", ct);
+            var alertRead = await client.ReadAlertsAsync(ct);
             var alerts = alertRead.Data;
             CachedTemperatureSnapshot? temperatures = null;
             var temperatureStatus = settings.ReadCachedTemperatures ? "unavailable" : "disabled";
@@ -244,7 +244,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 failedRead = "cached_temperatures";
                 try
                 {
-                    temperatures = CachedTemperatures.Normalize(await client.ReadAsync("disk.temperatures", ct), DateTime.UtcNow);
+                    temperatures = await client.ReadTemperaturesAsync(ct);
                     temperatureStatus = "supported";
                 }
                 catch (NasReadException error)
@@ -264,7 +264,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 failedRead = "datasets";
                 try
                 {
-                    datasetSnapshot = Datasets.Normalize(await client.ReadAsync("pool.dataset.query", ct), DateTime.UtcNow);
+                    datasetSnapshot = await client.ReadDatasetsAsync(ct);
                     datasetStatus = "supported";
                 }
                 catch (NasReadException error)
@@ -277,14 +277,14 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 }
             }
 
-            JsonElement? hardwareMetrics = null;
+            HardwareReporting? hardwareMetrics = null;
             var hardwareState = await db.HardwareServers.AsNoTracking().SingleOrDefaultAsync(s => s.ConnectionId == profile.Id, ct);
             var hardwareDue = configuration?.GetValue<bool>("Homelab:HardwareMetricsEnabled") == true && (refresh == RefreshTarget.Hardware || hardwareState?.NextAttemptUtc is null || hardwareState.ConfigurationRevision != revision || hardwareState.NextAttemptUtc <= started);
             if (hardwareDue)
             {
                 try
                 {
-                    hardwareMetrics = await client.ReadHardwareMetricsAsync(hardwareState?.CollectionStartedUtc is null || hardwareState.ConfigurationRevision != revision, ct);
+                    hardwareMetrics = await client.ReadHardwareAsync(hardwareState?.CollectionStartedUtc is null || hardwareState.ConfigurationRevision != revision, ct);
                 }
                 catch (NasReadException)
                 {
@@ -299,7 +299,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             {
                 try
                 {
-                    powerOnSnapshot = await ApiPowerOnHours.CollectAsync(client, currentDisks, revision, ct, powerOnState?.SnapshotJson);
+                    powerOnSnapshot = await client.ReadPowerOnHoursAsync(currentDisks, revision, powerOnState?.SnapshotJson, ct);
                 }
                 catch (NasReadException)
                 {
@@ -317,7 +317,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 upsTimeout.CancelAfter(TimeSpan.FromSeconds(5));
                 try
                 {
-                    ups = UpsSnapshot.Read(await client.ReadUpsMetricsAsync(upsTimeout.Token), DateTime.UtcNow);
+                    ups = await client.ReadUpsAsync(upsTimeout.Token);
                 }
                 catch (NasReadException error)
                 {
@@ -332,7 +332,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                     ups = new("unavailable");
                 }
                 if (DateTime.UtcNow - started < TimeSpan.FromSeconds(27) &&
-                    await UpsNominalRating.ReadAsync(profile, ct) is { Length: > 0 } devices)
+                    await client.ReadUpsDevicesAsync(profile, ct) is { Length: > 0 } devices)
                     ups = (ups ?? new("no-readings")) with { Devices = devices };
             }
 
@@ -343,8 +343,8 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 return CollectionResult.Unavailable;
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             profile.CertificateSha256 ??= client.ServerCertificateSha256;
-            profile.Version = Text(system, "version");
-            var hardwareServer = await HardwareCollection.StageInventory(db, profile, system, started, ct);
+            profile.Version = system.Version;
+            var hardwareServer = await HardwareCollection.StageInventory(db, profile, system.Hardware, started, ct);
             if (hardwareDue)
             {
                 hardwareServer.NextAttemptUtc = started.AddMinutes(5);
@@ -368,7 +368,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             IdentityCandidate[]? mappingCandidates = null;
             if (disks is { } diskSnapshot)
             {
-                var candidates = diskSnapshot.EnumerateArray().Select(row => new IdentityCandidate(Text(row, "serial"), Text(row, "model"), Text(row, "wwn"), Text(row, "name"))).ToArray();
+                var candidates = diskSnapshot.Select(row => row.Identity).ToArray();
                 await DiskIdentity.ReconcileAsync(db, profile.Id, candidates, DateTime.UtcNow, ct, revision);
                 StorageInventory.Attach(db.Disks.Local.Where(x => x.ConnectionId == profile.Id).ToArray(), diskSnapshot);
                 profile.DiscoveryIdentityJson = DiscoveryAssignments.Capture(revision, DateTime.UtcNow, candidates);
@@ -378,14 +378,20 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             if (poolRead.Data is { } pools)
             {
                 // Store a curated topology projection, never the complete server response.
-                var topology = pools.EnumerateArray().Select(p => new { name = Text(p, "name"), guid = Text(p, "guid"), status = Text(p, "status"), topology = p.TryGetProperty("topology", out var t) ? SanitizeTopology(t) : null }).ToArray();
+                var topology = pools.Select(p => new { name = p.Name, guid = p.Guid, status = p.Status, topology = p.Topology }).ToArray();
                 profile.TopologyJson = JsonSerializer.Serialize(topology);
-                foreach (var pool in pools.EnumerateArray())
+                foreach (var pool in pools)
                 {
-                    if (PoolHistory.Normalize(profile.Id, pool, DateTime.UtcNow)is { } snapshot)
+                    if (pool.Snapshot is { } snapshot)
                     {
+                        snapshot.ConnectionId = profile.Id;
+                        PoolHistory.SetFetchTime(snapshot, DateTime.UtcNow);
                         snapshot.VdevEvidenceJson = VdevMapping.Attach(snapshot.VdevEvidenceJson!, mappingCandidates, db.Disks.Local.Where(x => x.ConnectionId == profile.Id).ToArray());
-                        snapshot.SourceContextJson = VdevChanges.CaptureContext(system, revision, systemReadStarted, systemReadFinished);
+                        if (system.PoolContext is { } context)
+                            snapshot.SourceContextJson = VdevChanges.SerializeContext(context with
+                            {
+                                ConfigurationRevision = revision
+                            });
                         await VdevFindings.RecordAsync(db, snapshot, ct);
                         await ResilverFindings.RecordAsync(db, snapshot, ct);
                         db.PoolSnapshots.Add(snapshot);
@@ -408,7 +414,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                     }
 
                     if (pool.status is "DEGRADED" or "FAULTED" or "UNAVAIL" or "SUSPENDED" or "OFFLINE")
-                        await UpsertFinding(db, profile.Id, "pool-state-v1:" + pool.guid, "Pool " + pool.name + " is " + pool.status, "TrueNAS reported this pool state at " + DateTime.UtcNow.ToString("O"), "Review native details, backup availability, and your incident runbook.", "critical", ct);
+                        await UpsertFinding(db, profile.Id, "pool-state-v1:" + pool.guid, "Pool " + pool.name + " is " + pool.status, provider.DisplayName + " reported this pool state at " + DateTime.UtcNow.ToString("O"), "Review native details, backup availability, and your incident runbook.", "critical", ct);
                 }
             }
 
@@ -503,7 +509,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
         }
     }
 
-    private static async Task RecordCapabilities(HomelabDb db, NasConnection nas, DateTime started, string status, string detail, string? alerts, int inventorySeconds, bool inventoryCollected, CancellationToken ct, string? failedRead = null, IReadOnlyDictionary<string, string>? sourceStatuses = null)
+    private async Task RecordCapabilities(HomelabDb db, NasConnection nas, DateTime started, string status, string detail, string? alerts, int inventorySeconds, bool inventoryCollected, CancellationToken ct, string? failedRead = null, IReadOnlyDictionary<string, string>? sourceStatuses = null)
     {
         var capabilities = await db.Capabilities.Where(x => x.ConnectionId == nas.Id).ToListAsync(ct);
         foreach (var name in new[]
@@ -558,9 +564,9 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
         db.CollectionRuns.Add(new() { ConnectionId = nas.Id, StartedUtc = started, EndedUtc = DateTime.UtcNow, Result = status == "supported" ? "partial" : status, CapabilitySummaryJson = JsonSerializer.Serialize(capabilities.Concat(db.Capabilities.Local.Where(x => x.ConnectionId == nas.Id)).DistinctBy(x => x.Name).Select(c => new { c.Name, c.Status, c.LastSuccessUtc, c.ExpectedSeconds })) });
     }
 
-    private static async Task RecordEventCapabilities(HomelabDb db, NasConnection nas, DateTime started, IReadOnlyDictionary<string, string>? statuses, CancellationToken ct)
+    private async Task RecordEventCapabilities(HomelabDb db, NasConnection nas, DateTime started, IReadOnlyDictionary<string, string>? statuses, CancellationToken ct)
     {
-        foreach (var collection in TrueNasClient.EventCollections)
+        foreach (var collection in provider.EventCollections)
         {
             var name = "events:" + collection;
             var capability = db.Capabilities.Local.SingleOrDefault(x => x.ConnectionId == nas.Id && x.Name == name) ?? await db.Capabilities.SingleOrDefaultAsync(x => x.ConnectionId == nas.Id && x.Name == name, ct);
@@ -584,78 +590,6 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
     }
 
     private static double BackoffSeconds(NasConnection profile) => Math.Min(Math.Max(900, profile.PollSeconds), profile.PollSeconds * Math.Pow(2, Math.Min(4, profile.ConsecutiveFailures))) + Random.Shared.Next(0, 10);
-    private sealed record SourceRead(JsonElement? Data, string Status);
-    private static async Task<SourceRead> ReadArray(INasReadClient client, string method, CancellationToken ct)
-    {
-        try
-        {
-            var data = await client.ReadAsync(method, ct);
-            return ValidArray(data, method) ? new(data, "supported") : new(null, "unavailable");
-        }
-        catch (NasReadException error)
-        {
-            return new(null, error.Status);
-        }
-    // Broken transport, cancellation and unexpected implementation failures still discard the
-    // uncommitted cycle. A lost session is not proof of per-method permission denial.
-    }
-
-    private static bool ValidArray(JsonElement data, string method)
-    {
-        if (data.ValueKind != JsonValueKind.Array)
-            return false;
-        var ids = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var row in data.EnumerateArray())
-        {
-            if (row.ValueKind != JsonValueKind.Object)
-                return false;
-            if (row.EnumerateObject().Select(x => x.Name).Distinct(StringComparer.Ordinal).Count() != row.EnumerateObject().Count())
-                return false;
-            var fields = method switch
-            {
-                "disk.query" => new[]
-                {
-                    "serial",
-                    "model",
-                    "name",
-                    "wwn"
-                },
-                "pool.query" => ["name", "guid", "status"],
-                _ => ["id", "level", "klass", "formatted"]
-            };
-            foreach (var field in fields)
-                if (row.TryGetProperty(field, out var value) && value.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
-                    return false;
-            if (method == "disk.query")
-            {
-                if (!row.TryGetProperty("serial", out _) || !row.TryGetProperty("model", out _) || !row.TryGetProperty("name", out _))
-                    return false;
-            }
-            else
-            {
-                var key = method == "pool.query" ? "guid" : "id";
-                if (!row.TryGetProperty(key, out var id) || id.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(id.GetString()) || !ids.Add(id.GetString()!))
-                    return false;
-            }
-
-            if (method == "pool.query" && row.TryGetProperty("topology", out var topology))
-            {
-                if (topology.ValueKind is not (JsonValueKind.Object or JsonValueKind.Null))
-                    return false;
-                try
-                {
-                    _ = SanitizeTopology(topology);
-                }
-                catch (ArgumentException)
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
     private static async Task RecordTemperatureCapability(HomelabDb db, NasConnection nas, DateTime started, string status, CancellationToken ct)
     {
         var capability = db.Capabilities.Local.SingleOrDefault(x => x.ConnectionId == nas.Id && x.Name == "cached_temperatures") ?? await db.Capabilities.SingleOrDefaultAsync(x => x.ConnectionId == nas.Id && x.Name == "cached_temperatures", ct);
@@ -677,14 +611,14 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
         capability.Detail = status == "disabled" ? "Cache-only temperatures are off in Settings." : "Cache-only API read. Values have no observation timestamp or durable disk identity; missing entries are not zero. Full SMART coverage remains unsupported.";
     }
 
-    private static async Task ReconcileAlerts(HomelabDb db, Guid nas, JsonElement snapshot, CancellationToken ct)
+    private static async Task ReconcileAlerts(HomelabDb db, Guid nas, ReportedAlert[] snapshot, CancellationToken ct)
     {
         var existing = await db.NativeAlerts.Where(x => x.ConnectionId == nas).ToListAsync(ct);
         var seen = new HashSet<string>();
         var now = DateTime.UtcNow;
-        foreach (var row in snapshot.EnumerateArray())
+        foreach (var row in snapshot)
         {
-            var id = Text(row, "id");
+            var id = row.Id;
             if (string.IsNullOrEmpty(id))
                 continue;
             seen.Add(id);
@@ -700,27 +634,18 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 existing.Add(alert);
             }
 
-            alert.Level = Text(row, "level");
-            alert.Class = Text(row, "klass");
-            alert.Message = Text(row, "formatted");
+            alert.Level = row.Level;
+            alert.Class = row.Class;
+            alert.Message = row.Message;
             alert.LastSeenUtc = now;
             alert.AbsentSinceUtc = null;
-            alert.DismissedOnNas = row.TryGetProperty("dismissed", out var dismissed) && dismissed.ValueKind == JsonValueKind.True;
+            alert.DismissedOnNas = row.Dismissed;
         }
 
         foreach (var alert in existing.Where(x => !seen.Contains(x.SourceId) && x.AbsentSinceUtc == null))
             alert.AbsentSinceUtc = now;
     }
 
-    private static object? SanitizeTopology(JsonElement node) => node.ValueKind switch
-    {
-        JsonValueKind.Object => node.EnumerateObject().Where(p => new[] { "data", "special", "dedup", "log", "cache", "spare", "type", "guid", "name", "path", "status", "children", "stats", "read_errors", "write_errors", "checksum_errors" }.Contains(p.Name)).ToDictionary(p => p.Name, p => SanitizeTopology(p.Value)),
-        JsonValueKind.Array => node.EnumerateArray().Select(SanitizeTopology).ToArray(),
-        JsonValueKind.String => node.GetString(),
-        JsonValueKind.Number => node.GetRawText(),
-        _ => null
-    };
-    private static string Text(JsonElement row, string name) => row.TryGetProperty(name, out var value) ? value.ToString() : "";
     private static async Task UpsertFinding(HomelabDb db, Guid id, string rule, string title, string evidence, string nextStep, string severity, CancellationToken ct)
     {
         var finding = await db.Findings.FirstOrDefaultAsync(x => x.ConnectionId == id && x.Rule == rule && x.State != "resolved", ct);

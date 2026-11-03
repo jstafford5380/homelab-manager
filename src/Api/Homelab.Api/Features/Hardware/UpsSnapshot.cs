@@ -24,7 +24,7 @@ public record UpsSnapshot(string Status, UpsReading? Load = null, UpsReading? Ch
     private static UpsReading? Latest(JsonElement response, string name, DateTime now, double? max)
     {
         var graphs = response.EnumerateArray()
-            .Where(graph => graph.ValueKind == JsonValueKind.Object && HardwareCollection.Text(graph, "name") == name)
+            .Where(graph => graph.ValueKind == JsonValueKind.Object && TrueNasHardware.Text(graph, "name") == name)
             .ToArray();
         if (graphs.Length != 1 || !graphs[0].TryGetProperty("legend", out var legend) ||
             legend.ValueKind != JsonValueKind.Array || legend.GetArrayLength() != 2 ||

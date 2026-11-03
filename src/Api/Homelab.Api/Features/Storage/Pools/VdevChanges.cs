@@ -8,8 +8,10 @@ public static class VdevChanges
     {
         double? uptime = system.TryGetProperty("uptime_seconds", out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var seconds) && double.IsFinite(seconds) && seconds >= 0 && seconds <= 9007199254740991d ? seconds : null;
         var version = system.TryGetProperty("version", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
-        return JsonSerializer.Serialize(new PoolSourceContext("truenas-24.10-system-context-v1", NasIdentity.ReadSerial(system), version, revision, started, finished, uptime), Options);
+        return SerializeContext(new("truenas-24.10-system-context-v1", NasIdentity.ReadSerial(system), version, revision, started, finished, uptime));
     }
+
+    internal static string SerializeContext(PoolSourceContext context) => JsonSerializer.Serialize(context, Options);
 
     private static PoolSourceContext? Context(string? json)
     {

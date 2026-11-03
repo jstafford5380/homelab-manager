@@ -48,3 +48,11 @@ dotnet ef migrations has-pending-model-changes --project src/Api/Homelab.Api
 ```
 
 `ApiArchitectureTests` checks the pre-refactor method/route inventory, authorization metadata, JSON body binding, mutation guards, OpenAPI operation coverage and parameter sources, Scalar, and both logging providers. Existing integration and domain tests cover persisted evidence, concurrency, recovery revisions, hardware operations, credentials, and transport restrictions.
+
+## Integration providers
+
+`ApiHosting` registers built-in providers by stable ID. The existing NAS connection flow selects `truenas`, and Synology hardware collection resolves `synology` from the server platform. The registry rejects unknown IDs and incompatible capabilities. Both settings flows continue to use their current routes and stored credentials.
+
+To add a storage integration, implement the storage provider and read session, register it, and wire its settings flow to select its ID. Translate remote responses at the provider boundary into the app's inventory, alert, hardware, and evidence inputs. Preserve the distinction between a successful empty read, unsupported data, and a failed read. Add transport and response translation fixtures for the new provider. Keep remote operations read-only and use explicit allowlists where the transport accepts method names.
+
+Workers own scheduling, configuration revision checks, and evidence persistence. Hardware sources share detected components and collected readings while retaining their own acquisition and timing rules. Extend an existing capability when the data has the same meaning. Add a separate capability when the device reports a different kind of evidence.

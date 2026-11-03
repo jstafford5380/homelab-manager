@@ -41,6 +41,9 @@ public static class ApiHosting
         builder.Services.AddSingleton<PasswordHasher<Owner>>();
         builder.Services.AddSingleton<WriteCoordinator>();
         builder.Services.AddSingleton<INasReadClientFactory, NasReadClientFactory>();
+        builder.Services.AddSingleton<IIntegrationProvider, TrueNasProvider>();
+        builder.Services.AddSingleton<IIntegrationProvider, SynologyHardwareProvider>();
+        builder.Services.AddSingleton<ProviderRegistry>();
         builder.Services.AddSingleton<ISynologyHardwareReader, SynologyHardwareReader>();
         builder.Services.AddSingleton<SynologyHardwareCollector>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<SynologyHardwareCollector>());

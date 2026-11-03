@@ -25,6 +25,10 @@
     <ProjectReference Include="..\Homelab.ServiceDefaults\Homelab.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Homelab.Tests" />
+  </ItemGroup>
+
   <Target Name="CopyWebAssets" BeforeTargets="PrepareForBuild" Condition="Exists('../../Web/dist')">
     <ItemGroup>
       <Content Remove="wwwroot/**" />

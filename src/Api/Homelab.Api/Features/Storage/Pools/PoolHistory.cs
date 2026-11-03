@@ -7,6 +7,14 @@ public static class PoolHistory
     // A fetch is evidence of reported state, not a new scan event or its completion time.
     public static PoolSnapshot? Normalize(Guid connection, JsonElement row, DateTime fetched)
     {
+        var snapshot = Parse(connection, row);
+        if (snapshot is not null)
+            SetFetchTime(snapshot, fetched);
+        return snapshot;
+    }
+
+    internal static PoolSnapshot? Parse(Guid connection, JsonElement row)
+    {
         var guid = Text(row, "guid");
         if (string.IsNullOrWhiteSpace(guid))
             return null; // Never merge unnamed pools.
@@ -16,7 +24,6 @@ public static class PoolHistory
             PoolGuid = guid,
             Name = Text(row, "name") ?? "",
             Status = Text(row, "status") ?? "unknown",
-            FetchedUtc = fetched,
             StatusCode = StatusCode(row),
             TopologySignature = PoolCapacity.TopologySignature(row),
             VdevEvidenceJson = VdevEvidence.Capture(row),
@@ -29,9 +36,9 @@ public static class PoolHistory
             result.ScanFunction = Text(scan, "function");
             result.ScanState = Text(scan, "state");
             result.ScanErrors = Count(scan, "errors");
-            result.ScanStartedUtc = SourceTime(scan, "start_time", fetched);
-            var end = SourceTime(scan, "end_time", fetched);
-            var pause = SourceTime(scan, "pause", fetched);
+            result.ScanStartedUtc = SourceTime(scan, "start_time");
+            var end = SourceTime(scan, "end_time");
+            var pause = SourceTime(scan, "pause");
             // Do not manufacture an event time from polling or retain contradictory timing.
             if (result.ScanState is "FINISHED" or "CANCELED" && end >= result.ScanStartedUtc)
                 result.ScanEndedUtc = end;
@@ -51,6 +58,21 @@ public static class PoolHistory
         return result;
     }
 
+    internal static void SetFetchTime(PoolSnapshot snapshot, DateTime fetched)
+    {
+        snapshot.FetchedUtc = fetched;
+        if (snapshot.ScanStartedUtc > fetched)
+        {
+            snapshot.ScanStartedUtc = null;
+            snapshot.ScanEndedUtc = null;
+            snapshot.ScanPausedUtc = null;
+        }
+        if (snapshot.ScanEndedUtc > fetched)
+            snapshot.ScanEndedUtc = null;
+        if (snapshot.ScanPausedUtc > fetched)
+            snapshot.ScanPausedUtc = null;
+    }
+
     public static string? StatusCode(JsonElement row)
     {
         var code = Text(row, "status_code");
@@ -58,12 +80,11 @@ public static class PoolHistory
     }
 
     // TrueNAS EJSON datetime: one $date property containing epoch milliseconds.
-    private static DateTime? SourceTime(JsonElement row, string key, DateTime fetched)
+    private static DateTime? SourceTime(JsonElement row, string key)
     {
         if (!row.TryGetProperty(key, out var value) || value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() != 1 || !value.TryGetProperty("$date", out var date) || date.ValueKind != JsonValueKind.Number || !date.TryGetInt64(out var milliseconds) || milliseconds <= 0 || milliseconds > 253402300799999L)
             return null;
-        var utc = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime;
-        return utc <= fetched ? utc : null;
+        return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime;
     }
 
     private static string? Text(JsonElement row, string key) => row.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
