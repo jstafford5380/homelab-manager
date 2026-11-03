@@ -1,0 +1,61 @@
+{
+  "_mock": {
+    "note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.",
+    "label": "No systems yet",
+    "hero": {
+      "tone": "neutral",
+      "headline": "Nothing is being monitored yet",
+      "detail": "Connect a NAS and Homelab Control will start collecting storage, drive and coverage data.",
+      "signals": [
+        [
+          "Findings",
+          "neutral",
+          "No sources",
+          "Nothing collected yet",
+          "check"
+        ],
+        [
+          "Coverage",
+          "neutral",
+          "None",
+          "No systems enrolled",
+          "db"
+        ],
+        [
+          "Recovery",
+          "neutral",
+          "Unverified",
+          "No restore evidence recorded",
+          "shield"
+        ],
+        [
+          "Plans",
+          null,
+          "None open",
+          "Replacements, spares and reviews",
+          "bag"
+        ],
+        [
+          "Total investment",
+          null,
+          "$0.00",
+          "Recorded purchases",
+          null
+        ]
+      ]
+    },
+    "upcoming": [],
+    "driveCounts": {},
+    "now": "2026-11-03T15:00:00Z"
+  },
+  "connections": [],
+  "capabilities": [],
+  "findings": [],
+  "scanReports": [],
+  "planning": {
+    "driveAgeReviewYears": 5,
+    "reviews": [],
+    "spares": [],
+    "budgets": []
+  }
+}

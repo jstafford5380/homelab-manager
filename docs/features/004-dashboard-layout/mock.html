@@ -1,0 +1,541 @@
+<!doctype html>
+<!--
+  004 · Dashboard layout mock. Built from docs/features/_template/mock.html.
+  - Tokens are copied from src/Web/src/index.css.
+  - The toolbar is mock-only. Everything inside #app is the design.
+  - Responsive rules use @container app; map them to the app's 700px and 1100px @media breakpoints.
+  - Inline fixtures below mirror fixtures/*.json and drive the render.
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>004 Dashboard layout · Mock</title>
+  <style>
+    /* App tokens: light */
+    :root {
+      color-scheme: light;
+      --background: #ffffff;
+      --foreground: #1f2933;
+      --card: #ffffff;
+      --card-foreground: #1f2933;
+      --popover: #ffffff;
+      --popover-foreground: #1f2933;
+      --primary: #24303d;
+      --primary-foreground: #ffffff;
+      --secondary: #eef1f4;
+      --secondary-foreground: #2f3b48;
+      --muted: #f1f3f5;
+      --muted-foreground: #56616d;
+      --accent: #eef1f4;
+      --accent-foreground: #1f2933;
+      --destructive: #a8392b;
+      --border: #e1e5ea;
+      --input: #7d8794;
+      --ring: #3d5f86;
+      --page: #f6f7f8;
+      --surface-soft: #f3f5f7;
+      --surface-stripe: #fafbfc;
+      --text-secondary: var(--muted-foreground);
+      --brand: #1f2933;
+      --brand-background: #24303d;
+      --brand-foreground: #ffffff;
+      --nav-active: #e9edf1;
+      --nav-active-foreground: #1f2933;
+      --nav-count: #dde3e9;
+      --error-background: #fff0ed;
+      --error-border: #f3d1c7;
+      --error-foreground: #9e4938;
+      --warning-background: #fff6e8;
+      --warning-border: #dfc9a0;
+      --warning-foreground: #69471e;
+      --chart-axis: #b9c1ca;
+      --chart-point: #3d5f86;
+      --tone-ok: #1e6b45;
+      --tone-ok-bg: #e7f4ec;
+      --tone-ok-border: #bcdcc8;
+      --tone-warn: #7a4a0e;
+      --tone-warn-bg: #fff4e0;
+      --tone-warn-border: #e6c98f;
+      --tone-bad: #a1301f;
+      --tone-bad-bg: #fdece8;
+      --tone-bad-border: #efc0b5;
+      --tone-neutral: #56616d;
+      --tone-neutral-bg: #f1f3f5;
+      --tone-neutral-border: #8a95a1;
+      --tone-info: #3f6487;
+      --link: #3d5f86;
+    }
+    /* App tokens: dark */
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --background: #14181c;
+      --foreground: #e6e9ed;
+      --card: #1a1f24;
+      --card-foreground: #e6e9ed;
+      --popover: #1a1f24;
+      --popover-foreground: #e6e9ed;
+      --primary: #dfe5ec;
+      --primary-foreground: #14181c;
+      --secondary: #262d35;
+      --secondary-foreground: #dfe5ec;
+      --muted: #1f252b;
+      --muted-foreground: #a7b0ba;
+      --accent: #262d35;
+      --accent-foreground: #e6e9ed;
+      --destructive: #c0473a;
+      --border: #353d46;
+      --input: #7f8a96;
+      --ring: #9dbad8;
+      --page: #0f1215;
+      --surface-soft: #1f252b;
+      --surface-stripe: #1d2227;
+      --brand: #e6e9ed;
+      --brand-background: #dfe5ec;
+      --brand-foreground: #14181c;
+      --nav-active: #262d35;
+      --nav-active-foreground: #ffffff;
+      --nav-count: #333b45;
+      --error-background: #38221e;
+      --error-border: #a46b5f;
+      --error-foreground: #ffc1b5;
+      --warning-background: #34291b;
+      --warning-border: #82683e;
+      --warning-foreground: #f3d4a0;
+      --chart-axis: #7f8a96;
+      --chart-point: #9dbad8;
+      --tone-ok: #8fd9b1;
+      --tone-ok-bg: #142a20;
+      --tone-ok-border: #2c5a43;
+      --tone-warn: #f3cf92;
+      --tone-warn-bg: #33281a;
+      --tone-warn-border: #6e5531;
+      --tone-bad: #ffb4a6;
+      --tone-bad-bg: #3a201b;
+      --tone-bad-border: #7a3f34;
+      --tone-neutral: #a7b0ba;
+      --tone-neutral-bg: #1f252b;
+      --tone-neutral-border: #56606b;
+      --tone-info: #9dbad8;
+      --link: #9dbad8;
+    }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --background: #14181c;
+      --foreground: #e6e9ed;
+      --card: #1a1f24;
+      --card-foreground: #e6e9ed;
+      --popover: #1a1f24;
+      --popover-foreground: #e6e9ed;
+      --primary: #dfe5ec;
+      --primary-foreground: #14181c;
+      --secondary: #262d35;
+      --secondary-foreground: #dfe5ec;
+      --muted: #1f252b;
+      --muted-foreground: #a7b0ba;
+      --accent: #262d35;
+      --accent-foreground: #e6e9ed;
+      --destructive: #c0473a;
+      --border: #353d46;
+      --input: #7f8a96;
+      --ring: #9dbad8;
+      --page: #0f1215;
+      --surface-soft: #1f252b;
+      --surface-stripe: #1d2227;
+      --brand: #e6e9ed;
+      --brand-background: #dfe5ec;
+      --brand-foreground: #14181c;
+      --nav-active: #262d35;
+      --nav-active-foreground: #ffffff;
+      --nav-count: #333b45;
+      --error-background: #38221e;
+      --error-border: #a46b5f;
+      --error-foreground: #ffc1b5;
+      --warning-background: #34291b;
+      --warning-border: #82683e;
+      --warning-foreground: #f3d4a0;
+      --chart-axis: #7f8a96;
+      --chart-point: #9dbad8;
+      --tone-ok: #8fd9b1;
+      --tone-ok-bg: #142a20;
+      --tone-ok-border: #2c5a43;
+      --tone-warn: #f3cf92;
+      --tone-warn-bg: #33281a;
+      --tone-warn-border: #6e5531;
+      --tone-bad: #ffb4a6;
+      --tone-bad-bg: #3a201b;
+      --tone-bad-border: #7a3f34;
+      --tone-neutral: #a7b0ba;
+      --tone-neutral-bg: #1f252b;
+      --tone-neutral-border: #56606b;
+      --tone-info: #9dbad8;
+      --link: #9dbad8;
+    } }
+
+    /* App base (mirrors src/Web/src/App.css) */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--foreground); background: var(--page); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: -1px; font-weight: 600; text-wrap: balance; }
+    h2 { font-size: 17px; font-weight: 600; }
+    h3 { font-size: 15px; font-weight: 600; }
+    small, .muted { color: var(--text-secondary); font-size: 12px; }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
+    .card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground); }
+    .btn.outline { background: var(--background); color: var(--foreground); border-color: var(--border); }
+    .btn.ghost { background: transparent; color: var(--foreground); }
+    .btn.sm { height: 30px; padding: 0 10px; font-size: 13px; }
+    .btn:focus-visible, a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .tone-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); }
+    .tone-warn { --tone: var(--tone-warn); --tone-bg: var(--tone-warn-bg); --tone-border: var(--tone-warn-border); }
+    .tone-bad { --tone: var(--tone-bad); --tone-bg: var(--tone-bad-bg); --tone-border: var(--tone-bad-border); }
+    .tone-neutral { --tone: var(--tone-neutral); --tone-bg: var(--tone-neutral-bg); --tone-border: var(--tone-neutral-border); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); white-space: nowrap; }
+    .pill.tone-neutral { border-style: dashed; }
+    svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* Mock frame */
+    #app { container: app / inline-size; margin: 0 auto; padding-block: 36px; padding-left: max(38px, env(safe-area-inset-left, 0px)); padding-right: max(38px, env(safe-area-inset-right, 0px)); max-width: 1600px; }
+    html[data-width="tablet"] #app { max-width: 900px; }
+    html[data-width="mobile"] #app { max-width: 390px; padding-block: 24px; padding-left: 16px; padding-right: 16px; }
+    html[data-width="tablet"] body, html[data-width="mobile"] body { background: var(--muted); }
+    html[data-width="tablet"] #app, html[data-width="mobile"] #app { background: var(--page); min-height: calc(100vh - 49px); box-shadow: 0 0 0 1px var(--border); }
+    @media (max-width: 700px) { #app { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; } }
+    .mock-toolbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: #1b1f1d; color: #e8ece9; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mock-toolbar strong { margin-right: auto; }
+    .mock-toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+    .mock-toolbar select { font: inherit; background: #2b312e; color: #e8ece9; border: 1px solid #47504b; border-radius: 4px; padding: 3px 6px; }
+    body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: #1b1f1d; }
+
+    /* ---- Design ---- */
+    .page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+    .page-heading h1 { margin: 6px 0 4px; }
+    .ov { display: grid; gap: 28px; }
+
+    /* Verdict hero (unchanged structure; signal row now wraps evenly) */
+    .verdict { border: 1px solid var(--tone-border); border-radius: 14px; background: linear-gradient(180deg, var(--tone-bg), var(--card) 75%); padding: 24px; display: grid; gap: 22px; }
+    .verdict.tone-neutral { border-style: dashed; }
+    .verdict-main { display: flex; gap: 16px; align-items: flex-start; }
+    .verdict-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--tone); background: var(--card); border: 1px solid var(--tone-border); }
+    .verdict-icon svg.i { width: 22px; height: 22px; }
+    .verdict h2 { font-size: 22px; letter-spacing: -.5px; margin-top: 4px; text-wrap: balance; }
+    .verdict-detail { margin-top: 6px; color: var(--text-secondary); font-size: 13px; max-width: 70ch; }
+    .signals { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .signal { display: grid; gap: 4px; height: 100%; padding: 14px 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); color: inherit; }
+    a.signal:hover { border-color: var(--tone-border); text-decoration: none; }
+    .signal-label { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); }
+    .signal-label svg.i { width: 13px; height: 13px; }
+    .signal strong { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 600; letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
+    .signal strong svg.i { color: var(--tone); }
+
+    /* 004.01 Adaptive body: main column + rail. Main always has content (systems), so it never ends short. */
+    .body { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+    .col { display: grid; gap: 28px; min-width: 0; }
+
+    /* Findings */
+    .findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .finding { --sev: var(--tone-info); position: relative; display: grid; gap: 8px; padding: 18px 20px 16px 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; }
+    .finding::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--sev); }
+    .finding.sev-critical { --sev: var(--tone-bad); }
+    .finding.sev-urgent { --sev: var(--tone-warn); }
+    .finding-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .sev { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--sev); }
+    .sev svg.i { width: 13px; height: 13px; }
+    .finding-source { margin-left: auto; }
+    .finding p { font-size: 13px; color: var(--text-secondary); max-width: 75ch; }
+    .finding .next { display: flex; gap: 6px; color: var(--foreground); }
+    .finding .next svg.i { width: 14px; height: 14px; margin-top: 3px; }
+    .finding-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+
+    /* 004.02 Single system: expanded card with coverage list */
+    .sys-hero { padding: 0; gap: 0; }
+    .sys-hero-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px 20px 4px; }
+    .sys-hero-head h3 { font-size: 17px; }
+    .sys-hero-head .pill { margin-left: auto; }
+    .sys-status { padding: 0 20px 16px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .stats > div { padding: 14px 20px; display: grid; gap: 2px; }
+    .stats > div + div { border-left: 1px solid var(--border); }
+    .stats dt { font-size: 12px; color: var(--text-secondary); }
+    .stats dd { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
+    .stats dd.small { font-size: 15px; padding-top: 4px; }
+    .coverage { padding: 16px 20px 18px; display: grid; gap: 10px; }
+    .coverage-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .coverage-head h4 { margin: 0; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+    .cap-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
+    .cap-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; min-width: 0; }
+    .cap-list li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+
+    /* 004.03 Several systems: one row each, so the list never leaves a hole */
+    .sys-list { position: relative; padding: 0; gap: 0; overflow: hidden; }
+    .sys-row { display: grid; grid-template-columns: minmax(0, 1.6fr) 112px minmax(110px, .8fr) repeat(3, minmax(56px, .5fr)); align-items: center; gap: 12px; padding: 14px 20px; }
+    .sys-row + .sys-row { border-top: 1px solid var(--border); }
+    .sys-row.head { padding-block: 10px; background: var(--surface-soft); font-size: 12px; color: var(--text-secondary); }
+    .sys-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .sys-name > div { min-width: 0; }
+    .sys-name strong { display: block; }
+    .sys-name small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sys-row .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .sys-row .lbl { display: none; }
+
+    /* Rail */
+    .upcoming { padding: 6px 20px; gap: 0; }
+    .bucket { padding: 12px 0; }
+    .bucket + .bucket { border-top: 1px solid var(--border); }
+    .bucket h3 { font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+    .bucket ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .item { display: flex; gap: 10px; }
+    .item svg.i { margin-top: 2px; color: var(--text-secondary); }
+    .item > div { display: grid; min-width: 0; }
+    .item strong { font-weight: 600; }
+
+    /* 004.04 Readiness absorbs the quiet scan line */
+    .ready { padding: 4px 20px; gap: 0; }
+    .ready > .item { padding: 14px 0; }
+    .ready > .item + .item { border-top: 1px solid var(--border); }
+
+    /* Active scans (main column, only while one is running) */
+    .scan { gap: 10px; }
+    .scan-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+    .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface-soft); border: 1px solid var(--border); overflow: hidden; }
+    .bar > i { display: block; height: 100%; background: var(--tone-info); }
+
+    .empty { align-items: center; text-align: center; padding: 48px 24px; }
+    .empty svg.i { width: 32px; height: 32px; color: var(--text-secondary); }
+    .empty p { max-width: 52ch; color: var(--text-secondary); }
+
+    /* Tablet (app breakpoint 1100px) */
+    @container app (max-width: 1100px) {
+      .body { grid-template-columns: minmax(0, 1fr); }
+      /* Rail sections sit side by side under the main column instead of a long stack */
+      .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+      .rail > .span { grid-column: 1 / -1; }
+      .signal { padding: 12px 14px; }
+      .signal strong { font-size: 16px; }
+    }
+    /* Mobile (app breakpoint 700px) */
+    @container app (max-width: 700px) {
+      .page-heading { flex-direction: column; }
+      .verdict { padding: 18px; }
+      .verdict-main { flex-direction: column; gap: 12px; }
+      .signals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .signals > li:last-child { grid-column: 1 / -1; }
+      .rail { grid-template-columns: minmax(0, 1fr); }
+      .finding { padding: 16px 16px 14px 20px; }
+      .finding-source { margin-left: 0; flex-basis: 100%; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats > div:nth-child(3) { border-left: 0; }
+      .stats > div:nth-child(n+3) { border-top: 1px solid var(--border); }
+      .cap-list { grid-template-columns: minmax(0, 1fr); }
+      .sys-row.head { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      .sys-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+      .sys-row .sys-name { grid-column: 1; }
+      .sys-row .sys-pill { justify-self: end; }
+      .sys-row .lbl { display: block; font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+    }
+
+    .stats { margin: 0; }
+    .small-link { font-size: 13px; }
+    .footnote { margin-top: 12px; }
+    .bucket h3.is-overdue { color: var(--tone-warn); }
+    .upcoming-empty { padding: 14px 0; }
+    .upcoming-note { padding: 0 0 12px; }
+    .scan-row .wide { grid-column: 1 / -1; }
+    .refresh-warning { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px 20px; padding: 16px 18px; border: 1px solid var(--warning-border); border-radius: 10px; background: var(--warning-background); color: var(--warning-foreground); }
+    .refresh-warning > div { display: grid; gap: 4px; min-width: 0; flex: 1 1 320px; }
+    .refresh-warning small { color: inherit; }
+    @media (prefers-reduced-motion: no-preference) { a.signal { transition: border-color .15s; } }
+  </style>
+</head>
+<body>
+
+  <div class="mock-toolbar" role="region" aria-label="Mock controls (not part of the design)">
+    <strong>MOCK · 004 Dashboard layout</strong>
+    <label>State <select id="mock-state"></select></label>
+    <label>Width <select id="mock-width"><option value="desktop">Desktop</option><option value="tablet">Tablet 900</option><option value="mobile">Mobile 390</option></select></label>
+    <label>Theme <select id="mock-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  </div>
+
+  <main id="app">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">HOMELAB CONTROL</p>
+        <h1>Your homelab, at a glance.</h1>
+        <p class="muted">What needs attention today, and what's coming up.</p>
+      </div>
+      <button class="btn outline sm" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>Refresh</button>
+    </div>
+    <div class="ov" id="ov"></div>
+  </main>
+
+  <script type="application/json" data-fixture="calm">{"_mock": {"note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.", "label": "Calm \u00b7 1 system", "hero": {"tone": "neutral", "headline": "No open findings, but monitoring is incomplete", "detail": "Some sources are missing, unsupported or out of date, so problems there would not show up. Latest collection 1 minute ago from 1 system.", "signals": [["Findings", "ok", "None open", "Based on collected evidence", "check"], ["Coverage", "warn", "Incomplete", "3 source gaps", "db"], ["Recovery", "neutral", "Unverified", "No restore evidence recorded", "shield"], ["Plans", null, "None open", "Replacements, spares and reviews", "bag"], ["Total investment", null, "$2,059.00", "Recorded purchases", null]]}, "upcoming": [{"label": "Planning reminders", "items": [["drive", "5 drives past your 5-year review age", "Worth budgeting for. Age alone is not evidence of failure."], ["drive", "3 drives without a purchase date", "Add one so age and warranty reminders can appear here."]]}], "driveCounts": {"c1a7e0f2-0000-4000-8000-000000000001": 13}, "now": "2026-11-03T15:00:00Z"}, "connections": [{"id": "c1a7e0f2-0000-4000-8000-000000000001", "name": "Media NAS", "version": "TrueNAS SCALE 25.04", "status": "Partial \u2014 SMART and recovery unverified", "lastSuccessUtc": "2026-11-03T14:59:00Z", "pollSeconds": 300, "enabled": true}], "capabilities": [{"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "inventory", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "pools", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "cached_temperatures", "status": "disabled", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "recovery", "status": "unsupported", "lastSuccessUtc": null}], "findings": [], "scanReports": [], "planning": {"driveAgeReviewYears": 5, "reviews": [], "spares": [], "budgets": []}}</script>
+  <script type="application/json" data-fixture="findings">{"_mock": {"note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.", "label": "Findings \u00b7 1 system", "hero": {"tone": "warn", "headline": "2 findings need a look", "detail": "One is urgent. Some sources are missing, so problems there would not show up. Latest collection 1 minute ago from 1 system.", "signals": [["Findings", "warn", "2 open", "1 urgent \u00b7 1 acknowledged", "check"], ["Coverage", "warn", "Incomplete", "3 source gaps", "db"], ["Recovery", "neutral", "Unverified", "No restore evidence recorded", "shield"], ["Plans", null, "1 open", "Expand tank", "bag"], ["Total investment", null, "$2,059.00", "Recorded purchases", null]]}, "upcoming": [{"label": "Overdue", "items": [["bag", "Review plan: Expand tank", "Review date passed \u00b7 3 days ago"]]}, {"label": "Planning reminders", "items": [["drive", "5 drives past your 5-year review age", "Worth budgeting for. Age alone is not evidence of failure."], ["drive", "3 drives without a purchase date", "Add one so age and warranty reminders can appear here."]]}], "driveCounts": {"c1a7e0f2-0000-4000-8000-000000000001": 13}, "now": "2026-11-03T15:00:00Z"}, "connections": [{"id": "c1a7e0f2-0000-4000-8000-000000000001", "name": "Media NAS", "version": "TrueNAS SCALE 25.04", "status": "Partial \u2014 SMART and recovery unverified", "lastSuccessUtc": "2026-11-03T14:59:00Z", "pollSeconds": 300, "enabled": true}], "capabilities": [{"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "inventory", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "pools", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "cached_temperatures", "status": "disabled", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "recovery", "status": "unsupported", "lastSuccessUtc": null}], "findings": [{"id": "f-101", "connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "diskId": null, "severity": "urgent", "state": "open", "title": "Pool tank is 91% full", "evidence": "tank reports 32.8 TB used of 36.0 TB. Writes slow and snapshots fail as a pool approaches full.", "nextStep": "Free space or plan a vdev expansion before the next large ingest.", "firstSeenUtc": "2026-11-01T15:00:00Z", "reviewUtc": null, "snoozedUntilUtc": null}, {"id": "f-102", "connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "diskId": "d-ada4", "severity": "review", "state": "acknowledged", "title": "Scrub on tank finished with 2 checksum errors", "evidence": "The NAS reported 2 checksum errors on ada4 during the scrub that finished this morning. The NAS reported them as repaired.", "nextStep": "Check the drive's SMART history and cabling. Repeat errors on the same drive are worth a closer look.", "firstSeenUtc": "2026-11-03T09:00:00Z", "reviewUtc": "2026-11-08T09:00:00Z", "snoozedUntilUtc": null}], "scanReports": [], "planning": {"driveAgeReviewYears": 5, "reviews": [], "spares": [], "budgets": [{"currency": "USD", "total": 640.0, "withoutEstimate": 0, "count": 1}]}}</script>
+  <script type="application/json" data-fixture="fleet">{"_mock": {"note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.", "label": "Several systems \u00b7 scan running \u00b7 one out of date", "hero": {"tone": "warn", "headline": "1 finding needs a look", "detail": "Backup NAS hasn't reported for 3 hours, so its current condition is unknown. Latest collection 1 minute ago from 3 systems.", "signals": [["Findings", "warn", "1 open", "1 urgent", "check"], ["Coverage", "warn", "Incomplete", "9 source gaps", "db"], ["Recovery", "neutral", "Unverified", "No restore evidence recorded", "shield"], ["Plans", null, "1 open", "Expand tank", "bag"], ["Total investment", null, "$5,412.00", "Recorded purchases", null]]}, "upcoming": [{"label": "Planning reminders", "items": [["drive", "5 drives past your 5-year review age", "Worth budgeting for. Age alone is not evidence of failure."], ["drive", "3 drives without a purchase date", "Add one so age and warranty reminders can appear here."]]}], "driveCounts": {"c1a7e0f2-0000-4000-8000-000000000001": 13, "c1a7e0f2-0000-4000-8000-000000000002": 4, "c1a7e0f2-0000-4000-8000-000000000003": 4}, "now": "2026-11-03T15:00:00Z"}, "connections": [{"id": "c1a7e0f2-0000-4000-8000-000000000001", "name": "Media NAS", "version": "TrueNAS SCALE 25.04", "status": "Partial \u2014 SMART and recovery unverified", "lastSuccessUtc": "2026-11-03T14:59:00Z", "pollSeconds": 300, "enabled": true}, {"id": "c1a7e0f2-0000-4000-8000-000000000002", "name": "Backup NAS", "version": "TrueNAS SCALE 25.04", "status": "Last collection failed: connection timed out", "lastSuccessUtc": "2026-11-03T12:00:00Z", "pollSeconds": 300, "enabled": true}, {"id": "c1a7e0f2-0000-4000-8000-000000000003", "name": "Office DS920+", "version": "Synology DSM 7.2", "status": "Partial \u2014 SMART unverified", "lastSuccessUtc": "2026-11-03T14:58:00Z", "pollSeconds": 300, "enabled": true}], "capabilities": [{"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "inventory", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "pools", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "cached_temperatures", "status": "disabled", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "recovery", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "inventory", "status": "stale", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "pools", "status": "stale", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "cached_temperatures", "status": "disabled", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000002", "name": "recovery", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "inventory", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "pools", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "cached_temperatures", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000003", "name": "recovery", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}], "findings": [{"id": "f-101", "connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "diskId": null, "severity": "urgent", "state": "open", "title": "Pool tank is 91% full", "evidence": "tank reports 32.8 TB used of 36.0 TB. Writes slow and snapshots fail as a pool approaches full.", "nextStep": "Free space or plan a vdev expansion before the next large ingest.", "firstSeenUtc": "2026-11-01T15:00:00Z", "reviewUtc": null, "snoozedUntilUtc": null}], "scanReports": [{"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "nasName": "Media NAS", "poolGuid": "1234567890", "poolName": "tank", "function": "SCRUB", "state": "SCANNING", "fetchedUtc": "2026-11-03T14:59:00Z", "validUntilUtc": "2026-11-03T15:09:00Z", "freshness": "fresh", "explanation": "Reported by the NAS in the latest pool read.", "percentage": 62.0, "errors": 0, "scanStartedUtc": "2026-11-03T11:00:00Z", "scanEndedUtc": null, "scanPausedUtc": null, "scanRemainingSeconds": null}], "planning": {"driveAgeReviewYears": 5, "reviews": [], "spares": [{"id": "s-1", "quantity": 1}], "budgets": [{"currency": "USD", "total": 640.0, "withoutEstimate": 0, "count": 1}]}}</script>
+  <script type="application/json" data-fixture="partial">{"_mock": {"note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.", "label": "Partly unavailable \u00b7 last-known data", "hero": {"tone": "neutral", "headline": "No open findings, but monitoring is incomplete", "detail": "Some sources are missing, unsupported or out of date, so problems there would not show up. Latest collection 1 minute ago from 1 system.", "signals": [["Findings", "ok", "None open", "Based on collected evidence", "check"], ["Coverage", "warn", "Incomplete", "3 source gaps", "db"], ["Recovery", "neutral", "Unverified", "No restore evidence recorded", "shield"], ["Plans", null, "None open", "Replacements, spares and reviews", "bag"], ["Total investment", null, "$2,059.00", "Recorded purchases", null]]}, "upcoming": [], "driveCounts": {"c1a7e0f2-0000-4000-8000-000000000001": 13}, "refreshError": {"lastRefreshLocal": "11/3/2026, 2:41 PM", "message": "Overview data could not be read."}, "now": "2026-11-03T15:00:00Z"}, "connections": [{"id": "c1a7e0f2-0000-4000-8000-000000000001", "name": "Media NAS", "version": "TrueNAS SCALE 25.04", "status": "Partial \u2014 SMART and recovery unverified", "lastSuccessUtc": "2026-11-03T14:59:00Z", "pollSeconds": 300, "enabled": true}], "capabilities": [{"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "inventory", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "pools", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "cached_temperatures", "status": "disabled", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "recovery", "status": "unsupported", "lastSuccessUtc": null}], "findings": [], "scanReports": null, "planning": "unavailable"}</script>
+  <script type="application/json" data-fixture="loading">{"_mock": {"note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.", "label": "Loading planning", "hero": {"tone": "neutral", "headline": "No open findings, but monitoring is incomplete", "detail": "Some sources are missing, unsupported or out of date, so problems there would not show up. Latest collection 1 minute ago from 1 system.", "signals": [["Findings", "ok", "None open", "Based on collected evidence", "check"], ["Coverage", "warn", "Incomplete", "3 source gaps", "db"], ["Recovery", "neutral", "Unverified", "No restore evidence recorded", "shield"], ["Plans", null, "None open", "Replacements, spares and reviews", "bag"], ["Total investment", null, "$2,059.00", "Recorded purchases", null]]}, "upcoming": [], "driveCounts": {"c1a7e0f2-0000-4000-8000-000000000001": 13}, "now": "2026-11-03T15:00:00Z"}, "connections": [{"id": "c1a7e0f2-0000-4000-8000-000000000001", "name": "Media NAS", "version": "TrueNAS SCALE 25.04", "status": "Partial \u2014 SMART and recovery unverified", "lastSuccessUtc": "2026-11-03T14:59:00Z", "pollSeconds": 300, "enabled": true}], "capabilities": [{"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "system_identity", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "inventory", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "pools", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "datasets", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "alerts", "status": "supported", "lastSuccessUtc": "2026-11-03T14:59:00Z"}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "cached_temperatures", "status": "disabled", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "smart", "status": "unsupported", "lastSuccessUtc": null}, {"connectionId": "c1a7e0f2-0000-4000-8000-000000000001", "name": "recovery", "status": "unsupported", "lastSuccessUtc": null}], "findings": [], "scanReports": [], "planning": null}</script>
+  <script type="application/json" data-fixture="empty">{"_mock": {"note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.", "label": "No systems yet", "hero": {"tone": "neutral", "headline": "Nothing is being monitored yet", "detail": "Connect a NAS and Homelab Control will start collecting storage, drive and coverage data.", "signals": [["Findings", "neutral", "No sources", "Nothing collected yet", "check"], ["Coverage", "neutral", "None", "No systems enrolled", "db"], ["Recovery", "neutral", "Unverified", "No restore evidence recorded", "shield"], ["Plans", null, "None open", "Replacements, spares and reviews", "bag"], ["Total investment", null, "$0.00", "Recorded purchases", null]]}, "upcoming": [], "driveCounts": {}, "now": "2026-11-03T15:00:00Z"}, "connections": [], "capabilities": [], "findings": [], "scanReports": [], "planning": {"driveAgeReviewYears": 5, "reviews": [], "spares": [], "budgets": []}}</script>
+  <script>
+    const I = {
+      help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+      ok: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+      warn: '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+      bad: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+      info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+      db: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0"/>',
+      shield: '<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/>',
+      bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4ZM3 6h18M16 10a4 4 0 0 1-8 0"/>',
+      box: '<path d="M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
+      drive: '<path d="M22 12H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1ZM6 16h.01M10 16h.01"/>',
+      scan: '<path d="M3 12a9 9 0 1 0 9-9 9.8 9.8 0 0 0-6.7 2.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/>',
+      arrow: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>',
+      bell: '<path d="M8.7 3A6 6 0 0 1 18 8a21 21 0 0 0 .6 5M17 17H3s3-2 3-9a4.7 4.7 0 0 1 .3-1.7M10.3 21a1.9 1.9 0 0 0 3.4 0M2 2l20 20"/>',
+      cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+      plus: '<path d="M5 12h14M12 5v14"/>',
+    };
+    const ic = (n) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`;
+    const toneIcon = { ok: "ok", warn: "warn", bad: "bad", neutral: "help" };
+    // 004.02 Proposed source labels and status pills. Gap = any status other than "supported" (same rule as today's "Source gaps").
+    const CAP_LABEL = { system_identity: "System identity", inventory: "Drive inventory", pools: "Pools", datasets: "Datasets", alerts: "NAS alerts", cached_temperatures: "Drive temperatures", smart: "SMART health", recovery: "Restore evidence" };
+    const CAP_STATUS = { supported: ["ok", "Reporting"], disabled: ["neutral", "Turned off"], unsupported: ["neutral", "Unsupported"], not_reported: ["neutral", "Not reported"], missing: ["neutral", "Not reported"], unavailable: ["warn", "Unavailable"], denied: ["warn", "Access denied"], stale: ["warn", "Out of date"] };
+    const capLabel = (n) => CAP_LABEL[n] || n.replaceAll("_", " ");
+    const capStatus = (s) => CAP_STATUS[s] || ["neutral", s.replaceAll("_", " ")];
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+    const STATES = { calm: "", findings: "", fleet: "", partial: "", loading: "", empty: "" };
+    const FIXTURES = Object.fromEntries([...document.querySelectorAll("[data-fixture]")].map((el) => [el.dataset.fixture, JSON.parse(el.textContent)]));
+    for (const k of Object.keys(STATES)) STATES[k] = FIXTURES[k]._mock.label;
+
+    let NOW = 0;
+    function ago(iso) {
+      const m = Math.round((NOW - Date.parse(iso)) / 60000);
+      if (m < 1) return "just now";
+      if (m < 60) return `${m} minute${m === 1 ? "" : "s"} ago`;
+      const h = Math.round(m / 60);
+      if (h < 24) return `${h} hour${h === 1 ? "" : "s"} ago`;
+      const d = Math.round(h / 24);
+      return `${d} day${d === 1 ? "" : "s"} ago`;
+    }
+    function ahead(iso) { const d = Math.round((Date.parse(iso) - NOW) / 86400000); return `in ${d} day${d === 1 ? "" : "s"}`; }
+    function freshness(c) {
+      if (c.enabled === false) return "paused";
+      if (!c.lastSuccessUtc) return "never";
+      return NOW - Date.parse(c.lastSuccessUtc) > Math.max(300, c.pollSeconds * 3) * 1000 ? "stale" : "fresh";
+    }
+    const PILL = { fresh: ["ok", "Reporting"], paused: ["neutral", "Paused"], never: ["warn", "No collection yet"], stale: ["warn", "Out of date"] };
+
+    function signal([label, tone, value, detail, icon], calm) {
+      const inner = `<span class="signal-label">${icon ? ic(icon) : ""}${label}</span><strong>${tone ? ic(toneIcon[tone]) : ""}${value}</strong><small>${detail}</small>`;
+      // 004.01 With no findings there is no attention section to scroll to, so the Findings tile is not a link.
+      const link = tone && !(calm && label === "Findings");
+      return `<li>${link ? `<a href="#" class="signal tone-${tone}">${inner}</a>` : `<div class="signal${tone ? ` tone-${tone}` : ""}">${inner}</div>`}</li>`;
+    }
+    function finding(f, name) {
+      const sevIcon = { critical: "bad", urgent: "warn", review: "info" }[f.severity] || "info";
+      const ack = f.state === "acknowledged";
+      return `<li class="finding sev-${f.severity}"><div class="finding-meta"><span class="sev">${ic(sevIcon)}${f.severity}</span>${ack ? `<span class="pill tone-neutral">${ic("check")}Acknowledged${f.reviewUtc ? ` · review ${ahead(f.reviewUtc)}` : ""}</span>` : ""}<small class="finding-source">${esc(name)} · first seen ${ago(f.firstSeenUtc)}</small></div>
+        <h3><a href="#">${esc(f.title)}</a></h3><p>${esc(f.evidence)}</p><p class="next">${ic("arrow")}<span>${esc(f.nextStep)}</span></p>
+        <div class="finding-actions">${ack ? "" : `<button class="btn outline sm" type="button">${ic("check")}Acknowledge for 7 days</button>`}<button class="btn ghost sm" type="button">${ic("bell")}Snooze deliveries 24h</button></div></li>`;
+    }
+    function sysFacts(fx, c) {
+      const caps = fx.capabilities.filter((x) => x.connectionId === c.id);
+      return { caps, drives: fx._mock.driveCounts[c.id] ?? 0, open: fx.findings.filter((f) => f.connectionId === c.id).length, gaps: caps.filter((x) => x.status !== "supported").length, pill: PILL[freshness(c)] };
+    }
+    function oneSystem(fx, c) {
+      const { caps, drives, open, gaps, pill } = sysFacts(fx, c);
+      const sorted = [...caps].sort((a, b) => (a.status === "supported") - (b.status === "supported"));
+      return `<div class="card sys-hero"><div class="sys-hero-head">${ic("db")}<h3>${esc(c.name)}</h3><small>${esc(c.version)}</small><span class="pill tone-${pill[0]}">${ic(toneIcon[pill[0]])}${pill[1]}</span></div>
+        <p class="muted sys-status">${esc(c.status)}</p>
+        <dl class="stats"><div><dt>Last collected</dt><dd class="small">${c.lastSuccessUtc ? ago(c.lastSuccessUtc) : "Not yet observed"}</dd></div><div><dt>Drives</dt><dd>${drives}</dd></div><div><dt>Open findings</dt><dd>${open}</dd></div><div><dt>Source gaps</dt><dd>${gaps}</dd></div></dl>
+        <div class="coverage"><div class="coverage-head"><h4>Sources</h4><a href="#" class="small-link">Review coverage</a></div>
+        <ul class="cap-list" aria-label="Sources for ${esc(c.name)}">${sorted.map((x) => { const [t, l] = capStatus(x.status); return `<li><span>${capLabel(x.name)}</span><span class="pill tone-${t}">${ic(toneIcon[t])}${l}</span></li>`; }).join("")}</ul></div></div>`;
+    }
+    function systemList(fx) {
+      const row = (c) => {
+        const { drives, open, gaps, pill } = sysFacts(fx, c);
+        return `<div class="sys-row" role="row"><div class="sys-name" role="cell">${ic("db")}<div><strong><a href="#">${esc(c.name)}</a></strong><small title="${esc(c.status)}">${esc(c.status)}</small></div></div>
+          <span class="sys-pill" role="cell"><span class="pill tone-${pill[0]}">${ic(toneIcon[pill[0]])}${pill[1]}</span></span>
+          <span role="cell"><span class="lbl">Last collected</span>${c.lastSuccessUtc ? ago(c.lastSuccessUtc) : "Not yet observed"}</span><span class="num" role="cell"><span class="lbl">Drives</span>${drives}</span><span class="num" role="cell"><span class="lbl">Open findings</span>${open}</span><span class="num" role="cell"><span class="lbl">Source gaps</span>${gaps}</span></div>`;
+      };
+      return `<div class="card sys-list" role="table" aria-label="Systems"><div class="sys-row head" role="row"><span role="columnheader">System</span><span role="columnheader">Status</span><span role="columnheader">Last collected</span><span role="columnheader">Drives</span><span role="columnheader">Open findings</span><span role="columnheader">Source gaps</span></div>${fx.connections.map(row).join("")}</div>`;
+    }
+    function scanCard(r) {
+      const fresh = r.freshness === "fresh" && r.validUntilUtc && Date.parse(r.validUntilUtc) >= NOW;
+      const pct = r.percentage;
+      return `<div class="scan-row"><strong>${esc(r.nasName)} · ${esc(r.poolName || r.poolGuid)}</strong><span class="pill tone-neutral">${fresh ? "Recent source report" : "Last-known report"}</span>
+        <span>${r.function} · ${r.scanPausedUtc ? "PAUSED (source report)" : r.state}</span><span></span>
+        ${pct === null ? "" : `<div class="bar" role="img" aria-label="Reported progress ${pct.toFixed(1)}%"><i style="width:${pct}%"></i></div>`}
+        <small class="wide">${pct === null ? "Progress unknown" : `Reported progress: ${pct.toFixed(1)}%`} · ${r.errors === null ? "Scan errors unknown" : `Reported scan errors: ${r.errors}`}${r.scanStartedUtc ? ` · started ${ago(r.scanStartedUtc)}` : ""}</small></div>`;
+    }
+    function section(id, title, aside, inner) {
+      return `<section aria-labelledby="${id}"><div class="section-title"><h2 id="${id}">${title}</h2>${aside}</div>${inner}</section>`;
+    }
+
+    function render(key) {
+      const fx = FIXTURES[key], m = fx._mock;
+      NOW = Date.parse(m.now);
+      const calm = fx.findings.length === 0;
+      let html = "";
+      if (m.refreshError) html += `<section class="refresh-warning" role="alert"><div><strong>Overview refresh unavailable</strong><p>Showing last-known overview data loaded ${m.refreshError.lastRefreshLocal}. This does not establish the current condition of your NAS.</p><small>${m.refreshError.message}</small></div><button class="btn outline sm" type="button">Retry overview</button></section>`;
+      const h = m.hero;
+      html += `<section class="verdict tone-${h.tone}" aria-labelledby="v-title"><div class="verdict-main"><span class="verdict-icon">${ic(toneIcon[h.tone])}</span><div><p class="eyebrow">Current condition</p><h2 id="v-title">${h.headline}</h2><p class="verdict-detail">${h.detail}</p></div></div>
+        <ul class="signals" aria-label="Condition summary">${h.signals.map((s) => signal(s, calm)).join("")}</ul></section>`;
+
+      if (!fx.connections.length) {
+        html += `<div class="card empty">${ic("shield")}<h3>Meet your NAS</h3><p>Connect your NAS to see storage topology, drive identity and collection coverage. Missing data will stay visibly unknown.</p><button class="btn" type="button">${ic("plus")}Connect a NAS</button></div>`;
+      } else {
+        const name = (id) => fx.connections.find((c) => c.id === id)?.name ?? "Unknown system";
+        const scans = fx.scanReports;
+        const main = [];
+        if (!calm) main.push(section("ov-attention-title", "Needs your attention", '<span class="muted">Most severe first</span>', `<ul class="findings">${fx.findings.map((f) => finding(f, name(f.connectionId))).join("")}</ul><p class="muted footnote">Critical findings bypass delivery snoozes. Acknowledging never changes alerts on your NAS.</p>`));
+        if (scans?.length) main.push(section("ov-scan-title", "Scrub &amp; resilver reports", '<a href="#" class="small-link">Review storage history</a>', `<div class="card scan">${scans.map(scanCard).join("")}<small>These are NAS-reported observations. Homelab Control does not start, pause or stop scans, and does not infer a completion time.</small></div>`));
+        main.push(section("ov-systems-title", "Systems", `<span class="muted">${fx.connections.length} enrolled</span>`, fx.connections.length === 1 ? oneSystem(fx, fx.connections[0]) : systemList(fx)));
+
+        const p = fx.planning;
+        const up = m.upcoming.length
+          ? m.upcoming.map((b) => `<div class="bucket"><h3${b.label === "Overdue" ? ' class="is-overdue"' : ""}>${b.label}</h3><ul>${b.items.map(([i, t, d]) => `<li class="item">${ic(i)}<div><a href="#"><strong>${t}</strong></a><small>${d}</small></div></li>`).join("")}</ul></div>`).join("")
+          : `<div class="upcoming-empty item">${ic("cal")}<p class="muted">${p === null ? "Checking planning reminders…" : "Nothing scheduled. Add warranty dates to drives and review dates to plans, and reminders will collect here."}</p></div>`;
+        const upNote = p === "unavailable" ? '<p class="muted upcoming-note" role="status">Drive age reminders are unavailable right now.</p>' : "";
+        const spares = p && p !== "unavailable" ? p.spares.reduce((s, x) => s + x.quantity, 0) : null;
+        const budget = p && p !== "unavailable" && p.budgets.length ? p.budgets : null;
+        const money = (b) => new Intl.NumberFormat("en-US", { style: "currency", currency: b.currency }).format(b.total);
+        // 004.04 The quiet scan line. Copy keeps today's caveats.
+        const scanLine = scans === null || scans === undefined
+          ? ["Scan summary unavailable", "Review storage history and collection coverage."]
+          : scans.length
+            ? [`${scans.length} scan report${scans.length === 1 ? "" : "s"} in progress`, "Shown under Scrub & resilver reports."]
+            : ["No scrub or resilver in progress", "In the latest retained pool snapshots. This does not establish that all pools were checked."];
+        const ready = `<div class="card ready">
+          <div class="item">${ic("box")}<div><strong>${spares === null ? "Spares unknown" : spares ? `${spares} spare${spares === 1 ? "" : "s"}` : "No spares recorded"}</strong><small>${spares === 0 ? "A compatible spare on the shelf shortens a rebuild." : spares === null ? "Planning data isn't available right now." : "Recorded in inventory"}</small></div></div>
+          <div class="item">${ic("bag")}<div><strong>${budget ? budget.map(money).join(" + ") : "No open plans"}</strong><small>${budget ? `Across ${budget.reduce((s, b) => s + b.count, 0)} open plan${budget.reduce((s, b) => s + b.count, 0) === 1 ? "" : "s"}` : "Across 0 open plans"}</small></div></div>
+          <div class="item">${ic("scan")}<div><strong>${scanLine[0]}</strong><small>${scanLine[1]} <a href="#">Review storage history</a></small></div></div></div>`;
+        const rail = [section("ov-upcoming-title", "Coming up", '<a href="#" class="small-link">Open planning</a>', `<div class="card upcoming">${up}${upNote}</div>`), section("ov-ready-title", "Readiness", "", ready)];
+        html += `<div class="body"><div class="col">${main.join("")}</div><div class="col rail">${rail.join("")}</div></div>`;
+      }
+      document.getElementById("ov").innerHTML = html;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const stateSelect = document.getElementById("mock-state");
+    const widthSelect = document.getElementById("mock-width");
+    const themeSelect = document.getElementById("mock-theme");
+    for (const [v, label] of Object.entries(STATES)) stateSelect.add(new Option(label, v));
+    function apply() {
+      render(stateSelect.value);
+      document.documentElement.dataset.width = widthSelect.value;
+      document.documentElement.dataset.theme = themeSelect.value;
+      try { history.replaceState(null, "", "?" + new URLSearchParams({ state: stateSelect.value, width: widthSelect.value, theme: themeSelect.value })); } catch { /* Opaque origins refuse URL changes. */ }
+    }
+    let dark = false; try { dark = matchMedia("(prefers-color-scheme: dark)").matches; } catch { /* no matchMedia */ }
+    stateSelect.value = STATES[params.get("state")] ? params.get("state") : "calm";
+    widthSelect.value = ["desktop", "tablet", "mobile"].includes(params.get("width")) ? params.get("width") : "desktop";
+    themeSelect.value = ["light", "dark"].includes(params.get("theme")) ? params.get("theme") : dark ? "dark" : "light";
+    [stateSelect, widthSelect, themeSelect].forEach((el) => el.addEventListener("change", apply));
+    apply();
+  </script>
+</body>
+</html>

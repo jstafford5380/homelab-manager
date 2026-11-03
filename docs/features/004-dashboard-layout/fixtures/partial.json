@@ -1,0 +1,121 @@
+{
+  "_mock": {
+    "note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.",
+    "label": "Partly unavailable \u00b7 last-known data",
+    "hero": {
+      "tone": "neutral",
+      "headline": "No open findings, but monitoring is incomplete",
+      "detail": "Some sources are missing, unsupported or out of date, so problems there would not show up. Latest collection 1 minute ago from 1 system.",
+      "signals": [
+        [
+          "Findings",
+          "ok",
+          "None open",
+          "Based on collected evidence",
+          "check"
+        ],
+        [
+          "Coverage",
+          "warn",
+          "Incomplete",
+          "3 source gaps",
+          "db"
+        ],
+        [
+          "Recovery",
+          "neutral",
+          "Unverified",
+          "No restore evidence recorded",
+          "shield"
+        ],
+        [
+          "Plans",
+          null,
+          "None open",
+          "Replacements, spares and reviews",
+          "bag"
+        ],
+        [
+          "Total investment",
+          null,
+          "$2,059.00",
+          "Recorded purchases",
+          null
+        ]
+      ]
+    },
+    "upcoming": [],
+    "driveCounts": {
+      "c1a7e0f2-0000-4000-8000-000000000001": 13
+    },
+    "refreshError": {
+      "lastRefreshLocal": "11/3/2026, 2:41 PM",
+      "message": "Overview data could not be read."
+    },
+    "now": "2026-11-03T15:00:00Z"
+  },
+  "connections": [
+    {
+      "id": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "Media NAS",
+      "version": "TrueNAS SCALE 25.04",
+      "status": "Partial \u2014 SMART and recovery unverified",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z",
+      "pollSeconds": 300,
+      "enabled": true
+    }
+  ],
+  "capabilities": [
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "system_identity",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "inventory",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "pools",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "datasets",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "alerts",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "cached_temperatures",
+      "status": "disabled",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "smart",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "recovery",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    }
+  ],
+  "findings": [],
+  "scanReports": null,
+  "planning": "unavailable"
+}

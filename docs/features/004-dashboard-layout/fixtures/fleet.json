@@ -1,0 +1,299 @@
+{
+  "_mock": {
+    "note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.",
+    "label": "Several systems \u00b7 scan running \u00b7 one out of date",
+    "hero": {
+      "tone": "warn",
+      "headline": "1 finding needs a look",
+      "detail": "Backup NAS hasn't reported for 3 hours, so its current condition is unknown. Latest collection 1 minute ago from 3 systems.",
+      "signals": [
+        [
+          "Findings",
+          "warn",
+          "1 open",
+          "1 urgent",
+          "check"
+        ],
+        [
+          "Coverage",
+          "warn",
+          "Incomplete",
+          "9 source gaps",
+          "db"
+        ],
+        [
+          "Recovery",
+          "neutral",
+          "Unverified",
+          "No restore evidence recorded",
+          "shield"
+        ],
+        [
+          "Plans",
+          null,
+          "1 open",
+          "Expand tank",
+          "bag"
+        ],
+        [
+          "Total investment",
+          null,
+          "$5,412.00",
+          "Recorded purchases",
+          null
+        ]
+      ]
+    },
+    "upcoming": [
+      {
+        "label": "Planning reminders",
+        "items": [
+          [
+            "drive",
+            "5 drives past your 5-year review age",
+            "Worth budgeting for. Age alone is not evidence of failure."
+          ],
+          [
+            "drive",
+            "3 drives without a purchase date",
+            "Add one so age and warranty reminders can appear here."
+          ]
+        ]
+      }
+    ],
+    "driveCounts": {
+      "c1a7e0f2-0000-4000-8000-000000000001": 13,
+      "c1a7e0f2-0000-4000-8000-000000000002": 4,
+      "c1a7e0f2-0000-4000-8000-000000000003": 4
+    },
+    "now": "2026-11-03T15:00:00Z"
+  },
+  "connections": [
+    {
+      "id": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "Media NAS",
+      "version": "TrueNAS SCALE 25.04",
+      "status": "Partial \u2014 SMART and recovery unverified",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z",
+      "pollSeconds": 300,
+      "enabled": true
+    },
+    {
+      "id": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "Backup NAS",
+      "version": "TrueNAS SCALE 25.04",
+      "status": "Last collection failed: connection timed out",
+      "lastSuccessUtc": "2026-11-03T12:00:00Z",
+      "pollSeconds": 300,
+      "enabled": true
+    },
+    {
+      "id": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "Office DS920+",
+      "version": "Synology DSM 7.2",
+      "status": "Partial \u2014 SMART unverified",
+      "lastSuccessUtc": "2026-11-03T14:58:00Z",
+      "pollSeconds": 300,
+      "enabled": true
+    }
+  ],
+  "capabilities": [
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "system_identity",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "inventory",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "pools",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "datasets",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "alerts",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "cached_temperatures",
+      "status": "disabled",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "smart",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "recovery",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "system_identity",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "inventory",
+      "status": "stale",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "pools",
+      "status": "stale",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "datasets",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "alerts",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "cached_temperatures",
+      "status": "disabled",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "smart",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000002",
+      "name": "recovery",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "system_identity",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "inventory",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "pools",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "datasets",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "alerts",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "cached_temperatures",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "smart",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000003",
+      "name": "recovery",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    }
+  ],
+  "findings": [
+    {
+      "id": "f-101",
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "diskId": null,
+      "severity": "urgent",
+      "state": "open",
+      "title": "Pool tank is 91% full",
+      "evidence": "tank reports 32.8 TB used of 36.0 TB. Writes slow and snapshots fail as a pool approaches full.",
+      "nextStep": "Free space or plan a vdev expansion before the next large ingest.",
+      "firstSeenUtc": "2026-11-01T15:00:00Z",
+      "reviewUtc": null,
+      "snoozedUntilUtc": null
+    }
+  ],
+  "scanReports": [
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "nasName": "Media NAS",
+      "poolGuid": "1234567890",
+      "poolName": "tank",
+      "function": "SCRUB",
+      "state": "SCANNING",
+      "fetchedUtc": "2026-11-03T14:59:00Z",
+      "validUntilUtc": "2026-11-03T15:09:00Z",
+      "freshness": "fresh",
+      "explanation": "Reported by the NAS in the latest pool read.",
+      "percentage": 62.0,
+      "errors": 0,
+      "scanStartedUtc": "2026-11-03T11:00:00Z",
+      "scanEndedUtc": null,
+      "scanPausedUtc": null,
+      "scanRemainingSeconds": null
+    }
+  ],
+  "planning": {
+    "driveAgeReviewYears": 5,
+    "reviews": [],
+    "spares": [
+      {
+        "id": "s-1",
+        "quantity": 1
+      }
+    ],
+    "budgets": [
+      {
+        "currency": "USD",
+        "total": 640.0,
+        "withoutEstimate": 0,
+        "count": 1
+      }
+    ]
+  }
+}

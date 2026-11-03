@@ -1,0 +1,182 @@
+{
+  "_mock": {
+    "note": "Mock-only fields: hero, upcoming, driveCounts and refreshError are rendered by existing Overview code and are unchanged by 004. Everything outside _mock mirrors fields /api/v1/overview and /api/v1/planning/review already return.",
+    "label": "Findings \u00b7 1 system",
+    "hero": {
+      "tone": "warn",
+      "headline": "2 findings need a look",
+      "detail": "One is urgent. Some sources are missing, so problems there would not show up. Latest collection 1 minute ago from 1 system.",
+      "signals": [
+        [
+          "Findings",
+          "warn",
+          "2 open",
+          "1 urgent \u00b7 1 acknowledged",
+          "check"
+        ],
+        [
+          "Coverage",
+          "warn",
+          "Incomplete",
+          "3 source gaps",
+          "db"
+        ],
+        [
+          "Recovery",
+          "neutral",
+          "Unverified",
+          "No restore evidence recorded",
+          "shield"
+        ],
+        [
+          "Plans",
+          null,
+          "1 open",
+          "Expand tank",
+          "bag"
+        ],
+        [
+          "Total investment",
+          null,
+          "$2,059.00",
+          "Recorded purchases",
+          null
+        ]
+      ]
+    },
+    "upcoming": [
+      {
+        "label": "Overdue",
+        "items": [
+          [
+            "bag",
+            "Review plan: Expand tank",
+            "Review date passed \u00b7 3 days ago"
+          ]
+        ]
+      },
+      {
+        "label": "Planning reminders",
+        "items": [
+          [
+            "drive",
+            "5 drives past your 5-year review age",
+            "Worth budgeting for. Age alone is not evidence of failure."
+          ],
+          [
+            "drive",
+            "3 drives without a purchase date",
+            "Add one so age and warranty reminders can appear here."
+          ]
+        ]
+      }
+    ],
+    "driveCounts": {
+      "c1a7e0f2-0000-4000-8000-000000000001": 13
+    },
+    "now": "2026-11-03T15:00:00Z"
+  },
+  "connections": [
+    {
+      "id": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "Media NAS",
+      "version": "TrueNAS SCALE 25.04",
+      "status": "Partial \u2014 SMART and recovery unverified",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z",
+      "pollSeconds": 300,
+      "enabled": true
+    }
+  ],
+  "capabilities": [
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "system_identity",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "inventory",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "pools",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "datasets",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "alerts",
+      "status": "supported",
+      "lastSuccessUtc": "2026-11-03T14:59:00Z"
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "cached_temperatures",
+      "status": "disabled",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "smart",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    },
+    {
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "name": "recovery",
+      "status": "unsupported",
+      "lastSuccessUtc": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "f-101",
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "diskId": null,
+      "severity": "urgent",
+      "state": "open",
+      "title": "Pool tank is 91% full",
+      "evidence": "tank reports 32.8 TB used of 36.0 TB. Writes slow and snapshots fail as a pool approaches full.",
+      "nextStep": "Free space or plan a vdev expansion before the next large ingest.",
+      "firstSeenUtc": "2026-11-01T15:00:00Z",
+      "reviewUtc": null,
+      "snoozedUntilUtc": null
+    },
+    {
+      "id": "f-102",
+      "connectionId": "c1a7e0f2-0000-4000-8000-000000000001",
+      "diskId": "d-ada4",
+      "severity": "review",
+      "state": "acknowledged",
+      "title": "Scrub on tank finished with 2 checksum errors",
+      "evidence": "The NAS reported 2 checksum errors on ada4 during the scrub that finished this morning. The NAS reported them as repaired.",
+      "nextStep": "Check the drive's SMART history and cabling. Repeat errors on the same drive are worth a closer look.",
+      "firstSeenUtc": "2026-11-03T09:00:00Z",
+      "reviewUtc": "2026-11-08T09:00:00Z",
+      "snoozedUntilUtc": null
+    }
+  ],
+  "scanReports": [],
+  "planning": {
+    "driveAgeReviewYears": 5,
+    "reviews": [],
+    "spares": [],
+    "budgets": [
+      {
+        "currency": "USD",
+        "total": 640.0,
+        "withoutEstimate": 0,
+        "count": 1
+      }
+    ]
+  }
+}
