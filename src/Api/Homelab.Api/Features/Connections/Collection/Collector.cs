@@ -162,6 +162,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
         var revision = profile.ConfigurationRevision;
         var inventorySeconds = Math.Max(900, profile.PollSeconds);
         string? failedRead = null;
+        var powerOnDue = false;
         try
         {
             var settings = await db.Settings.AsNoTracking().SingleOrDefaultAsync(ct) ?? new OperatingSettings();
@@ -170,7 +171,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             // A new or edited connection must re-establish inventory. Otherwise only a successful
             // inventory read advances this clock; pool/alert polls cannot refresh disk evidence.
             var powerOnState = await db.ApiPowerOnStates.SingleOrDefaultAsync(x => x.ConnectionId == profile.Id, ct);
-            var powerOnDue = settings.ReadApiPowerOnHours && (forcePowerOnHours || ApiPowerOnHours.Due(profile, powerOnState?.SnapshotJson, started));
+            powerOnDue = settings.ReadApiPowerOnHours && (forcePowerOnHours || ApiPowerOnHours.Due(profile, powerOnState?.SnapshotJson, started));
             var inventoryDue = refresh == RefreshTarget.Storage || powerOnDue || profile.NextAttemptUtc is null || inventory?.Status != "supported" || inventory.LastSuccessUtc is null || started - inventory.LastSuccessUtc.Value >= TimeSpan.FromSeconds(inventorySeconds);
             await using var client = clients.Create();
             await client.ConnectAsync(profile, protection.CreateProtector("nas-credentials").Unprotect(profile.ProtectedApiKey), ct);
@@ -383,7 +384,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             // Cache entries have no observation timestamp or stable drive identity. Keep a bounded
             // latest snapshot by reported name; never attach these values to physical disk history.
             // Recheck the opt-in before committing; this snapshot never becomes a health finding.
-            if (powerOnSnapshot is not null && await db.Settings.AsNoTracking().AnyAsync(x => x.ReadApiPowerOnHours, ct))
+            if (powerOnDue && await db.Settings.AsNoTracking().AnyAsync(x => x.ReadApiPowerOnHours, ct))
             {
                 if (powerOnState is null)
                 {
@@ -394,7 +395,13 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                     db.ApiPowerOnStates.Add(powerOnState);
                 }
 
-                powerOnState.SnapshotJson = JsonSerializer.Serialize(powerOnSnapshot);
+                if (powerOnSnapshot is not null)
+                {
+                    powerOnState.SnapshotJson = JsonSerializer.Serialize(powerOnSnapshot);
+                    powerOnState.LastFailedAttemptUtc = null;
+                }
+                else
+                    powerOnState.LastFailedAttemptUtc = started;
             }
 
             if (temperatures is not null)
@@ -449,6 +456,14 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             profile.NextAttemptUtc = DateTime.UtcNow.AddSeconds(BackoffSeconds(profile));
             var status = ex is UnauthorizedAccessException ? "denied" : ex is NasReadException read ? read.Status : "unavailable";
             await RecordCapabilities(db, profile, started, status, "Snapshot not committed; previous evidence retained.", null, inventorySeconds, true, stop, failedRead);
+            if (powerOnDue && await db.Settings.AsNoTracking().AnyAsync(x => x.ReadApiPowerOnHours, stop))
+            {
+                var state = await db.ApiPowerOnStates.SingleOrDefaultAsync(x => x.ConnectionId == id, stop);
+                if (state is null)
+                    db.ApiPowerOnStates.Add(new() { ConnectionId = id, LastFailedAttemptUtc = started });
+                else
+                    state.LastFailedAttemptUtc = started;
+            }
             logger.LogWarning("NAS {NasId} collection failed ({ErrorType}).", profile.Id, ex.GetType().Name);
             await db.SaveChangesAsync(stop);
             return CollectionResult.Unavailable;

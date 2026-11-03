@@ -36,9 +36,9 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, EmptyResponse>
             return;
         }
 
-        if (Validate(input)is { } error)
+        if (ValidateField(input) is { } error)
         {
-            await Send.ResultAsync(Results.BadRequest(new { error }));
+            await Send.ResultAsync(Results.BadRequest(new { error = error.Message, errors = new Dictionary<string, string[]> { [error.Field] = [error.Message] } }));
             return;
         }
 

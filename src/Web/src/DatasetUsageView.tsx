@@ -88,7 +88,7 @@ export function DatasetUsageView({ connectionId }: { connectionId: string }) {
       {state && <>
         <p className="dataset-status"><Badge variant="outline">{recent ? "Recent read" : state.status === "supported" ? "Last-known usage" : state.status}</Badge>
           <span className="muted">Fetched {state.snapshot ? time(state.snapshot.fetchedUtc) : "never"}</span></p>
-        {!state.enabled && <p>Enable “Read dataset space usage” in <Link to="/settings">Settings</Link> to collect this optional inventory.</p>}
+        {!state.enabled && <p>Enable “Read dataset space usage” in <Link to="/settings/monitoring">Settings</Link> to collect this optional inventory.</p>}
         {!recent && state.snapshot && <p className="muted">These saved values do not confirm current usage. Check collection coverage before making capacity decisions.</p>}
         {!state.snapshot ? <p>No saved dataset usage is available.</p> : <>
           {items.length === 0 ? <p>The API returned no visible datasets. This does not establish that the NAS contains no data.</p> : <>

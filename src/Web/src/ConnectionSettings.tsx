@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "react-router";
+import { CircleCheck, CircleHelp, Clock, Pause, TriangleAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-type Connection = {
+import { SettingsSaveBar } from "./SettingsSaveBar";
+import { useDisplayFormat } from "./displayPreferences";
+
+export type Connection = {
   id: string;
   configurationRevision: string;
   name: string;
@@ -22,347 +20,291 @@ type Connection = {
   trustedCaPem: string | null;
   certificateSha256: string | null;
   status: string;
+  lastSuccessUtc?: string | null;
+  apiKeyReplacedUtc?: string | null;
   systemSerial: string | null;
   observedSystemSerial: string | null;
   systemIdentityState: string;
   systemIdentityCheckedUtc: string | null;
 };
-export function ConnectionSettings({ timezone }: { timezone: string }) {
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [editing, setEditing] = useState<Connection | null>(null);
+export function connectionStatus(connection: Connection) {
+  if (connection.systemIdentityState === "changed" ||
+      (connection.systemSerial && connection.observedSystemSerial && connection.systemSerial !== connection.observedSystemSerial))
+    return { text: "Identity changed", tone: "bad", icon: TriangleAlert, attention: true };
+  if (connection.systemIdentityState === "missing")
+    return { text: "Identity unavailable", tone: "bad", icon: TriangleAlert, attention: true };
+  if (/unsupported release/i.test(connection.status))
+    return { text: "Unsupported release", tone: "neutral", icon: CircleHelp, attention: false };
+  if (!connection.enabled)
+    return { text: "Paused", tone: "neutral", icon: Pause, attention: false };
+  if (/unavailable|denied|no source/i.test(connection.status))
+    return { text: "Unavailable", tone: "bad", icon: TriangleAlert, attention: true };
+  if (/awaiting/i.test(connection.status))
+    return { text: "Awaiting validation", tone: "neutral", icon: CircleHelp, attention: false };
+  if (!connection.lastSuccessUtc)
+    return { text: "Never collected", tone: "neutral", icon: CircleHelp, attention: false };
+  const age = Date.now() - Date.parse(connection.lastSuccessUtc);
+  if (age < 0 || age > Math.max(300_000, connection.pollSeconds * 3_000))
+    return { text: "Out of date", tone: "warn", icon: Clock, attention: false };
+  return { text: "Reporting", tone: "ok", icon: CircleCheck, attention: false };
+}
+function Status({ connection }: { connection: Connection }) {
+  const { text, tone, icon: Icon } = connectionStatus(connection);
+  return <span className={`ov-pill tone-${tone}`}><Icon size={14} aria-hidden="true" />{text}</span>;
+}
+
+export function ConnectionSettings({ id, connections, error, onConnections, onDirty }: {
+  id?: string;
+  connections: Connection[];
+  error: string;
+  onConnections: (connections: Connection[]) => void;
+  onDirty: (dirty: boolean) => void;
+}) {
+  const { time } = useDisplayFormat();
+  const connection = connections.find(connection => connection.id === id);
+  if (error) return <p role="alert">{error}</p>;
+  if (id) return connection
+    ? <ConnectionDetail key={id} connection={connection} onDirty={onDirty} onConnections={onConnections} />
+    : <p role="status">Connection not found.</p>;
+  return <Card className="settings-group">
+    {connections.length ? connections.map(connection => <div key={connection.id} className="settings-row settings-connection">
+      <div><h3>{connection.name} <Status connection={connection} /></h3>
+        <p className="muted settings-meta">{connection.connectHost ? `Via tunnel ${connection.connectHost}:${connection.connectPort}` : connection.apiUri}
+          {" · "}{connection.status === "Collection paused by owner" ? "Paused by you" : connection.lastSuccessUtc ? `Last read ${time(connection.lastSuccessUtc)}` : "No successful read recorded"}
+          {connection.enabled && ` · Every ${connection.pollSeconds} seconds`}</p></div>
+      <Button asChild variant="outline"><Link to={`/settings/connections/${connection.id}`}
+        aria-label={`${connectionStatus(connection).attention ? "Review" : "Manage"} ${connection.name}`}>{connectionStatus(connection).attention ? "Review" : "Manage"}</Link></Button>
+    </div>) : <div className="empty"><h3>No systems connected yet</h3>
+      <p>Connect a TrueNAS system directly or through an SSH tunnel you already run. Until then, every health status stays unknown.</p>
+    </div>}
+  </Card>;
+}
+
+const fields = [
+  ["name", "Name"], ["apiUri", "Logical NAS URI"], ["connectHost", "Tunnel host (optional)"],
+  ["connectPort", "Tunnel port (optional)"], ["pollSeconds", "Collection interval (seconds)"],
+  ["enabled", "Collection enabled"], ["trustedCaPem", "Trusted public CA/self-signed certificate (PEM)"],
+  ["certificateSha256", "Enrolled certificate SHA-256"],
+] as const;
+type Field = typeof fields[number][0];
+
+function ConnectionDetail({ connection, onDirty, onConnections }: {
+  connection: Connection;
+  onDirty: (dirty: boolean) => void;
+  onConnections: (connections: Connection[]) => void;
+}) {
+  const { time } = useDisplayFormat();
+  const [editing, setEditing] = useState(connection);
+  const [draft, setDraft] = useState(connection);
   const [message, setMessage] = useState("");
-  const messageRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => {
-    if (message && editing) messageRef.current?.focus();
-  }, [message, editing]);
+  const [success, setSuccess] = useState("");
   const [conflict, setConflict] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
-  async function load() {
+  const [actionDirty, setActionDirty] = useState(false);
+  const alert = useRef<HTMLParagraphElement>(null);
+  const changes = fields.filter(([key]) => draft[key] !== editing[key]).length;
+  useEffect(() => { onDirty(changes > 0 || actionDirty); }, [changes, actionDirty, onDirty]);
+  useEffect(() => () => onDirty(false), [onDirty]);
+  useEffect(() => { document.getElementById("connection-" + Object.keys(errors)[0])?.focus(); }, [errors]);
+
+  useEffect(() => { if (message && changes === 0) alert.current?.focus(); }, [message, changes]);
+
+  async function reload() {
     const response = await fetch("/api/v1/connections");
-    if (!response.ok) throw new Error("Could not load connections");
-    const data: Connection[] = await response.json();
-    setConnections(data);
-    return data;
+    if (!response.ok) throw new Error("Could not reload connections.");
+    const rows: Connection[] = await response.json();
+    const latest = rows.find(row => row.id === editing.id);
+    if (!latest) throw new Error("This connection is no longer available.");
+    onConnections(rows);
+    setEditing(latest);
+    setDraft(latest);
+    setActionDirty(false);
+    setConflict(false);
+    setErrors({});
   }
-  useEffect(() => {
-    void load().catch((e) => setMessage(String(e)));
-  }, []);
   async function save(path: string, body: unknown) {
     setBusy(true);
     setMessage("");
-    setConflict(false);
+    setSuccess("");
+    setErrors({});
     try {
       const response = await fetch("/api/v1/connections/" + path, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Homelab-Request": "1",
-        },
+        headers: { "Content-Type": "application/json", "X-Homelab-Request": "1" },
         body: JSON.stringify(body),
       });
       if (!response.ok) {
         setConflict(response.status === 409);
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || "Could not update connection");
+        if (error.errors) setErrors(error.errors);
+        throw new Error(error.errors ? "Not saved. Fix the highlighted field and try again." : error.error ?? "Could not update connection.");
       }
-      await load();
-      setEditing(null);
-      setMessage(
-        "Connection updated. Validation occurs on the next collection.",
-      );
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+      setSuccess("Connection updated. Validation occurs on the next collection.");
+      await reload();
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+      return false;
+    } finally { setBusy(false); }
   }
-  return (
-    <section style={{ marginTop: 24 }}>
-      <h2>Manage connection identity & certificate trust</h2>
-      <p className="muted">
-        Pausing stops future collection attempts; a read already in progress may
-        finish but its snapshot will be discarded. Private-CA trust and SHA-256
-        pinning never disable hostname validation.
-      </p>
-      {connections.map((c) => (
-        <Card key={c.id} className="list-card" style={{ marginTop: 12 }}>
-          <div className="row">
-            <div>
-              <h3>{c.name}</h3>
-              <small>
-                {c.status} · {c.pollSeconds}s interval
-              </small>
-            </div>
-            <Button variant="outline" onClick={() => { setMessage(""); setConflict(false); setEditing(c); }}>
-              Edit connection
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => void save(c.id, { ...c, enabled: !c.enabled })}
-            >
-              {c.enabled ? "Pause collection" : "Resume collection"}
-            </Button>
-          </div>
-          <div className="connection-identity">
-            <strong>
-              System identity: {c.systemIdentityState || "unavailable"}
-            </strong>
-            <p>
-              Saved serial: {c.systemSerial || "No usable serial recorded"} ·
-              Last reported: {c.observedSystemSerial || "Unavailable"}
+  function row(key: Field, label: string): ReactNode {
+    const attributes = { id: "connection-" + key, disabled: busy, "aria-invalid": !!errors[key],
+      "aria-describedby": errors[key] ? "connection-error-" + key : undefined };
+    const value = draft[key];
+    const previous = editing[key];
+    return <div className="settings-row" key={key}><div><Label htmlFor={attributes.id}>{label}</Label>
+      {key === "apiUri" && <p className="muted">TLS is always validated against this hostname.</p>}
+      {key === "trustedCaPem" && <p className="muted">Leave blank to use the operating system’s trust store.</p>}
+      {key === "enabled" && <p className="muted">Pausing stops future collection. Any snapshot from a read already in progress is discarded.</p>}</div>
+      <div>
+        {key === "enabled" ? <input {...attributes} type="checkbox" role="switch" checked={draft.enabled}
+          onChange={event => setDraft({ ...draft, enabled: event.target.checked })} /> :
+          key === "trustedCaPem" ? <textarea {...attributes} rows={4} value={draft.trustedCaPem ?? ""}
+            onChange={event => setDraft({ ...draft, trustedCaPem: event.target.value || null })} /> :
+          <Input {...attributes} type={key === "connectPort" || key === "pollSeconds" ? "number" : "text"}
+            value={typeof value === "boolean" ? "" : value ?? ""} onChange={event => {
+              const value = event.target.value;
+              setDraft({ ...draft, [key]: key === "pollSeconds" ? Number(value) : key === "connectPort" ? value ? Number(value) : null : value });
+            }} />}
+        {previous !== value && <p className="muted settings-meta">Was {key === "trustedCaPem" ? previous ? "a configured certificate" : "unset" :
+          typeof previous === "boolean" ? previous ? "On" : "Off" : previous || "unset"}</p>}
+        {errors[key] && <p className="error" id={"connection-error-" + key}>{errors[key].join(" ")}</p>}
+      </div>
+    </div>;
+  }
+  const reloadAction = () => {
+    setBusy(true);
+    void reload().then(() => setMessage("")).catch(error => setMessage(error.message)).finally(() => setBusy(false));
+  };
+  return <>
+    <div><Status connection={editing} /> <span className="muted">{editing.status}</span></div>
+    {editing.systemSerial &&
+      editing.observedSystemSerial &&
+      editing.systemSerial !== editing.observedSystemSerial && (
+        <>
+
+          <Card className="settings-group settings-identity-review" key={editing.configurationRevision}><form onChange={() => setActionDirty(true)}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const f = Object.fromEntries(
+                new FormData(e.currentTarget),
+              );
+              void save(editing.id + "/identity", { ...f, configurationRevision: editing.configurationRevision });
+            }}
+          >
+            <h3><TriangleAlert size={18} aria-hidden="true" /> This system reported a different serial</h3>
+            <p>Collection is paused so evidence from two machines isn’t mixed. Historical evidence is kept either way.</p>
+            <p className="muted">
+              Saved: {editing.systemSerial}. Newly reported:{" "}
+              {editing.observedSystemSerial}. First verify the
+              physical NAS, endpoint and certificate independently.
+              Accept a new baseline only for a documented hardware
+              change on this same NAS; enroll a separate connection
+              for a different NAS.
             </p>
-            <small>
-              Checked:{" "}
-              {c.systemIdentityCheckedUtc
-                ? new Date(c.systemIdentityCheckedUtc).toLocaleString(
-                    undefined,
-                    { timeZone: timezone },
-                  )
-                : "Never"}
-              . A DMI serial is supplementary evidence, not a guaranteed unique
-              hardware identifier.
-            </small>
-          </div>
-        </Card>
-      ))}
-      {message && !editing && <p role="status">{message}</p>}
-      {conflict && !editing && <Button variant="outline" disabled={busy} onClick={() => {
-        void load().then(() => { setConflict(false); setMessage("Connections reloaded. Review the latest state before retrying."); })
-          .catch(error => setMessage(error instanceof Error ? error.message : "Could not reload connections."));
-      }}>Reload connections</Button>}
-      <Dialog
-        open={!!editing}
-        onOpenChange={(open) => {
-          if (!open) setEditing(null);
-        }}
-      >
-        <DialogContent
-          key={editing?.configurationRevision}
-          style={{
-            maxHeight: "85vh",
-            overflow: "auto",
-            maxWidth: "min(680px, calc(100vw - 2rem))",
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Connection, tunnel & trust</DialogTitle>
-            <DialogDescription>
-              These settings change how Homelab Control reads the NAS. They do
-              not modify NAS configuration.
-            </DialogDescription>
-          </DialogHeader>
-          {editing && (
-            <>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const f = Object.fromEntries(new FormData(e.currentTarget));
-                  void save(editing.id, {
-                    ...f,
-                    configurationRevision: editing.configurationRevision,
-                    enabled: f.enabled === "on",
-                    pollSeconds: Number(f.pollSeconds),
-                    connectHost: f.connectHost || null,
-                    connectPort: f.connectPort ? Number(f.connectPort) : null,
-                    trustedCaPem: f.trustedCaPem || null,
-                    certificateSha256: f.certificateSha256 || null,
-                  });
-                }}
-              >
-                <div className="settings-grid">
-                  {[
-                    { name: "name", label: "Name", value: editing.name },
-                    {
-                      name: "apiUri",
-                      label: "Logical NAS URI",
-                      value: editing.apiUri,
-                    },
-                    {
-                      name: "connectHost",
-                      label: "Tunnel host (optional)",
-                      value: editing.connectHost || "",
-                    },
-                    {
-                      name: "connectPort",
-                      label: "Tunnel port (optional)",
-                      value: editing.connectPort || "",
-                      type: "number",
-                    },
-                    {
-                      name: "pollSeconds",
-                      label: "Collection interval (30–3600 seconds)",
-                      value: editing.pollSeconds,
-                      type: "number",
-                    },
-                  ].map((field) => (
-                    <div className="field" key={field.name}>
-                      <Label htmlFor={"connection-" + field.name}>
-                        {field.label}
-                      </Label>
-                      <Input
-                        id={"connection-" + field.name}
-                        name={field.name}
-                        defaultValue={field.value}
-                        type={field.type || "text"}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <label className="backup-checkbox">
-                  <input
-                    type="checkbox"
-                    name="enabled"
-                    defaultChecked={editing.enabled}
-                  />{" "}
-                  Collection enabled
-                </label>
-                <div className="field" style={{ marginTop: 16 }}>
-                  <Label htmlFor="trusted-ca">
-                    Trusted public CA/self-signed certificate (PEM)
-                  </Label>
-                  <textarea
-                    id="trusted-ca"
-                    name="trustedCaPem"
-                    rows={5}
-                    defaultValue={editing.trustedCaPem || ""}
-                  />
-                </div>
-                <div className="field">
-                  <Label htmlFor="certificate-pin">
-                    Enrolled certificate SHA-256
-                  </Label>
-                  <Input
-                    id="certificate-pin"
-                    name="certificateSha256"
-                    defaultValue={editing.certificateSha256 || ""}
-                  />
-                  <p className="muted">
-                    A successful first trusted connection records this
-                    fingerprint. For a planned certificate change, verify the
-                    new fingerprint independently and enter it here. Clearing it
-                    explicitly reenrolls the next certificate that passes trust
-                    and hostname checks.
-                  </p>
-                </div>
-                <Button disabled={busy}>Save connection</Button>
-              </form>
-              {editing.systemSerial &&
-                editing.observedSystemSerial &&
-                editing.systemSerial !== editing.observedSystemSerial && (
-                  <>
-                    <hr />
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const f = Object.fromEntries(
-                          new FormData(e.currentTarget),
-                        );
-                        void save(editing.id + "/identity", { ...f, configurationRevision: editing.configurationRevision });
-                      }}
-                    >
-                      <h3>Review a changed system identity</h3>
-                      <p className="muted">
-                        Saved: {editing.systemSerial}. Newly reported:{" "}
-                        {editing.observedSystemSerial}. First verify the
-                        physical NAS, endpoint and certificate independently.
-                        Accept a new baseline only for a documented hardware
-                        change on this same NAS; enroll a separate connection
-                        for a different NAS.
-                      </p>
-                      <div className="field">
-                        <Label htmlFor="identity-previous">
-                          Retype saved system serial
-                        </Label>
-                        <Input
-                          id="identity-previous"
-                          name="previousSerial"
-                          required
-                          autoComplete="off"
-                        />
-                      </div>
-                      <div className="field">
-                        <Label htmlFor="identity-new">
-                          Retype newly reported system serial
-                        </Label>
-                        <Input
-                          id="identity-new"
-                          name="newSerial"
-                          required
-                          autoComplete="off"
-                        />
-                      </div>
-                      <div className="field">
-                        <Label htmlFor="identity-evidence">
-                          Independent verification evidence
-                        </Label>
-                        <Input
-                          id="identity-evidence"
-                          name="evidence"
-                          required
-                          maxLength={4000}
-                        />
-                      </div>
-                      <Button variant="outline" disabled={busy}>
-                        Accept identity baseline & resume
-                      </Button>
-                    </form>
-                  </>
-                )}
-              {editing.systemSerial && !editing.observedSystemSerial && (
-                <p className="muted">
-                  {editing.systemIdentityState === "awaiting validation"
-                    ? "The endpoint or certificate trust changed. After reviewing connection settings, resume collection to obtain a new authenticated identity read before accepting a baseline change. Historical evidence is retained."
-                    : "The saved system serial is currently missing. Restore the expected endpoint/identity before resuming; a missing serial cannot be accepted as a new baseline."}
-                </p>
-              )}
-              <hr />
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const f = new FormData(e.currentTarget);
-                  void save(editing.id + "/credentials", {
-                    apiKey: f.get("apiKey"),
-                    configurationRevision: editing.configurationRevision,
-                  });
-                }}
-              >
-                <div className="field">
-                  <Label htmlFor="rotated-key">New NAS API key</Label>
-                  <Input
-                    maxLength={8192}
-                    autoComplete="new-password"
-                    id="rotated-key"
-                    name="apiKey"
-                    type="password"
-                    required
-                  />
-                </div>
-                <Button variant="outline" disabled={busy}>
-                  Rotate credential & resume
-                </Button>
-              </form>
-              {message && (
-                <p className="error" role="alert" tabIndex={-1} ref={messageRef}>
-                  {message}
-                </p>
-              )}
-              {conflict && <>
-                <p className="muted">Reloading discards this dialog’s unsaved edits and clears the entered API key.</p>
-                <Button variant="outline" disabled={busy} onClick={async () => {
-                  setBusy(true);
-                  try {
-                    const latest = (await load()).find(c => c.id === editing.id);
-                    if (!latest) throw new Error("This connection is no longer available.");
-                    setEditing(latest); setConflict(false); setMessage("");
-                  } catch (error) { setMessage(error instanceof Error ? error.message : "Could not reload connection."); }
-                  finally { setBusy(false); }
-                }}>Reload saved connection</Button>
-              </>}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </section>
-  );
+            <div className="field">
+              <Label htmlFor="identity-previous">
+                Retype saved system serial
+              </Label>
+              <Input
+                id="identity-previous"
+                name="previousSerial"
+                required
+                autoComplete="off"
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="identity-new">
+                Retype newly reported system serial
+              </Label>
+              <Input
+                id="identity-new"
+                name="newSerial"
+                required
+                autoComplete="off"
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="identity-evidence">
+                Independent verification evidence
+              </Label>
+              <Input
+                id="identity-evidence"
+                name="evidence"
+                required
+                maxLength={4000}
+              />
+            </div>
+            <Button variant="outline" disabled={busy || changes > 0 || conflict}>
+              Accept new baseline & resume
+            </Button>
+          </form></Card>
+        </>
+      )}
+    {editing.systemSerial && !editing.observedSystemSerial && (
+      <p className="muted">
+        {editing.systemIdentityState === "awaiting validation"
+          ? "The endpoint or certificate trust changed. After reviewing connection settings, resume collection to obtain a new authenticated identity read before accepting a baseline change. Historical evidence is retained."
+          : "The saved system serial is currently missing. Restore the expected endpoint/identity before resuming; a missing serial cannot be accepted as a new baseline."}
+      </p>
+    )}
+
+    <form noValidate className="settings-form" onSubmit={event => {
+      event.preventDefault();
+      if (!changes || busy || conflict) return;
+      void save(editing.id, { ...draft, connectHost: draft.connectHost || null, certificateSha256: draft.certificateSha256 || null });
+    }}>
+      <Card className="settings-group">
+        <div className="settings-group-heading"><h3>Connection</h3></div>
+        {fields.slice(0, 6).map(([key, label]) => row(key, label))}
+      </Card>
+      <Card className="settings-group">
+        <div className="settings-group-heading"><h3>Certificate trust</h3></div>
+        {fields.slice(6).map(([key, label]) => row(key, label))}
+        <div className="settings-row"><details><summary>How this works</summary>
+          <p>Private-CA trust and SHA-256 pinning always validate the NAS hostname. A successful first trusted connection records its fingerprint. For a planned change, verify the new fingerprint independently before entering it. Clearing the fingerprint enrolls the next certificate that passes trust and hostname checks.</p>
+        </details></div>
+      </Card>
+      {changes > 0 && <SettingsSaveBar section="Connection" count={changes} error={message} busy={busy}
+        onDiscard={() => { setDraft(editing); setErrors({}); if (!conflict) setMessage(""); }}
+        onReload={conflict ? reloadAction : undefined} />}
+    </form>
+    <div className="settings-meta"><strong>System identity: {editing.systemIdentityState}</strong><p>Saved serial: {editing.systemSerial || "No usable serial recorded"} · Last reported: {editing.observedSystemSerial || "Unavailable"}</p>
+      <p className="muted">Checked: {editing.systemIdentityCheckedUtc ? time(editing.systemIdentityCheckedUtc) : "Never"}. A DMI serial is supplementary evidence, not a guaranteed unique hardware identifier.</p>
+    </div>
+    <Card className="settings-group" key={"key-" + editing.configurationRevision}><form onChange={() => setActionDirty(true)}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const f = new FormData(form);
+        void save(editing.id + "/credentials", {
+          apiKey: f.get("apiKey"),
+          configurationRevision: editing.configurationRevision,
+        }).then(updated => { if (updated) form.reset(); });
+      }}
+    >
+      <h3>API key</h3>
+      <p className="muted">Stored encrypted. It’s never shown again after saving.</p>
+      {editing.apiKeyReplacedUtc && <p className="muted">Last replaced {time(editing.apiKeyReplacedUtc)}</p>}
+      <div className="field">
+        <Label htmlFor="rotated-key">New NAS API key</Label>
+        <Input
+          maxLength={8192}
+          autoComplete="new-password"
+          id="rotated-key"
+          name="apiKey"
+          type="password"
+          required
+        />
+      </div>
+      <Button variant="outline" disabled={busy || changes > 0 || conflict}>
+        Replace API key & resume
+      </Button>
+    </form></Card>
+
+    {changes === 0 && message && <p ref={alert} tabIndex={-1} role="alert" className="error">{message}</p>}
+    {changes === 0 && conflict && <Button variant="outline" disabled={busy} onClick={reloadAction}>Reload saved connection</Button>}
+    {success && <p role="status">{success}</p>}
+  </>;
 }

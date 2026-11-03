@@ -48,6 +48,11 @@ public sealed class Endpoint(HomelabDb db, Microsoft.AspNetCore.DataProtection.I
         }
 
         connection.ProtectedApiKey = Microsoft.AspNetCore.DataProtection.DataProtectionCommonExtensions.Protect(protection.CreateProtector("nas-credentials"), input.ApiKey);
+        var history = await db.ConnectionCredentialHistory.FindAsync([id], ct);
+        if (history is null)
+            db.ConnectionCredentialHistory.Add(new() { ConnectionId = id, ReplacedUtc = DateTime.UtcNow });
+        else
+            history.ReplacedUtc = DateTime.UtcNow;
         connection.ConfigurationRevision = Guid.NewGuid();
         connection.NextAttemptUtc = null;
         connection.Enabled = true;

@@ -1,3 +1,4 @@
+import { SettingsPage } from "./SettingsPage";
 import { RefreshServerButton, type ServerRefreshTarget } from "./RefreshServerButton";
 import { BrandIcon } from "./BrandIcon";
 import { ActivityHistory } from "./ActivityHistory";
@@ -29,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -38,15 +38,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import "./App.css";
-import { ConnectionSettings } from "./ConnectionSettings";
 import { InventoryView } from "./InventoryView";
 import { RecoveryView } from "./RecoveryView";
-import { NotificationSettings } from "./NotificationSettings";
-import { AppearanceSettings } from "./AppearanceSettings";
-import { OperationsSettings } from "./OperationsSettings";
 import { PlanningReview } from "./PlanningReview";
 const HardwareView = lazy(() => import("./HardwareView").then(module => ({ default: module.HardwareView })));
-import { HardwareSettings } from "./HardwareSettings";
 import { StorageView } from "./StorageView";
 import { StorageExportButton } from "./StorageExportButton";
 
@@ -126,11 +121,6 @@ function Field({
     </div>
   );
 }
-function date(value: string | null, timezone: string) {
-  return value
-    ? new Date(value).toLocaleString(undefined, { timeZone: timezone })
-    : "Not yet observed";
-}
 export default function App() {
   const [session, setSession] = useState<{
     authenticated: boolean;
@@ -149,7 +139,7 @@ export default function App() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const page =
-    nav.find((item) => item.path === location.pathname)?.title ??
+    (location.pathname.startsWith("/settings/") ? "Settings" : nav.find((item) => item.path === location.pathname)?.title) ??
     "Page not found";
   const findingId = page === "Overview" ? searchParams.get("finding") : null;
   const focusedPlanId = page === "Planning" ? searchParams.get("plan") : null;
@@ -360,6 +350,88 @@ export default function App() {
       <RefreshCw size={15} /> Refresh
     </Button>
   );
+  const connecting = page === "Settings";
+  const editorDialog = (
+    <Dialog open={modal} onOpenChange={setModal}>
+      <DialogTrigger asChild>
+        <Button><Plus size={16} /> {connecting ? "Connect NAS" : "Add plan"}</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{connecting ? "Enroll a NAS" : "Plan ahead"}</DialogTitle></DialogHeader>
+        <form onSubmit={event => {
+          event.preventDefault();
+          const fields = Object.fromEntries(new FormData(event.currentTarget));
+          void action(() => connecting
+            ? request("/connections", {
+                ...fields,
+                connectHost: fields.connectHost || null,
+                connectPort: fields.connectPort ? Number(fields.connectPort) : null,
+              })
+            : request("/plans", { ...fields, budget: fields.budget ? Number(fields.budget) : null, currency: "USD" }));
+        }}>
+          {connecting ? <>
+          <Field
+            name="name"
+            label="Display name"
+            placeholder="Home NAS"
+          />
+          <Field
+            name="apiUri"
+            label="Logical secure WebSocket address"
+            placeholder="wss://nas.home/websocket"
+          />
+          <Field
+            name="apiKey"
+            label="TrueNAS API key"
+            type="password"
+          />
+          <div className="field">
+            <Label htmlFor="enroll-trusted-ca">Trusted public CA certificate (optional)</Label>
+            <textarea id="enroll-trusted-ca" name="trustedCaPem" rows={4} maxLength={20000} aria-describedby="enroll-ca-help" />
+            <p id="enroll-ca-help" className="muted">For a private certificate, paste the public CA certificate before connecting. Never paste a private key. Leave blank for system-trusted certificates.</p>
+          </div>
+          <Field
+            name="connectHost"
+            label="Tunnel connection host (optional)"
+            required={false}
+          />
+          <Field
+            name="connectPort"
+            label="Tunnel port (optional)"
+            type="number"
+            required={false}
+          />
+          <p className="muted">
+            TLS checks the logical NAS hostname. Your existing
+            SSH tunnel only changes where the connection is
+            opened.
+          </p>
+          </> : <>
+          <Field
+            name="title"
+            label="What are you planning?"
+            defaultValue={searchParams.get("title") ?? undefined}
+            placeholder="Purchase a compatible spare drive"
+          />
+          <Field
+            name="reason"
+            label="Evidence or reason"
+            defaultValue={searchParams.get("reason") ?? undefined}
+            placeholder="No spare available; review model and capacity"
+          />
+          <Field
+            name="budget"
+            label="Budget (USD)"
+            type="number"
+            required={false}
+          />
+          </>}
+          <Button disabled={busy} type="submit">Save</Button>
+          {error && <p className="error">{error}</p>}
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
   return (
     <DisplayPreferencesContext.Provider value={snapshot.settings}>
       <div className="shell">
@@ -391,7 +463,7 @@ export default function App() {
               <Link
                 key={item.title}
                 className={page === item.title ? "active" : ""}
-                to={item.path}
+                to={item.title === "Settings" ? "/settings/connections" : item.path}
                 aria-label={item.title}
                 aria-current={page === item.title ? "page" : undefined}
               >
@@ -476,7 +548,9 @@ export default function App() {
                         ? "Turn observations into a practical replacement plan."
                         : page === "Storage"
                           ? "Pools and drives, one server at a time."
-                        : "Evidence, history, and the details that matter."}
+                        : page === "Settings"
+                            ? "How Homelab Control reads your systems, what it flags for review, and where it sends alerts."
+                            : "Evidence, history, and the details that matter."}
                 </p>
               </div>
               {page === "Storage" ? <div className="storage-heading-actions">
@@ -553,162 +627,16 @@ export default function App() {
                 planRevision={JSON.stringify(snapshot.plans)}
               />
             )}
-            {(page === "Planning" || page === "Settings") && (
+            {page === "Planning" && (
               <>
                 <div className="section-title">
                   <h2>
-                    {page === "Settings"
-                      ? "NAS connections"
-                      : page === "Planning"
-                        ? "Replacement & maintenance queue"
-                        : "Protection policies"}
+                    Replacement & maintenance queue
                   </h2>
-                  <Dialog open={modal} onOpenChange={setModal}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus size={16} />{" "}
-                        {page === "Settings"
-                          ? "Connect NAS"
-                          : page === "Planning"
-                            ? "Add plan"
-                            : "Add policy"}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>
-                          {page === "Settings"
-                            ? "Enroll a NAS"
-                            : page === "Planning"
-                              ? "Plan ahead"
-                              : "Record protection evidence"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const fields = Object.fromEntries(
-                            new FormData(e.currentTarget),
-                          );
-                          void action(() =>
-                            request(
-                              page === "Settings"
-                                ? "/connections"
-                                : page === "Planning"
-                                  ? "/plans"
-                                  : "/recovery",
-                              {
-                                ...fields,
-                                ...(page === "Settings"
-                                  ? {
-                                      connectHost: fields.connectHost || null,
-                                      connectPort: fields.connectPort
-                                        ? Number(fields.connectPort)
-                                        : null,
-                                    }
-                                  : page === "Planning"
-                                    ? {
-                                        budget: fields.budget
-                                          ? Number(fields.budget)
-                                          : null,
-                                        currency: "USD",
-                                      }
-                                    : { rpoHours: Number(fields.rpoHours) }),
-                              },
-                            ),
-                          );
-                        }}
-                      >
-                        {page === "Settings" ? (
-                          <>
-                            <Field
-                              name="name"
-                              label="Display name"
-                              placeholder="Home NAS"
-                            />
-                            <Field
-                              name="apiUri"
-                              label="Logical secure WebSocket address"
-                              placeholder="wss://nas.home/websocket"
-                            />
-                            <Field
-                              name="apiKey"
-                              label="TrueNAS API key"
-                              type="password"
-                            />
-                            <div className="field">
-                              <Label htmlFor="enroll-trusted-ca">Trusted public CA certificate (optional)</Label>
-                              <textarea id="enroll-trusted-ca" name="trustedCaPem" rows={4} maxLength={20000} aria-describedby="enroll-ca-help" />
-                              <p id="enroll-ca-help" className="muted">For a private certificate, paste the public CA certificate before connecting. Never paste a private key. Leave blank for system-trusted certificates.</p>
-                            </div>
-                            <Field
-                              name="connectHost"
-                              label="Tunnel connection host (optional)"
-                              required={false}
-                            />
-                            <Field
-                              name="connectPort"
-                              label="Tunnel port (optional)"
-                              type="number"
-                              required={false}
-                            />
-                            <p className="muted">
-                              TLS checks the logical NAS hostname. Your existing
-                              SSH tunnel only changes where the connection is
-                              opened.
-                            </p>
-                          </>
-                        ) : page === "Planning" ? (
-                          <>
-                            <Field
-                              name="title"
-                              label="What are you planning?"
-                              defaultValue={searchParams.get("title") ?? undefined}
-                              placeholder="Purchase a compatible spare drive"
-                            />
-                            <Field
-                              name="reason"
-                              label="Evidence or reason"
-                              defaultValue={searchParams.get("reason") ?? undefined}
-                              placeholder="No spare available; review model and capacity"
-                            />
-                            <Field
-                              name="budget"
-                              label="Budget (USD)"
-                              type="number"
-                              required={false}
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <Field name="asset" label="Dataset or service" />
-                            <Field
-                              name="destination"
-                              label="Backup destination"
-                            />
-                            <Field
-                              name="rpoHours"
-                              label="Recovery point objective (hours)"
-                              type="number"
-                            />
-                            <Field
-                              name="evidence"
-                              label="Evidence / notes"
-                              required={false}
-                            />
-                          </>
-                        )}
-                        <Button disabled={busy} type="submit">
-                          Save
-                        </Button>
-                        {error && <p className="error">{error}</p>}
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+                  {editorDialog}
                 </div>
                 <Card className="list-card">
-                  {page === "Planning" ? (
-                    snapshot.plans.length ? (
+                  {snapshot.plans.length ? (
                       snapshot.plans.map((p) => (
                         <div className="row" key={p.id} id={"plan-" + p.id} tabIndex={-1}>
                           <ShoppingBag />
@@ -772,47 +700,12 @@ export default function App() {
                           review with its evidence and budget.
                         </p>
                       </div>
-                    )
-                  ) : snapshot.connections.length ? (
-                    snapshot.connections.map((c) => (
-                      <div className="row" key={c.id}>
-                        <Database />
-                        <div>
-                          <h3>{c.name}</h3>
-                          <small>
-                            {date(c.lastSuccessUtc, snapshot.settings.timezone)}
-                          </small>
-                        </div>
-                        <Badge variant="outline">{c.status}</Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty">
-                      <Boxes />
-                      <h3>Your first connection</h3>
-                      <p>
-                        Connect directly to your NAS API or point to an existing
-                        SSH tunnel.
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </Card>
               </>
             )}
-            {page === "Settings" && (
-              <>
-                <AppearanceSettings />
-                <ConnectionSettings timezone={snapshot.settings.timezone} />
-                <HardwareSettings />
-                <OperationsSettings
-                  onSaved={(settings) => {
-                    setSnapshot((current) => ({ ...current, settings }));
-                    void refresh();
-                  }}
-                />
-                <NotificationSettings />
-              </>
-            )}
+            {page === "Settings" && <SettingsPage enrollment={editorDialog} connectionVersion={JSON.stringify(snapshot.connections)}
+              onDisplaySaved={settings => setSnapshot(current => ({ ...current, settings }))} />}
             {page === "Activity" && <ActivityHistory />}
             <footer>
               HOMELAB CONTROL <span>Evidence first. Uncertainty visible.</span>

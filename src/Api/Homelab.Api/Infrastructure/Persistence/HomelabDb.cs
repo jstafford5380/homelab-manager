@@ -8,6 +8,7 @@ public sealed class HomelabDb(DbContextOptions<HomelabDb> options) : DbContext(o
     public DbSet<HardwareComponent> HardwareComponents => Set<HardwareComponent>();
     public DbSet<HardwareReading> HardwareReadings => Set<HardwareReading>();
     public DbSet<HardwareEvent> HardwareEvents => Set<HardwareEvent>();
+    public DbSet<ConnectionCredentialHistory> ConnectionCredentialHistory => Set<ConnectionCredentialHistory>();
     public DbSet<ApiPowerOnState> ApiPowerOnStates => Set<ApiPowerOnState>();
     public DbSet<SmartRead> SmartReads => Set<SmartRead>();
     public DbSet<DatasetRenameReview> DatasetRenames => Set<DatasetRenameReview>();
@@ -68,6 +69,9 @@ public sealed class HomelabDb(DbContextOptions<HomelabDb> options) : DbContext(o
         model.Entity<HardwareReading>().HasIndex(x => new { x.ServerId, x.TakenUtc, x.Source });
         model.Entity<HardwareEvent>().HasOne<HardwareComponent>().WithMany().HasForeignKey(x => x.ComponentId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<HardwareEvent>().HasIndex(x => new { x.ComponentId, x.AtUtc });
+        model.Entity<ConnectionCredentialHistory>().HasKey(x => x.ConnectionId);
+        model.Entity<ConnectionCredentialHistory>().HasOne<NasConnection>().WithOne()
+            .HasForeignKey<ConnectionCredentialHistory>(x => x.ConnectionId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<ApiPowerOnState>().HasKey(x => x.ConnectionId);
         model.Entity<ApiPowerOnState>().HasOne<NasConnection>().WithOne().HasForeignKey<ApiPowerOnState>(x => x.ConnectionId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<SmartRead>().HasKey(x => x.DiskId);

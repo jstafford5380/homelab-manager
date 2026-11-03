@@ -1,6 +1,6 @@
 # 003 · Settings rework
 
-- **Status:** ready · 2026-11-02
+- **Status:** implemented · 2026-11-02
 - **Mock:** [mock.html](mock.html). Use the toolbar to switch State, Width and Theme. The sub-nav, and the Manage and Review buttons on connections, work inside the mock. `?section=` opens a section directly, e.g. `?state=dirty&section=monitoring`.
 - **Shared preview:** —
 - **Affected screens:** **Settings** (`/settings`), which gains one URL per section: `/settings/connections`, `/settings/connections/<id>`, `/settings/monitoring`, `/settings/review-levels`, `/settings/notifications`, `/settings/data`, `/settings/display`. `/settings` redirects to `/settings/connections`.
@@ -34,18 +34,18 @@ Rejected alternatives:
 
 | ID | Feature | Depends on | Flag | Status |
 | --- | --- | --- | --- | --- |
-| 003.01 | Settings shell: sub-nav (desktop/tablet) and tab row (phone), one section at a time, a URL per section, attention count on Connections | — | — | ready |
-| 003.02 | Per-section save: sticky save bar, Discard, "Was …" hints, nav dot, leave guard, field-level errors, conflict handling | 003.01 | — | ready |
-| 003.03 | Connections list: status pill, meta line, Connect NAS, Add Synology hardware, empty state | 003.01 | — | ready |
-| 003.04 | Connection detail page: connection, certificate trust, replace API key, identity-change review | 003.03, 003.02 | — | ready |
-| 003.05 | Monitoring: drive collection intervals; optional reads as switches with "How this works"; power-on hours last run and Run now | 003.02 | — | ready |
-| 003.06 | Review levels: drives (age, warranty, local temperature policy) and hardware levels | 003.02 | — | ready |
-| 003.07 | Notifications: three-step setup, set-up summary, quiet period, recent deliveries | 003.01 | — | ready |
-| 003.08 | Data & backups: history retention, backup destination, daily backups, copies, Back up now, backup history | 003.02 | — | ready |
-| 003.09 | Display: theme (instant, per browser), timezone, capacity units | 003.02 | — | ready |
-| 003.10 | Loading and unavailable states for the whole page | 003.01 | — | ready |
-| 003.11 | Remove connection (new: stops collection and deletes credentials, keeps evidence) | 003.04 | — | ready |
-| 003.12 | "Last replaced" date for a connection's API key (new field) | 003.04 | — | ready |
+| 003.01 | Settings shell: sub-nav (desktop/tablet) and tab row (phone), one section at a time, a URL per section, attention count on Connections | — | — | implemented |
+| 003.02 | Per-section save: sticky save bar, Discard, "Was …" hints, nav dot, leave guard, field-level errors, conflict handling | 003.01 | — | implemented |
+| 003.03 | Connections list: status pill, meta line, Connect NAS, Add Synology hardware, empty state | 003.01 | — | implemented |
+| 003.04 | Connection detail page: connection, certificate trust, replace API key, identity-change review | 003.03, 003.02 | — | implemented |
+| 003.05 | Monitoring: drive collection intervals; optional reads as switches with "How this works"; power-on hours last run and Run now | 003.02 | — | implemented |
+| 003.06 | Review levels: drives (age, warranty, local temperature policy) and hardware levels | 003.02 | — | implemented |
+| 003.07 | Notifications: three-step setup, set-up summary, quiet period, recent deliveries | 003.01 | — | implemented |
+| 003.08 | Data & backups: history retention, backup destination, daily backups, copies, Back up now, backup history | 003.02 | — | implemented |
+| 003.09 | Display: theme (instant, per browser), timezone, capacity units | 003.02 | — | implemented |
+| 003.10 | Loading and unavailable states for the whole page | 003.01 | — | implemented |
+| 003.11 | Remove connection (new: stops collection and deletes credentials, keeps evidence) | 003.04 | — | deferred |
+| 003.12 | "Last replaced" date for a connection's API key (new field) | 003.04 | — | implemented |
 
 003.11 and 003.12 are capabilities the app doesn't have today. Build or defer each on its own; when deferred, its row is simply absent from the detail page. "Add Synology hardware" (003.03) renders only while 002's `synology` flag is on.
 
@@ -119,21 +119,21 @@ Fixtures group settings by section. Today the API exposes one flat settings obje
 
 ## Acceptance checklist
 
-- [ ] Every state in the table is implemented and reachable.
-- [ ] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
-- [ ] No horizontal page scroll at 390px. Only the tab row scrolls sideways.
-- [ ] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
-- [ ] Unknown, stale, paused and unsupported states look different from healthy ones.
-- [ ] No claims beyond the evidence.
-- [ ] Feature-specific checks:
-  - [ ] 003.01: each section has its own URL; reload and back/forward keep the section.
-  - [ ] 003.02: saving one section never changes fields in another; a stale revision shows a conflict instead of overwriting; Discard restores the saved values.
-  - [ ] 003.04: the identity callout appears only when the serials differ; Accept new baseline is unavailable while the observed serial is missing.
-  - [ ] 003.05: Run now works without saving other edits, and is disabled until power-on hours is saved as on.
-  - [ ] 003.06: temperature limit and basis appear only while the policy switch is on; basis is required when it is on.
-  - [ ] 003.07: Send a test and Turn on delivery are disabled, with their reason shown, until the previous step succeeds; changing the destination requires a new test.
-  - [ ] 003.08: Back up now is absent when no destination is configured.
-  - [ ] 003.09: theme applies without the save bar; timezone and units use it.
+- [x] Every state in the table is implemented and reachable.
+- [x] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
+- [x] No horizontal page scroll at 390px. Only the tab row scrolls sideways.
+- [x] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
+- [x] Unknown, stale, paused and unsupported states look different from healthy ones.
+- [x] No claims beyond the evidence.
+- [x] Feature-specific checks:
+  - [x] 003.01: each section has its own URL; reload and back/forward keep the section.
+  - [x] 003.02: saving one section never changes fields in another; a stale revision shows a conflict instead of overwriting; Discard restores the saved values.
+  - [x] 003.04: the identity callout appears only when the serials differ; Accept new baseline is unavailable while the observed serial is missing.
+  - [x] 003.05: Run now works without saving other edits, and is disabled until power-on hours is saved as on.
+  - [x] 003.06: temperature limit and basis appear only while the policy switch is on; basis is required when it is on.
+  - [x] 003.07: Send a test and Turn on delivery are disabled, with their reason shown, until the previous step succeeds; changing the destination requires a new test.
+  - [x] 003.08: Back up now is absent when no destination is configured.
+  - [x] 003.09: theme applies without the save bar; timezone and units use it.
   - [ ] 003.11: removing asks for confirmation and keeps drive history.
 
 ## Implementation notes
@@ -142,10 +142,57 @@ _Codex: one entry per feature ID as it lands: final endpoints and fields, compon
 
 ### 003.01
 
-—
+`SettingsPage` provides six route-backed sections and redirects `/settings` to Connections. The shell shares the existing app navigation and derives the attention count from `GET /api/v1/connections`, including a missing identity as requiring review. Browser coverage checks direct links, reload, history navigation, heading focus, and tab overflow at 390 px.
+
+### 003.02
+
+`GET /api/v1/settings` returns the existing flat `settings` object plus `revisions` keyed by section. `PATCH /api/v1/settings/{section}` takes `revision` and `changes`, rejects fields outside the section, and returns updated `settings` and `revisions`. Validation returns field-keyed `errors` with HTTP 400. A changed section returns HTTP 409. Reloading a conflicting operating section keeps the draft for review against the refreshed values. The existing whole-document PUT remains available to API clients.
+
+`SettingsSaveBar` and `SettingsPage` provide the sticky bar, previous values, Discard, navigation indicators and a discard-or-stay dialog for in-app navigation, including browser back. Reloading or closing the browser uses its native unsaved-changes prompt. Connection configuration uses its existing revision-protected PUT. API and browser tests cover section isolation, validation, conflict recovery, and discard.
+
+### 003.03
+
+`ConnectionSettings` uses the existing connection list response for identity, status, last-success time, interval, and tunnel information. Pause provenance is shown when the stored status establishes it. The API has no dedicated pause timestamp. Synology enrollment remains under Connections, behind the existing `synology` flag, with its own hardware setup list. The browser workflow covers the connection list and opens the existing NAS enrollment.
+
+### 003.04
+
+The per-connection URL opens the inline `ConnectionDetail`. Configuration, identity acceptance, and rotation continue through the existing revision-protected PUT routes under `/api/v1/connections/{id}`. Configuration validation now names the invalid field. Identity acceptance retains the serial and independent-verification inputs needed by the real API. The browser workflow covers identity review, stale revisions, reloading saved connection values, and mobile layout.
+
+### 003.05
+
+`OperationsSettings` displays `powerOnHoursLastRun` from `GET /api/v1/settings`. The summary reflects the most recent recorded attempt on a server and includes a timestamp, outcome, and available/total drive counts when a snapshot was returned. Failed attempts keep previous drive evidence and omit counts. `POST /api/v1/storage/power-on-hours/run` remains an independent action gated by the saved opt-in. Existing collection limits and schedules are retained. API and browser coverage checks opt-in, failures, preserved readings, and running the action with unrelated edits.
+
+### 003.06
+
+The Review levels section uses the existing drive age, warranty, temperature policy and hardware fields through the section PATCH. The local policy switch reveals the limit and required basis. Enabling the switch requires entering a limit. The browser workflow covers hidden fields, missing-basis validation, saving, disabling, and axe in both themes.
+
+### 003.07
+
+`NotificationSettings` uses the existing settings, test, and retry endpoints under `/api/v1/notifications`. The destination summary uses the receiver kind and safe host information. Tokens and full webhook URLs stay write-only. A replacement returns the owner to the test and enable steps. Quiet-period and masking preferences have a separate draft. Quiet-period validation returns `errors.maintenanceUntilUtc` and focuses the field. Browser coverage exercises the first-run gates, Telegram setup, delivery history, and retry.
+
+### 003.08
+
+The Data & backups section shows `backupDestinationConfigured` and `backupDestinationPath` from settings. It uses `GET /api/v1/backups` for history and `POST /api/v1/backups` for the independent action. The action is absent without a configured path. Browser coverage checks the unconfigured destination and history formatting. Existing backup tests cover creation, cleanup, and restore behavior.
+
+### 003.09
+
+`AppearanceSettings` applies the theme immediately in the browser. Timezone and capacity units save through the Display PATCH. The timezone control accepts an IANA timezone so existing and less common zones are available. Browser coverage checks the theme across tabs, browser storage failure, and the effects of saving timezone and units.
+
+### 003.10
+
+`SettingsPage` shows disabled navigation and a loading status until settings arrive. Failure shows the request error and retry, and the browser-local theme remains accessible under Display. Both states are covered by the browser workflow with axe in light and dark.
+
+### 003.11
+
+Deferred under the package’s optional-capability rule. Removing a connection while retaining its linked evidence needs an explicit archival model. The detail page omits the removal row.
+
+### 003.12
+
+`GET /api/v1/connections` returns `apiKeyReplacedUtc` after a successful revision-checked rotation. The migration adds per-connection replacement history with no inferred dates for existing keys. The detail page omits unknown dates. The API test checks before and after rotation and verifies that the response excludes the key.
 
 ## Change log
 
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-11-02 | Package created | Claude |
+| 2026-11-02 | Settings rework implemented. Connection removal deferred. | Codex |

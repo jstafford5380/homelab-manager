@@ -260,7 +260,7 @@ export function HardwareReviewLine({ detail: d }: { detail: HwDetail }) {
     <p className="hw-review-line">
       Review levels: CPU {d.cpuLevel}%, memory {d.memoryLevel}%, temperature{" "}
       {d.temperatureLevel} °C. Dashed lines on the charts.{" "}
-      <Link to="/settings#hardware-review-levels">Change in Settings</Link>
+      <Link to="/settings/review-levels">Change in Settings</Link>
     </p>
   );
 }

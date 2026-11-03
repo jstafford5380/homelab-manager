@@ -241,7 +241,7 @@ export function HardwareView({
                   </strong>{" "}
                   Averages come only from the readings you add and can miss busy
                   or quiet periods. Add a reading or{" "}
-                  <Link to={`/settings?server=${d.server.id}#synology`}>
+                  <Link to={`/settings/connections?server=${d.server.id}#synology`}>
                     connect it in Settings
                   </Link>{" "}
                   to collect automatically.

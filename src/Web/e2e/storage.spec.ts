@@ -807,8 +807,12 @@ test("001.18 Run now requires saved opt-in and reports running, errors and outco
     backupDailyCopies: 7, backupWeeklyCopies: 4,
   };
   await page.route("**/api/v1/settings", r => {
-    if (r.request().method() === "PUT") { saved = r.request().postDataJSON(); return r.fulfill({ json: saved }); }
-    return r.fulfill({ json: { settings: saved, backupDestinationConfigured: false } });
+    return r.fulfill({ json: { settings: saved, backupDestinationConfigured: false, revisions: { monitoring: "fixture" } } });
+  });
+  await page.route("**/api/v1/settings/monitoring", r => {
+    expect(r.request().method()).toBe("PATCH");
+    saved = { ...saved, ...r.request().postDataJSON().changes };
+    return r.fulfill({ json: { settings: saved, revisions: { monitoring: "updated" } } });
   });
   await page.route("**/api/v1/backups", r => r.fulfill({ json: [] }));
   await page.route("**/api/v1/connections", r => r.fulfill({ json: [] }));
@@ -826,30 +830,30 @@ test("001.18 Run now requires saved opt-in and reports running, errors and outco
       { name: "Backup NAS", completed: false, hoursAvailable: 0, unsupported: 0, denied: 0, unavailable: 0 },
     ] } });
   });
-  await page.goto("/settings");
+  await page.goto("/settings/monitoring");
   const run = page.getByRole("button", { name: "Run now", exact: true });
   await expect(run).toBeDisabled();
   await page.getByLabel("Read power-on hours through the TrueNAS API", { exact: true }).check();
   await expect(run).toBeDisabled();
   await expect(page.getByText("Save settings to enable Run now.")).toBeVisible();
-  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(run).toBeEnabled();
   await run.click();
   await expect(page.getByText("A power-on hours read is already running.", { exact: true })).toBeVisible();
   await expect(run).toBeEnabled();
   fail = false;
-  await page.getByLabel("Disk inventory interval (minutes)").fill("99");
+  await page.getByLabel("Disk inventory interval").fill("99");
   await run.click();
   await expect(page.getByRole("button", { name: "Running…", exact: true })).toBeDisabled();
   await expect(page.getByText("Reading power-on hours…", { exact: true })).toBeVisible();
   await expect.poll(() => Boolean(finish)).toBe(true);
   finish!();
-  await expect(page.getByText("TrueNAS: finished.", { exact: false })).toContainText("4 drives returned hours; 2 unsupported; 1 permission denied");
+  await expect(page.getByText("TrueNAS: 4 drives returned hours.", { exact: false })).toContainText("4 drives returned hours. 2 unsupported, 1 denied");
   await expect(page.getByText("Backup NAS: no new reading was saved.", { exact: false })).toBeVisible();
   await expect(run).toBeEnabled();
   expect(calls).toBe(2);
   expect(saved.inventoryMinutes).toBe(15);
-  await expect(page.getByLabel("Disk inventory interval (minutes)")).toHaveValue("99");
+  await expect(page.getByLabel("Disk inventory interval")).toHaveValue("99");
   await page.setViewportSize({ width: 390, height: 844 });
   await run.scrollIntoViewIfNeeded();
   await expect(run).toBeVisible();

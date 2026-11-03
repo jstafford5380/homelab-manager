@@ -96,13 +96,19 @@ public class ApiPowerOnHoursTests
         Assert.Equal(6, factory.Client.ReadDevices.Count);
         settings.ReadApiPowerOnHours = true; await db.SaveChangesAsync();
         Assert.Empty(await db.Observations.ToArrayAsync()); Assert.Empty(await db.Findings.ToArrayAsync());
-        var json = (await db.ApiPowerOnStates.SingleAsync()).SnapshotJson;
+        var json = (await db.ApiPowerOnStates.AsNoTracking().SingleAsync()).SnapshotJson;
         var disk = await db.Disks.SingleAsync(x => x.Serial == "SERIAL");
         Assert.Equal("stale", ApiPowerOnHours.ForDrive(nas, disk, true, DateTime.UtcNow.AddHours(19), json).Status);
         nas.ConfigurationRevision = Guid.NewGuid();
         Assert.Equal("unavailable", ApiPowerOnHours.ForDrive(nas, disk, true, DateTime.UtcNow, json).Status);
         Assert.True(ApiPowerOnHours.Due(nas, json, DateTime.UtcNow));
         Assert.Equal("disabled", ApiPowerOnHours.ForDrive(nas, disk, false, DateTime.UtcNow, json).Status);
+        factory.Client.FailConnection = true;
+        Assert.Equal(200, ((IStatusCodeHttpResult)await collector.RunPowerOnHoursNowAsync(default)).StatusCode);
+        var lastState = await db.ApiPowerOnStates.AsNoTracking().SingleAsync();
+        Assert.NotNull(lastState.LastFailedAttemptUtc);
+        Assert.Equal(json, lastState.SnapshotJson);
+
     }
     private class Factory : INasReadClientFactory
     {
@@ -112,10 +118,11 @@ public class ApiPowerOnHoursTests
     private class Client : INasReadClient
     {
         public string After = Inventory;
-        public bool Denied;
+        public bool Denied, FailConnection;
         public List<string> ReadDevices = [];
         public TaskCompletionSource? ReadStarted, ContinueRead;
-        public Task ConnectAsync(NasConnection profile, string key, CancellationToken ct) => Task.CompletedTask;
+        public Task ConnectAsync(NasConnection profile, string key, CancellationToken ct) =>
+            FailConnection ? Task.FromException(new IOException("Fixture connection unavailable")) : Task.CompletedTask;
         public async Task<JsonElement> ReadSmartAttributesAsync(string device, CancellationToken ct)
         {
             ReadDevices.Add(device);

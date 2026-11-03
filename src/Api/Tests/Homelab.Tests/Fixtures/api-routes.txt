@@ -50,6 +50,7 @@ GET /api/v1/storage/drives/{id:guid}/trends
 GET /api/v1/storage/overview
 GET /health/live
 GET /health/ready
+PATCH /api/v1/settings/{section}
 POST /api/v1/backups
 POST /api/v1/connections
 POST /api/v1/connections/{id:guid}/dataset-renames

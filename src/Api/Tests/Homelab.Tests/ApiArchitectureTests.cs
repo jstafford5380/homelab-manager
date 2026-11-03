@@ -28,7 +28,7 @@ public sealed class ApiArchitectureTests(ApiFactory factory) : IClassFixture<Api
         var expected = await File.ReadAllLinesAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "api-routes.txt"));
         var actual = endpoints.SelectMany(e => e.Metadata.GetRequiredMetadata<HttpMethodMetadata>().HttpMethods.Select(m => m + " " + e.RoutePattern.RawText)).Order().ToArray();
         Assert.Equal(expected.Order(), actual);
-        Assert.Equal(109, endpoints.Length);
+        Assert.Equal(110, endpoints.Length);
         Assert.Equal(3, endpoints.Count(e => e.Metadata.GetMetadata<OwnsWriteLease>() is not null));
         foreach (var endpoint in endpoints)
         {
@@ -47,7 +47,7 @@ public sealed class ApiArchitectureTests(ApiFactory factory) : IClassFixture<Api
         using var client = factory.CreateClient();
         var json = await client.GetFromJsonAsync<JsonElement>("/openapi/v1.json");
         var paths = json.GetProperty("paths");
-        Assert.Equal(109, paths.EnumerateObject().Sum(p => p.Value.EnumerateObject().Count(o => o.Name is "get" or "post" or "put" or "delete" or "patch")));
+        Assert.Equal(110, paths.EnumerateObject().Sum(p => p.Value.EnumerateObject().Count(o => o.Name is "get" or "post" or "put" or "delete" or "patch")));
         var profile = paths.GetProperty("/api/v1/storage/drives/{id}/profile").GetProperty("put");
         Assert.Equal("3.0.4", json.GetProperty("openapi").GetString());
         Assert.True(profile.TryGetProperty("requestBody", out _));
@@ -90,6 +90,21 @@ public sealed class ApiArchitectureTests(ApiFactory factory) : IClassFixture<Api
         var session = await client.GetFromJsonAsync<JsonElement>("/api/v1/session");
         Assert.True(session.GetProperty("authenticated").GetBoolean());
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/v1/plans", new PlanningItem())).StatusCode);
+        var saved = await client.GetFromJsonAsync<JsonElement>("/api/v1/settings");
+        var revision = saved.GetProperty("revisions").GetProperty("monitoring").GetString();
+        const string monitoring = "/api/v1/settings/monitoring";
+        var rejectedSection = await client.PatchAsJsonAsync(monitoring, new { revision, changes = new { timezone = "UTC" } });
+        Assert.Equal(HttpStatusCode.BadRequest, rejectedSection.StatusCode);
+        var invalidField = await client.PatchAsJsonAsync(monitoring, new { revision, changes = new { inventoryMinutes = 0 } });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidField.StatusCode);
+        var invalidBody = await invalidField.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(invalidBody.GetProperty("errors").TryGetProperty("inventoryMinutes", out _));
+        var patch = await client.PatchAsJsonAsync(monitoring, new { revision, changes = new { inventoryMinutes = 30 } });
+        Assert.Equal(HttpStatusCode.OK, patch.StatusCode);
+        var result = (await patch.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("settings");
+        Assert.Equal(30, result.GetProperty("inventoryMinutes").GetInt32());
+        Assert.Equal(saved.GetProperty("settings").GetProperty("timezone").GetString(), result.GetProperty("timezone").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PatchAsJsonAsync(monitoring, new { revision, changes = new { inventoryMinutes = 45 } })).StatusCode);
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HomelabDb>();
         var connection = new NasConnection { Name = "Route binding", Enabled = false };
@@ -99,6 +114,14 @@ public sealed class ApiArchitectureTests(ApiFactory factory) : IClassFixture<Api
         await db.SaveChangesAsync();
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/v1/hardware/servers/{connection.Id}?range=30d")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/v1/disks/{disk.Id}/spare-reviews")).StatusCode);
+        var beforeRotation = await client.GetFromJsonAsync<JsonElement>("/api/v1/connections");
+        Assert.Equal(JsonValueKind.Null, beforeRotation[0].GetProperty("apiKeyReplacedUtc").ValueKind);
+        Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync($"/api/v1/connections/{connection.Id}/credentials",
+            new { apiKey = "replacement-fixture-key", configurationRevision = connection.ConfigurationRevision })).StatusCode);
+        var afterRotation = await client.GetFromJsonAsync<JsonElement>("/api/v1/connections");
+        Assert.InRange(afterRotation[0].GetProperty("apiKeyReplacedUtc").GetDateTime(), DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow);
+        Assert.DoesNotContain("replacement-fixture-key", afterRotation.GetRawText());
+
     }
 }
 

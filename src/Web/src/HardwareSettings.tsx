@@ -18,6 +18,7 @@ export function HardwareSettings() {
     [editing, setEditing] = useState<Setup | null>(null),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
   const [params] = useSearchParams();
   useEffect(() => {
     const controller = new AbortController();
@@ -44,7 +45,8 @@ export function HardwareSettings() {
   if (!enabled) return null;
   return (
     <section id="synology" style={{ marginTop: 32 }}>
-      <h2>Synology hardware</h2>
+      <div className="settings-section-heading"><h3>Synology hardware</h3>
+      <Button variant="outline" onClick={() => { setEditing(null); setShowSetup(value => !value); }}>Add Synology hardware</Button></div>
       <p className="muted">
         Enroll a Synology server for entered parts and readings, or connect
         through read-only SNMP v2c on UDP 161. SNMP v2c sends the community
@@ -60,7 +62,7 @@ export function HardwareSettings() {
           </Button>
         </p>
       ))}
-      <Card style={{ padding: 20, marginTop: 16 }}>
+      {(editing || showSetup) && <Card style={{ padding: 20, marginTop: 16 }}>
         <h3>{editing ? `Edit ${editing.name}` : "Enroll a Synology server"}</h3>
         <form
           key={editing?.id ?? "new"}
@@ -82,6 +84,7 @@ export function HardwareSettings() {
               );
               setServers(await hardwareRequest("/synology/settings"));
               setEditing(null);
+              setShowSetup(false);
               setMessage("Saved");
             } catch (err) {
               setMessage(err instanceof Error ? err.message : String(err));
@@ -148,7 +151,7 @@ export function HardwareSettings() {
             )}
           </div>
         </form>
-      </Card>
+      </Card>}
       <p role="status">{message}</p>
     </section>
   );

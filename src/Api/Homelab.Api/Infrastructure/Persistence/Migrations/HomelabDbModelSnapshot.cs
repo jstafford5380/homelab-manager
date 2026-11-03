@@ -18,6 +18,7 @@ namespace Homelab.Api.Migrations
             modelBuilder.Entity("Homelab.Api.ApiPowerOnState", b =>
             {
                 b.Property<Guid>("ConnectionId").HasColumnType("TEXT");
+                b.Property<DateTime?>("LastFailedAttemptUtc").HasColumnType("TEXT");
                 b.Property<string>("SnapshotJson").IsRequired().HasColumnType("TEXT");
                 b.HasKey("ConnectionId");
                 b.ToTable("ApiPowerOnStates");
@@ -123,6 +124,13 @@ namespace Homelab.Api.Migrations
                 b.HasIndex("ConnectionId", "Id");
                 b.HasIndex("StartedUtc", "Id");
                 b.ToTable("CollectionRuns");
+            });
+            modelBuilder.Entity("Homelab.Api.ConnectionCredentialHistory", b =>
+            {
+                b.Property<Guid>("ConnectionId").HasColumnType("TEXT");
+                b.Property<DateTime>("ReplacedUtc").HasColumnType("TEXT");
+                b.HasKey("ConnectionId");
+                b.ToTable("ConnectionCredentialHistory");
             });
             modelBuilder.Entity("Homelab.Api.DatasetInventorySample", b =>
             {
@@ -874,6 +882,11 @@ namespace Homelab.Api.Migrations
                 b.HasIndex("DiskId", "RequestId").IsUnique();
                 b.HasIndex("DiskId", "AssetId", "Id");
                 b.ToTable("SpareReviews");
+            });
+            modelBuilder.Entity("Homelab.Api.ConnectionCredentialHistory", b =>
+            {
+                b.HasOne("Homelab.Api.NasConnection", null).WithOne()
+                    .HasForeignKey("Homelab.Api.ConnectionCredentialHistory", "ConnectionId").OnDelete(DeleteBehavior.Cascade).IsRequired();
             });
             modelBuilder.Entity("Homelab.Api.ApiPowerOnState", b =>
             {

@@ -100,7 +100,12 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, IDataProtectio
 
         if (input.MaintenanceUntilUtc > DateTime.UtcNow.AddDays(7))
         {
-            await Send.ResultAsync(Results.BadRequest(new { error = "Maintenance suppression is limited to seven days." }));
+            const string error = "Maintenance suppression is limited to seven days.";
+            await Send.ResultAsync(Results.BadRequest(new
+            {
+                error,
+                errors = new Dictionary<string, string[]> { ["maintenanceUntilUtc"] = [error] }
+            }));
             return;
         }
 
