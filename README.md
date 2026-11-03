@@ -14,6 +14,7 @@ React + TypeScript + shadcn/ui, hosted by ASP.NET Core 10 and orchestrated with 
    | `HOMELAB_KEY_CERTIFICATE_BASE64` | A single-line Base64 encoding of the password-protected credential-encryption PFX. |
    | `HOMELAB_KEY_CERTIFICATE_PASSWORD` | The password used to export that PFX. |
    | `HOMELAB_TRUSTED_PROXY` | The Coolify proxy's IP address on the Docker network shared with this app, or that network's CIDR if every attached peer is trusted. |
+   | `HOMELAB_HARDWARE_METRICS_ENABLED` | Optional. Set to `true` to collect read-only TrueNAS hardware metrics. Defaults to `false`. After redeploying, use **Refresh** on the Hardware page to collect immediately. |
 
    Create the credential-encryption PFX once on your workstation, in a private working directory. Use a strong PFX password such as one generated with `openssl rand -hex 32`. Paste the final command's output into the Base64 variable and keep the matching password.
 

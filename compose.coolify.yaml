@@ -15,6 +15,7 @@ services:
       Homelab__KeyCertificateBase64: ${HOMELAB_KEY_CERTIFICATE_BASE64:-}
       Homelab__KeyCertificatePassword: ${HOMELAB_KEY_CERTIFICATE_PASSWORD:-}
       Homelab__TrustedProxy: ${HOMELAB_TRUSTED_PROXY:-}
+      Homelab__HardwareMetricsEnabled: "${HOMELAB_HARDWARE_METRICS_ENABLED:-false}"
     volumes:
       - homelab-data:/data
       - homelab-backups:/backups
