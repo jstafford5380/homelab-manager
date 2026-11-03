@@ -218,7 +218,6 @@ export default function App() {
                 (row: unknown) => row !== null && typeof row === "object",
               ),
           ) ||
-          (next.scanReports !== undefined && !validScanReports(next.scanReports)) ||
           !next.recoveryAssessments.every(
             (row: { assessment?: { protection?: unknown } }) =>
               typeof row.assessment?.protection === "string",
@@ -229,7 +228,12 @@ export default function App() {
           timeZone: next.settings.timezone,
         });
         if (refreshController.current !== controller) return;
-        setSnapshot(next);
+        setSnapshot({
+          ...next,
+          scanReports: validScanReports(next.scanReports)
+            ? next.scanReports
+            : undefined,
+        });
         setLastRefresh(Date.now());
       } else {
         setSnapshot(empty);
@@ -464,13 +468,19 @@ export default function App() {
                 key={item.title}
                 className={page === item.title ? "active" : ""}
                 to={item.title === "Settings" ? "/settings/connections" : item.path}
-                aria-label={item.title}
+                aria-label={
+                  item.title === "Overview" && issues.length > 0
+                    ? `Overview ${issues.length} open ${issues.length === 1 ? "finding" : "findings"}`
+                    : item.title
+                }
                 aria-current={page === item.title ? "page" : undefined}
               >
                 <item.icon size={18} />
                 {item.title}
                 {item.title === "Overview" && issues.length > 0 && (
-                  <span className="nav-count">{issues.length}</span>
+                  <span className="nav-count" aria-hidden="true">
+                    {` ${issues.length}`}
+                  </span>
                 )}
               </Link>
             ))}

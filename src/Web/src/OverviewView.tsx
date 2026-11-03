@@ -11,6 +11,7 @@ import {
   CircleHelp,
   Database,
   HardDrive,
+  History,
   Info,
   Package,
   Plus,
@@ -22,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScanOverview, type ScanReport } from "./ScanOverview";
+import { capabilityLabel } from "./capabilityLabels";
 import { useDisplayFormat } from "./displayPreferences";
 import type { DisplayPreferences } from "./displayPreferences";
 import type { Plan } from "./PlanEditor";
@@ -30,6 +32,7 @@ export type Connection = {
   id: string;
   name: string;
   status: string;
+  version?: string | null;
   lastSuccessUtc: string | null;
   pollSeconds: number;
   enabled?: boolean;
@@ -477,7 +480,8 @@ export function OverviewView({
     planning && planning !== "unavailable"
       ? planning.spares.reduce((sum, s) => sum + s.quantity, 0)
       : null;
-  const scanActive = !!snapshot.scanReports?.length;
+  const scanCount = snapshot.scanReports?.length ?? 0;
+  const scanActive = scanCount > 0;
   const shown = showAll ? issues : issues.slice(0, 5);
 
   return (
@@ -511,35 +515,44 @@ export function OverviewView({
         <ul className="ov-signals" aria-label="Condition summary">
           {signals.map((s) => {
             const Icon = toneIcon[s.tone];
+            const className = `ov-signal tone-${s.tone}`;
+            const content = (
+              <>
+                <span className="ov-signal-label">
+                  <s.icon size={14} aria-hidden="true" /> {s.label}
+                </span>
+                <strong>
+                  {s.status !== false && (
+                    <Icon
+                      size={16}
+                      aria-hidden="true"
+                      className="ov-tone-icon"
+                    />
+                  )}
+                  {s.value}
+                </strong>
+                <small>{s.detail}</small>
+              </>
+            );
             return (
               <li key={s.label}>
-                <Link
-                  to={s.to}
-                  className={`ov-signal tone-${s.tone}`}
-                  onClick={(e) => {
-                    if (s.to === "/") {
-                      e.preventDefault();
+                {s.to === "/" && (!issues.length || !connections.length) ? (
+                  <div className={className}>{content}</div>
+                ) : (
+                  <Link
+                    to={s.to}
+                    className={className}
+                    onClick={(event) => {
+                      if (s.to !== "/") return;
+                      event.preventDefault();
                       document
                         .getElementById("ov-attention")
                         ?.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }}
-                >
-                  <span className="ov-signal-label">
-                    <s.icon size={14} aria-hidden="true" /> {s.label}
-                  </span>
-                  <strong>
-                    {s.status !== false && (
-                      <Icon
-                        size={16}
-                        aria-hidden="true"
-                        className="ov-tone-icon"
-                      />
-                    )}
-                    {s.value}
-                  </strong>
-                  <small>{s.detail}</small>
-                </Link>
+                    }}
+                  >
+                    {content}
+                  </Link>
+                )}
               </li>
             );
           })}
@@ -560,17 +573,17 @@ export function OverviewView({
             </Button>
           </Card>
           {/* Retained scan reports can outlive a removed connection. */}
-          <ScanOverview reports={snapshot.scanReports} />
+          {scanActive && <ScanOverview reports={snapshot.scanReports} />}
         </>
       ) : (
         <div className="ov-columns">
           <div className="ov-column">
-            <section id="ov-attention" aria-labelledby="ov-attention-title">
-              <div className="section-title">
-                <h2 id="ov-attention-title">Needs your attention</h2>
-                <span className="muted">Most severe first</span>
-              </div>
-              {issues.length ? (
+            {issues.length > 0 && (
+              <section id="ov-attention" aria-labelledby="ov-attention-title">
+                <div className="section-title">
+                  <h2 id="ov-attention-title">Needs your attention</h2>
+                  <span className="muted">Most severe first</span>
+                </div>
                 <ul className="ov-findings">
                   {shown.map((item) => {
                     const SeverityIcon = severityIcon[item.severity] ?? Info;
@@ -670,42 +683,29 @@ export function OverviewView({
                     );
                   })}
                 </ul>
-              ) : (
-                <Card className="ov-calm">
-                  <CircleCheck size={20} aria-hidden="true" />
-                  <div>
-                    <h3>No open findings</h3>
-                    <p className="muted">
-                      {coverageIncomplete
-                        ? "Findings can only come from sources that are reporting. Check coverage for gaps."
-                        : "New evidence is checked every collection cycle."}
-                    </p>
-                  </div>
-                </Card>
-              )}
-              {issues.length > 5 && (
-                <Button
-                  variant="outline"
-                  className="ov-show-all"
-                  aria-expanded={showAll}
-                  onClick={() => setShowAll(!showAll)}
-                >
-                  {showAll
-                    ? "Show fewer"
-                    : `Show all ${issues.length} findings`}
-                </Button>
-              )}
-              {issues.length > 0 && (
+                {issues.length > 5 && (
+                  <Button
+                    variant="outline"
+                    className="ov-show-all"
+                    aria-expanded={showAll}
+                    onClick={() => setShowAll(!showAll)}
+                  >
+                    {showAll
+                      ? "Show fewer"
+                      : `Show all ${issues.length} findings`}
+                  </Button>
+                )}
                 <p className="muted ov-footnote">
                   Critical findings bypass delivery snoozes. Acknowledging never
                   changes alerts on your NAS.
                 </p>
-              )}
-            </section>
+              </section>
+            )}
             {scanActive && <ScanOverview reports={snapshot.scanReports} />}
+            <OverviewSystems snapshot={snapshot} issues={issues} now={now} />
           </div>
 
-          <div className="ov-column">
+          <div className="ov-column ov-rail">
             <section aria-labelledby="ov-upcoming-title">
               <div className="section-title">
                 <h2 id="ov-upcoming-title">Coming up</h2>
@@ -779,9 +779,11 @@ export function OverviewView({
                           : "No spares recorded"}
                     </strong>
                     <small>
-                      {spares === 0
-                        ? "A compatible spare on the shelf shortens a rebuild."
-                        : "Recorded in inventory"}
+                      {spares === null
+                        ? "Planning data isn't available right now."
+                        : spares === 0
+                          ? "A compatible spare on the shelf shortens a rebuild."
+                          : "Recorded in inventory"}
                     </small>
                   </div>
                 </div>
@@ -814,91 +816,222 @@ export function OverviewView({
                     </small>
                   </div>
                 </div>
+                <div>
+                  <History size={18} aria-hidden="true" />
+                  <div>
+                    <strong>
+                      {scanActive
+                        ? `${plural(scanCount, "scan report")} in progress`
+                        : snapshot.scanReports
+                          ? "No scrub or resilver in progress"
+                          : "Scan summary unavailable"}
+                    </strong>
+                    <small>
+                      {scanActive ? (
+                        "Shown under Scrub & resilver reports."
+                      ) : (
+                        <>
+                          {snapshot.scanReports
+                            ? "In the latest retained pool snapshots. This does not establish that all pools were checked. "
+                            : "Review storage history and collection coverage. "}
+                          <Link to="/storage">Review storage history</Link>
+                        </>
+                      )}
+                    </small>
+                  </div>
+                </div>
               </Card>
             </section>
-            {!scanActive && <ScanOverview reports={snapshot.scanReports} />}
           </div>
         </div>
       )}
-
-      {connections.length > 0 && (
-        <section
-          aria-labelledby="ov-systems-title"
-          className="ov-systems-section"
-        >
-          <div className="section-title">
-            <h2 id="ov-systems-title">Systems</h2>
-            <span className="muted">{connections.length} enrolled</span>
-          </div>
-          <ul className="ov-systems">
-            {connections.map((c) => {
-              const state = freshness(c, now);
-              const tone: Tone =
-                state === "fresh"
-                  ? "ok"
-                  : state === "paused"
-                    ? "neutral"
-                    : "warn";
-              const Icon = toneIcon[tone];
-              const drives = disks.filter(
-                (d) =>
-                  d.connectionId === c.id &&
-                  d.present &&
-                  d.lifecycle !== "retired",
-              ).length;
-              const open = issues.filter((f) => f.connectionId === c.id).length;
-              const missing = capabilities.filter(
-                (x) => x.connectionId === c.id && x.status !== "supported",
-              ).length;
-              return (
-                <li key={c.id}>
-                  <Card className="ov-system">
-                    <div className="ov-system-head">
-                      <Database size={18} aria-hidden="true" />
-                      <h3>{c.name}</h3>
-                      <span className={`ov-pill tone-${tone}`}>
-                        <Icon size={12} aria-hidden="true" />
-                        {state === "fresh"
-                          ? "Reporting"
-                          : state === "paused"
-                            ? "Paused"
-                            : state === "never"
-                              ? "No collection yet"
-                              : "Out of date"}
-                      </span>
-                    </div>
-                    <p className="muted ov-system-status">{c.status}</p>
-                    <dl>
-                      <div>
-                        <dt>Last collected</dt>
-                        <dd>
-                          {c.lastSuccessUtc ? (
-                            <Time value={c.lastSuccessUtc} now={now} />
-                          ) : (
-                            "Not yet observed"
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Drives</dt>
-                        <dd>{drives}</dd>
-                      </div>
-                      <div>
-                        <dt>Open findings</dt>
-                        <dd>{open}</dd>
-                      </div>
-                      <div>
-                        <dt>Source gaps</dt>
-                        <dd>{missing}</dd>
-                      </div>
-                    </dl>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
     </div>
+  );
+}
+
+const sourceLabels: Record<string, string> = {
+  system_identity: "System identity",
+  inventory: "Drive inventory",
+  pools: "Pools",
+  datasets: "Datasets",
+  alerts: "NAS alerts",
+  cached_temperatures: "Drive temperatures",
+  smart: "SMART health",
+  recovery: "Restore evidence",
+};
+
+const sourceStatuses: Record<string, [Tone, string]> = {
+  supported: ["ok", "Reporting"],
+  disabled: ["neutral", "Turned off"],
+  unsupported: ["neutral", "Unsupported"],
+  not_reported: ["neutral", "Not reported"],
+  missing: ["neutral", "Not reported"],
+  unavailable: ["warn", "Unavailable"],
+  denied: ["warn", "Access denied"],
+  stale: ["warn", "Out of date"],
+};
+
+const systemStatuses = {
+  fresh: ["ok", "Reporting"],
+  paused: ["neutral", "Paused"],
+  never: ["warn", "No collection yet"],
+  stale: ["warn", "Out of date"],
+} as const;
+
+function StatusPill({ tone, label }: { tone: Tone; label: string }) {
+  const Icon = toneIcon[tone];
+  return (
+    <span className={`ov-pill tone-${tone}`}>
+      <Icon size={12} aria-hidden="true" /> {label}
+    </span>
+  );
+}
+
+function OverviewSystems({
+  snapshot,
+  issues,
+  now,
+}: {
+  snapshot: Snapshot;
+  issues: Finding[];
+  now: number;
+}) {
+  const { connections, capabilities, disks } = snapshot;
+  const systems = connections.map((connection) => {
+    const sources = capabilities.filter(
+      (source) => source.connectionId === connection.id,
+    );
+    const gaps = sources.filter((source) => source.status !== "supported");
+    const [tone, label] = systemStatuses[freshness(connection, now)];
+    const stats = [
+      {
+        label: "Last collected",
+        value: connection.lastSuccessUtc ? (
+          <Time value={connection.lastSuccessUtc} now={now} />
+        ) : (
+          "Not yet observed"
+        ),
+      },
+      {
+        label: "Drives",
+        value: disks.filter(
+          (disk) =>
+            disk.connectionId === connection.id &&
+            disk.present &&
+            disk.lifecycle !== "retired",
+        ).length,
+      },
+      {
+        label: "Open findings",
+        value: issues.filter((issue) => issue.connectionId === connection.id)
+          .length,
+      },
+      { label: "Source gaps", value: gaps.length },
+    ];
+    return {
+      connection,
+      name: (
+        <Link to={`/settings/connections/${connection.id}`}>
+          {connection.name}
+        </Link>
+      ),
+      status: <StatusPill tone={tone} label={label} />,
+      stats,
+      sources: [
+        ...gaps,
+        ...sources.filter((source) => source.status === "supported"),
+      ],
+    };
+  });
+  const [first] = systems;
+
+  return (
+    <section aria-labelledby="ov-systems-title">
+      <div className="section-title">
+        <h2 id="ov-systems-title">Systems</h2>
+        <span className="muted">{systems.length} enrolled</span>
+      </div>
+      {systems.length === 1 ? (
+        <Card className="ov-system">
+          <div className="ov-system-head">
+            <Database size={18} aria-hidden="true" />
+            <h3>{first.name}</h3>
+            {first.connection.version && (
+              <small>{first.connection.version}</small>
+            )}
+            {first.status}
+          </div>
+          <p className="muted ov-system-status">{first.connection.status}</p>
+          <dl>
+            {first.stats.map(({ label, value }) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="ov-sources">
+            <div className="ov-sources-head">
+              <h4>Sources</h4>
+              <Link className="ov-section-link" to="/storage">
+                Review coverage
+              </Link>
+            </div>
+            {first.sources.length ? (
+              <ul aria-label={`Sources for ${first.connection.name}`}>
+                {first.sources.map(({ name, status }) => {
+                  const [tone, label] = sourceStatuses[status] ?? [
+                    "neutral",
+                    status.replaceAll("_", " "),
+                  ];
+                  return (
+                    <li key={name}>
+                      <span>{sourceLabels[name] ?? capabilityLabel(name)}</span>
+                      <StatusPill tone={tone} label={label} />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="muted">No sources reported yet.</p>
+            )}
+          </div>
+        </Card>
+      ) : (
+        <Card className="ov-system-table" role="table" aria-label="Systems">
+          <div className="ov-system-row ov-system-headers" role="row">
+            {["System", "Status", ...first.stats.map(({ label }) => label)].map(
+              (label) => (
+                <span key={label} role="columnheader">
+                  {label}
+                </span>
+              ),
+            )}
+          </div>
+          {systems.map(({ connection, name, status, stats }) => (
+            <div key={connection.id} className="ov-system-row" role="row">
+              <div className="ov-system-name" role="cell">
+                <Database size={16} aria-hidden="true" />
+                <div>
+                  <strong>{name}</strong>
+                  <small title={connection.status}>{connection.status}</small>
+                </div>
+              </div>
+              <div className="ov-system-row-status" role="cell">
+                {status}
+              </div>
+              {stats.map(({ label, value }) => (
+                <div key={label} role="cell">
+                  <span className="ov-system-cell-label" aria-hidden="true">
+                    {label}
+                  </span>
+                  {value}
+                </div>
+              ))}
+            </div>
+          ))}
+        </Card>
+      )}
+    </section>
   );
 }

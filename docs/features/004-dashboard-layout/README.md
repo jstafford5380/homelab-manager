@@ -1,6 +1,6 @@
 # 004 · Dashboard layout
 
-- **Status:** ready · 2026-11-03
+- **Status:** implemented · 2026-11-03
 - **Mock:** [mock.html](mock.html). Use the toolbar to switch State, Width and Theme, e.g. `?state=fleet&width=tablet&theme=dark`.
 - **Shared preview:** https://claude.ai/artifact/7z7esRrBJvQa4XzemPsKpi (the exploration version; `mock.html` is the final one)
 - **Affected screens:** **Overview** (`/`): everything below the Current condition hero. The hero itself changes only in how its tiles wrap (004.05) and whether the Findings tile is a link (004.01).
@@ -29,11 +29,11 @@ Rejected alternatives:
 
 | ID | Feature | Depends on | Flag | Status |
 | --- | --- | --- | --- | --- |
-| 004.01 | Adaptive body: attention section only when there are findings; main column order attention → active scans → Systems; rail = Coming up, Readiness; Findings tile not a link when there are no findings | — | — | ready |
-| 004.02 | Single-system card: today's stats plus a Sources list with a status pill per source, gaps first, "Review coverage" link | 004.01 | — | ready |
-| 004.03 | System rows for two or more systems, with a stacked label/value layout below 700px | 004.01 | — | ready |
-| 004.04 | Readiness gains the scan line; in-progress scan reports move into the main column above Systems | 004.01 | — | ready |
-| 004.05 | Responsive: hero tiles 5 across down to 700px, then 2 columns with Total investment spanning; rail two-up between 700 and 1100px | 004.01 | — | ready |
+| 004.01 | Adaptive body: attention section only when there are findings; main column order attention → active scans → Systems; rail = Coming up, Readiness; Findings tile not a link when there are no findings | — | — | implemented |
+| 004.02 | Single-system card: today's stats plus a Sources list with a status pill per source, gaps first, "Review coverage" link | 004.01 | — | implemented |
+| 004.03 | System rows for two or more systems, with a stacked label/value layout below 700px | 004.01 | — | implemented |
+| 004.04 | Readiness gains the scan line; in-progress scan reports move into the main column above Systems | 004.01 | — | implemented |
+| 004.05 | Responsive: hero tiles 5 across down to 700px, then 2 columns with Total investment spanning; rail two-up between 700 and 1100px | 004.01 | — | implemented |
 
 ## States
 
@@ -97,20 +97,20 @@ None.
 
 ## Acceptance checklist
 
-- [ ] Every state in the table is implemented and reachable.
+- [x] Every state in the table is implemented and reachable.
 - [ ] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
-- [ ] No horizontal page scroll at 390px.
-- [ ] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
-- [ ] Unknown, stale, and unsupported data look different from healthy data.
-- [ ] No claims beyond the evidence (no failure dates or probabilities).
-- [ ] Feature-specific checks:
-  - [ ] 004.01: with no findings, no "Needs your attention" heading or card is rendered, and the Findings tile is not focusable. With findings, the section is first in the main column.
-  - [ ] 004.01: in the calm one-system state at 1400px wide, the main column and rail end within about 120px of each other.
-  - [ ] 004.02: with one system, Sources lists every capability for that connection, gaps first. The Source gaps count equals the number of non-"supported" rows.
-  - [ ] 004.03: with two or more systems, Systems is one card of rows. "Last collected" doesn't wrap at 1100px or above. At 390px each row shows its labels.
-  - [ ] 004.04: with no scan in progress there is no Scrub & resilver section, and the Readiness row shows the caveat. With a report in progress, the full report card is above Systems. With an invalid or missing summary, the row reads "Scan summary unavailable".
-  - [ ] 004.04: retained scan reports still render under "Meet your NAS" when there are no connections.
-  - [ ] 004.05: at 390px the hero tiles are two columns and Total investment spans both. Between 700 and 1100px, Coming up and Readiness sit side by side.
+- [x] No horizontal page scroll at 390px.
+- [x] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`).
+- [x] Unknown, stale, and unsupported data look different from healthy data.
+- [x] No claims beyond the evidence (no failure dates or probabilities).
+- Feature-specific checks:
+  - [x] 004.01: with no findings, no "Needs your attention" heading or card is rendered, and the Findings tile is not focusable. With findings, the section is first in the main column.
+  - [x] 004.01: in the calm one-system state at 1400px wide, the main column and rail end within about 120px of each other.
+  - [x] 004.02: with one system, Sources lists every capability for that connection, gaps first. The Source gaps count equals the number of non-"supported" rows.
+  - [x] 004.03: with two or more systems, Systems is one card of rows. "Last collected" doesn't wrap at 1100px or above. At 390px each row shows its labels.
+  - [x] 004.04: with no scan in progress there is no Scrub & resilver section, and the Readiness row shows the caveat. With a report in progress, the full report card is above Systems. With an invalid or missing summary, the row reads "Scan summary unavailable".
+  - [x] 004.04: retained scan reports still render under "Meet your NAS" when there are no connections.
+  - [x] 004.05: at 390px the hero tiles are two columns and Total investment spans both. Between 700 and 1100px, Coming up and Readiness sit side by side.
 
 ## Implementation notes
 
@@ -118,23 +118,23 @@ _Codex: one entry per feature ID as it lands: final endpoints and fields, compon
 
 ### 004.01
 
-—
+Overview renders attention only for existing open or acknowledged issues from `GET /api/v1/overview`. The calm Findings tile is plain text. The main column contains attention, retained scan reports when present, and Systems, followed in DOM order by the planning and readiness rail. The navigation badge includes the count in its accessible name to match the visible label. Browser cases cover calm, findings, fleet, and the empty state.
 
 ### 004.02
 
-—
+The single-system card uses existing `connections` (including `version`), `capabilities`, `disks`, and `findings` from Overview. Gap statuses sort first. The system name links to connection settings and Review coverage links to Storage. With no capability records, the card shows “No sources reported yet.” The calm browser case checks order, count, and the coverage link.
 
 ### 004.03
 
-—
+Multiple systems use one card with accessible table roles, existing freshness rules, and status text with the full value in a tooltip. Mobile rows show the labels beside their values in a two-column layout. The fleet case checks row count, stale status, the connection link, and mobile labels.
 
 ### 004.04
 
-—
+Readiness uses the existing Overview `scanReports` and `GET /api/v1/planning/review` data. An invalid scan summary is treated as unavailable while the rest of the Overview response can load. Active and retained reports reuse ScanOverview and its source timing. The browser cases exercise active, empty, missing, invalid, and retained reports, plus loading and unavailable planning.
 
 ### 004.05
 
-—
+App.css uses the existing 700px and 1100px media breakpoints for the signal tiles, system facts, sources, and rail. Browser cases cover desktop, tablet, and mobile geometry and run axe WCAG 2.1 AA checks in light and dark. The live single-system dashboard was visually checked at all three widths in dark mode. The layout supports four tiles and gives Total investment the full last row on mobile when the separate investment change supplies it. Tablet tiles use tighter padding and omit the decorative label icons to fit five across alongside the app navigation. The full state-by-state visual comparison is left for design review.
 
 ## Change log
 

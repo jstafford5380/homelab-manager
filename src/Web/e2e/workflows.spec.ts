@@ -366,7 +366,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await page.getByRole('button', { name: 'Try again', exact: true }).click();
  await expect(page.getByLabel('Display timezone')).toHaveValue('UTC');
  await page.unroute('**/api/v1/settings', settingsUnavailable);
- await page.getByRole('link', { name: 'Overview', exact: true }).click();
+ await page.getByRole('link', { name: /^Overview(?: \d+ open findings?)?$/ }).click();
  await expect(page.getByRole('list', { name: 'Condition summary' }).getByText('1 gap', { exact: true })).toBeVisible();
  await page.screenshot({ path: 'test-results/overview-desktop.png', fullPage: true });
  await page.setViewportSize({ width: 390, height: 844 });
@@ -647,7 +647,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  };
  await page.route('**/api/v1/notifications', route => route.fulfill({json:notificationFixture}));
  // Leave and return so the settings view fetches the newly installed fixture.
- await page.getByRole('link',{name:'Overview',exact:true}).click();
+ await page.getByRole('link',{name: /^Overview(?: \d+ open findings?)?$/}).click();
  await expect(page.getByRole('heading',{name:'Your homelab, at a glance.',exact:true})).toBeVisible();
  let requestedRetry = false;
  await page.route('**/api/v1/notifications/deliveries/*/retry', route => {
@@ -706,7 +706,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
    scanStartedUtc:new Date(scanTime-7200000).toISOString(),scanPausedUtc:new Date(scanTime-60000).toISOString(),scanEndedUtc:null,scanRemainingSeconds:7200
   }]}});
  });
- await page.getByRole('link',{name:'Overview',exact:true}).click();
+ await page.getByRole('link',{name: /^Overview(?: \d+ open findings?)?$/}).click();
  await page.getByRole('button',{name:'Refresh',exact:true}).click();
  const scanRegion = page.getByRole('region',{name:'Scrub and resilver reports'});
  await expect(scanRegion.getByText('Recent source report',{exact:true})).toBeVisible();
@@ -727,6 +727,8 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  scanMode = 'complete';
  await page.getByRole('button',{name:'Refresh',exact:true}).click();
  await expect(scanRegion.getByText('RESILVER · PAUSED (source report)',{exact:true})).toHaveCount(0);
- await expect(scanRegion.getByText('No in-progress scan is recorded',{exact:false})).toBeVisible();
+ await expect(scanRegion).toHaveCount(0);
+ await expect(page.getByRole('heading', { name: 'Meet your NAS' })).toBeVisible();
+ await expect(page.getByRole('region', { name: 'Readiness' })).toHaveCount(0);
  expect(errors).toEqual([]);
 });
