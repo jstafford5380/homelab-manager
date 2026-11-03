@@ -6,7 +6,7 @@ React + TypeScript + shadcn/ui, hosted by ASP.NET Core 10 and orchestrated with 
 
 1. In Coolify, create an **Application** from the GitHub repository and select the **Docker Compose** build pack. Select your branch, use the repository root as the base directory, and set **Docker Compose Location** to `/compose.coolify.yaml`. Load the Compose file and use Coolify's managed deployment mode.
 2. In **Domains**, assign an HTTPS domain to the `homelab` service. Enter `https://homelab.example.com:8080`, replacing the hostname with yours. The suffix selects the container port. Open the deployed app at `https://homelab.example.com`. Point the hostname at your Coolify proxy and let it issue the public TLS certificate. [Coolify Compose and domains](https://coolify.io/docs/applications/builds/docker-compose)
-3. In **Environment Variables**, set the following runtime values. Store the token, PFX and password as secrets.
+3. In **Environment Variables**, set the following values. Enable **Runtime Variable** and clear **Build Variable** for each. Store the token, PFX and password as secrets.
 
    | Variable | Value |
    | --- | --- |

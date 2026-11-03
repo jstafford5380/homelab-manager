@@ -48,7 +48,7 @@ pnpm-debug.log*
 **/appsettings.*.Local.json
 **/secrets.json
 secrets/
-backups/
+/backups/
 **/data/
 *.db
 *.db-shm

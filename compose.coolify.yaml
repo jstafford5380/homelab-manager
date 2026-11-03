@@ -10,8 +10,8 @@ services:
       Homelab__DataPath: /data
       Homelab__BackupPath: /backups
       Homelab__SetupToken: ${HOMELAB_SETUP_TOKEN:-}
-      Homelab__KeyCertificateBase64: ${HOMELAB_KEY_CERTIFICATE_BASE64:?Set the credential-protection PFX in Coolify}
-      Homelab__KeyCertificatePassword: ${HOMELAB_KEY_CERTIFICATE_PASSWORD:?Set the PFX password in Coolify}
+      Homelab__KeyCertificateBase64: ${HOMELAB_KEY_CERTIFICATE_BASE64:-}
+      Homelab__KeyCertificatePassword: ${HOMELAB_KEY_CERTIFICATE_PASSWORD:-}
       Homelab__TrustedProxy: ${HOMELAB_TRUSTED_PROXY:-}
     volumes:
       - homelab-data:/data
