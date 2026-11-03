@@ -17,6 +17,7 @@ public interface INasReadClient : IAsyncDisposable
     Task<IReadOnlyDictionary<string, string>> SubscribeEventsAsync(CancellationToken ct) => Task.FromResult<IReadOnlyDictionary<string, string>>(new Dictionary<string, string>());
     Task ConnectAsync(NasConnection profile, string key, CancellationToken ct);
     Task<JsonElement> ReadAsync(string method, CancellationToken ct);
+    Task<JsonElement> ReadUpsMetricsAsync(CancellationToken ct) => throw new NasReadException("unsupported");
     Task<JsonElement> ReadHardwareMetricsAsync(bool backfill, CancellationToken ct) => throw new NasReadException("unsupported");
     Task<JsonElement> ReadSmartAttributesAsync(string disk, CancellationToken ct) => throw new NasReadException("unsupported");
 }

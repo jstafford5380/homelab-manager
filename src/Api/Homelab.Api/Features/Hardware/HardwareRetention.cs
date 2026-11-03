@@ -26,5 +26,5 @@ public static class HardwareRetention
         await db.SaveChangesAsync(ct);
     }
 
-    public static async Task<int> Expire(HomelabDb db, DateTime now, CancellationToken ct) => await db.HardwareReadings.Where(r => r.Source == "collected" && r.TakenUtc < now.AddDays(-366)).ExecuteDeleteAsync(ct) + await db.HardwareHourly.Where(h => h.HourUtc < now.AddDays(-732)).ExecuteDeleteAsync(ct);
+    public static async Task<int> Expire(HomelabDb db, DateTime now, CancellationToken ct) => await db.UpsPowerSamples.Where(s => s.BucketUtc < now.AddDays(-31)).ExecuteDeleteAsync(ct) + await db.HardwareReadings.Where(r => r.Source == "collected" && r.TakenUtc < now.AddDays(-366)).ExecuteDeleteAsync(ct) + await db.HardwareHourly.Where(h => h.HourUtc < now.AddDays(-732)).ExecuteDeleteAsync(ct);
 }

@@ -14,7 +14,8 @@ internal static class SettingsSections
         ["review-levels"] = ["driveAgeReviewYears", "warrantyNoticeDays", "temperatureReviewCelsius", "temperaturePolicyReason",
             "hardwareCpuPercent", "hardwareMemoryPercent", "hardwareTemperatureC", "hardwareSustainedMinutes"],
         ["data"] = ["sampleRetentionDays", "backupsEnabled", "backupDailyCopies", "backupWeeklyCopies"],
-        ["display"] = ["timezone", "capacityUnits"]
+        ["display"] = ["timezone", "capacityUnits"],
+        ["other"] = ["electricityRateUsdPerKwh"]
     };
 
     public static JsonObject Document(OperatingSettings settings) => JsonSerializer.SerializeToNode(settings, Json)!.AsObject();
@@ -61,6 +62,8 @@ internal static class SettingsSections
             Range("temperatureReviewCelsius", temperature, -273.15, 1000);
         if (TemperaturePolicy.Validate(settings) is { } policyError && !errors.ContainsKey("temperatureReviewCelsius"))
             errors["temperaturePolicyReason"] = [policyError];
+        if (settings.ElectricityRateUsdPerKwh is { } rate)
+            Range("electricityRateUsdPerKwh", rate, 0, 1000);
         if (settings.BackupsEnabled && !backupConfigured)
             errors["backupsEnabled"] = ["Configure the server backup destination first."];
         return errors;

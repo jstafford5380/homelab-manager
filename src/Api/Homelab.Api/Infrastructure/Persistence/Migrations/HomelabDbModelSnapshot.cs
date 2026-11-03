@@ -404,6 +404,9 @@ namespace Homelab.Api.Migrations
                 b.Property<double?>("SolderedBytes").HasColumnType("REAL");
                 b.Property<string>("Spec").IsRequired().HasColumnType("TEXT");
                 b.Property<DateTime?>("WarrantyEndUtc").HasColumnType("TEXT");
+                b.Property<string>("UpsDeviceKey").HasColumnType("TEXT");
+                b.Property<double?>("UpsNominalVa").HasColumnType("REAL");
+                b.Property<double?>("UpsPowerFactor").HasColumnType("REAL");
                 b.HasKey("Id");
                 b.HasIndex("PredecessorId", "ServerId");
                 b.HasIndex("ServerId", "DetectedKey").IsUnique();
@@ -476,6 +479,7 @@ namespace Homelab.Api.Migrations
                 b.Property<string>("ProtectedCommunity").HasColumnType("TEXT");
                 b.Property<double?>("UptimeSeconds").HasColumnType("REAL");
                 b.Property<string>("Version").HasColumnType("TEXT");
+                b.Property<string>("UpsSnapshotJson").HasColumnType("TEXT");
                 b.HasKey("Id");
                 b.HasIndex("ConnectionId").IsUnique();
                 b.ToTable("HardwareServers");
@@ -651,6 +655,7 @@ namespace Homelab.Api.Migrations
                 b.Property<double?>("TemperatureReviewCelsius").HasColumnType("REAL");
                 b.Property<string>("Timezone").IsRequired().HasColumnType("TEXT");
                 b.Property<int>("WarrantyNoticeDays").HasColumnType("INTEGER");
+                b.Property<double?>("ElectricityRateUsdPerKwh").HasColumnType("REAL");
                 b.HasKey("Id");
                 b.ToTable("Settings");
             });
@@ -887,6 +892,22 @@ namespace Homelab.Api.Migrations
             {
                 b.HasOne("Homelab.Api.NasConnection", null).WithOne()
                     .HasForeignKey("Homelab.Api.ConnectionCredentialHistory", "ConnectionId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+            });
+            modelBuilder.Entity("Homelab.Api.UpsPowerSample", b =>
+            {
+                b.Property<Guid>("ServerId").HasColumnType("TEXT");
+                b.Property<string>("DeviceKey").HasColumnType("TEXT");
+                b.Property<DateTime>("BucketUtc").HasColumnType("TEXT");
+                b.Property<double>("LoadPercent").HasColumnType("REAL");
+                b.Property<double?>("NominalVa").HasColumnType("REAL");
+                b.HasKey("ServerId", "DeviceKey", "BucketUtc");
+                b.HasIndex("BucketUtc");
+                b.ToTable("UpsPowerSamples");
+            });
+            modelBuilder.Entity("Homelab.Api.UpsPowerSample", b =>
+            {
+                b.HasOne("Homelab.Api.HardwareServer", null).WithMany()
+                    .HasForeignKey("ServerId").OnDelete(DeleteBehavior.Restrict).IsRequired();
             });
             modelBuilder.Entity("Homelab.Api.ApiPowerOnState", b =>
             {

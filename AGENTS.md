@@ -6,6 +6,10 @@
 - **Claude** owns design: feature packages in `docs/features/` (briefs, mocks, fixtures, assets), plus design reviews of implemented features.
 - The owner approves packages and accepts results.
 
+## Local development
+
+When the local API needs a restart, restart the `api` resource through Aspire. Use `dotnet dnx --yes aspire.cli@13.6.4 -- resource api restart --apphost src/Api/Homelab.AppHost/Homelab.AppHost.csproj --non-interactive` with the running AppHost.
+
 ## Implementing a feature package
 
 Packages live in `docs/features/NNN-slug/`. The process is in [docs/features/README.md](docs/features/README.md). When asked to implement a feature, or to "pick up the next feature":

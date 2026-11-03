@@ -29,6 +29,9 @@ export type HwRecord = {
   revision: string;
   kind: string;
   detectedKey: string | null;
+  upsDeviceKey?: string | null;
+  upsPowerFactor?: number | null;
+  upsNominalVa?: number | null;
   detectedName: string | null;
   detectedSpec: string | null;
   detectedTotalBytes: number | null;
@@ -82,7 +85,45 @@ export type HwServer = {
   watchCount: number | null;
   nearLimitCount: number | null;
 };
+type UpsReading = { value: number; observedUtc: string };
+export type HwUpsDevice = {
+  key: string | null;
+  name: string;
+  model: string | null;
+  hasSerial: boolean;
+  nominalVa: number | null;
+  load: UpsReading | null;
+  charge: UpsReading | null;
+  runtime: UpsReading | null;
+};
+export function estimateUpsWatts(device: HwUpsDevice | undefined, factor: number | null | undefined, enteredVa: number | null | undefined) {
+  const va = device?.nominalVa ?? enteredVa;
+  const load = device?.load;
+  if (va == null || !Number.isFinite(va) || va <= 0 || factor == null || !Number.isFinite(factor) || factor <= 0 || factor > 1 ||
+      !load || Date.now() - Date.parse(load.observedUtc) > 15 * 60_000)
+    return null;
+  return va * (load.value / 100) * factor;
+}
+export type HwUps = {
+  devices?: HwUpsDevice[] | null;
+  status: "reporting" | "no-readings" | "denied" | "unsupported" | "unavailable";
+  load?: UpsReading | null;
+  charge?: UpsReading | null;
+  runtime?: UpsReading | null;
+  nominalVa?: number | null;
+};
+export type HwUpsMonthlyPower = {
+  deviceKey: string;
+  medianWatts: number;
+  sampleCount: number;
+  daysWithSamples: number;
+  estimatedCostUsd: number | null;
+};
 export type HwDetail = {
+  upsMonthlyPower?: HwUpsMonthlyPower[];
+  electricityRateUsdPerKwh?: number | null;
+  ups?: HwUps | null;
+  lastCollectionUtc?: string | null;
   server: HwServer;
   coverage: {
     samples: number;
@@ -112,6 +153,7 @@ export const hwKinds: Record<string, string> = {
   memory: "Memory",
   motherboard: "Motherboard",
   "power-supply": "Power supply",
+  ups: "UPS",
   cooling: "Cooling",
   "storage-controller": "Storage controller",
   "network-card": "Network card",

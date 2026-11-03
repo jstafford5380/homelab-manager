@@ -23,6 +23,7 @@ public static class HardwareCollection
         {
             s.CollectionStartedUtc = null;
             s.LastMetricsUtc = null;
+            s.UpsSnapshotJson = null;
         }
 
         s.ConfigurationRevision = connection.ConfigurationRevision;

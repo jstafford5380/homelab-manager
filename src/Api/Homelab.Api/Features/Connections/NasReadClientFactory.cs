@@ -142,6 +142,12 @@ public sealed class NasReadClientFactory : INasReadClientFactory, IAsyncDisposab
             return (held?.Client ?? throw new InvalidOperationException("Lease is not connected.")).ReadAsync(method, ct);
         }
 
+        public Task<JsonElement> ReadUpsMetricsAsync(CancellationToken ct)
+        {
+            ObjectDisposedException.ThrowIf(closed, this);
+            return (held?.Client ?? throw new InvalidOperationException("Lease is not connected.")).ReadUpsMetricsAsync(ct);
+        }
+
         public Task<JsonElement> ReadHardwareMetricsAsync(bool backfill, CancellationToken ct)
         {
             ObjectDisposedException.ThrowIf(closed, this);

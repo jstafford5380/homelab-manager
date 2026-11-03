@@ -88,6 +88,27 @@ public sealed class HardwareTests
         Assert.False(TrueNasClient.AllowsReadParameters("reporting.netdata_get_data",[new[]{new{name="disktemp"}},new{unit="HOUR",page=1,aggregate=false}]));
         Assert.False(TrueNasClient.AllowsReadParameters("reporting.netdata_get_data",[args[0],new{unit="YEAR",page=9,aggregate=false}]));
     }
+    [Fact]
+    public void UpsReportingUsesOnlyTheLatestUnambiguousSamples()
+    {
+        var at = new DateTimeOffset(Now.AddMinutes(-1)).ToUnixTimeSeconds();
+        object Graph(string name, object[][] data) => new { name, legend = new[] { "time", "value" }, data };
+        var result = UpsSnapshot.Read(JsonSerializer.SerializeToElement(new[]
+        {
+            Graph("upsload", [[at, 28.5], [at - 2, 55], [at + 120, 45]]),
+            Graph("upscharge", [[at - 1, 100], [at, 0]]),
+            Graph("upsruntime", [[at, 1260]])
+        }), Now);
+        Assert.Equal("reporting", result.Status);
+        Assert.Equal(28.5, result.Load!.Value);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(at).UtcDateTime, result.Load.ObservedUtc);
+        Assert.Null(result.Charge);
+        Assert.Equal(1260, result.Runtime!.Value);
+        object[] args = [new[] { new { name = "upsload" }, new { name = "upscharge" }, new { name = "upsruntime" } },
+            new { unit = "HOUR", page = 1, aggregate = false }];
+        Assert.True(TrueNasClient.AllowsReadParameters("reporting.netdata_get_data", args));
+        Assert.False(TrueNasClient.AllowsReadParameters("reporting.netdata_get_data", [args[0], new { unit = "DAY", page = 1, aggregate = false }]));
+    }
     [Fact]public void TrueNasMemoryExcludesArcAndUnknownDimensionsStayUnknown()
     {
         var at=new DateTimeOffset(Now.AddMinutes(-10)).ToUnixTimeSeconds();
@@ -121,6 +142,29 @@ public sealed class HardwareTests
         s.Connected=false;await db.SaveChangesAsync();d=await HardwareMetrics.Detail(db,s,Now,30,true);
         Assert.Equal("none",d.Cpu.Source);Assert.Equal("Not monitored",d.Components.Single(c=>c.Record.Kind=="cooling").Status.Label);
     }
+    [Fact]
+    public async Task MonthlyUpsCostUsesMedianAndOnlyTheLinkedDevicesRecentSamples()
+    {
+        using var sqlite = new SqliteConnection("Data Source=:memory:");
+        await sqlite.OpenAsync();
+        await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(sqlite).Options);
+        await db.Database.MigrateAsync();
+        var nas = new NasConnection { LastSuccessUtc = Now };
+        var device = new UpsDevice("fixture-ups", "ups", null, true, 1500, null, null, null);
+        var server = new HardwareServer { ConnectionId = nas.Id, ConfigurationRevision = nas.ConfigurationRevision,
+            UpsSnapshotJson = new UpsSnapshot("reporting", Devices: [device]).Serialize() };
+        db.AddRange(nas, server, new OperatingSettings { ElectricityRateUsdPerKwh = 0.15 },
+            new HardwareComponent { ServerId = server.Id, Kind = "ups", UpsDeviceKey = device.Key, UpsPowerFactor = 0.6 });
+        foreach (var (key, days, load) in new[] { ("fixture-ups", 1, 20), ("fixture-ups", 2, 30),
+            ("fixture-ups", 3, 90), ("fixture-ups", 31, 1), ("another-ups", 1, 1) })
+            db.UpsPowerSamples.Add(new() { ServerId = server.Id, DeviceKey = key, BucketUtc = Now.AddDays(-days), LoadPercent = load, NominalVa = 1500 });
+        await db.SaveChangesAsync();
+        var result = Assert.Single((await HardwareMetrics.Detail(db, server, Now, 1, true)).UpsMonthlyPower!);
+        Assert.Equal(270, result.MedianWatts);
+        Assert.Equal(3, result.SampleCount);
+        Assert.Equal(29.16, result.EstimatedCostUsd!.Value, 2);
+    }
+
     [Fact]public async Task HourlyRetentionKeepsEnteredEvidenceAndExactReviewHistoryForAYear()
     {
         using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();await using var db=new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(connection).Options);await db.Database.MigrateAsync();
@@ -153,7 +197,13 @@ public sealed class HardwareTests
     {
         using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();await using var db=new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(connection).Options);
         await db.GetService<IMigrator>().MigrateAsync("20261102000009_Hardware");
-        db.Settings.Add(new(){HardwareCpuPercent=invalid?0:65,HardwareMemoryPercent=invalid?0:75,HardwareTemperatureC=0,HardwareSustainedMinutes=invalid?0:120});await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO Settings (Id, Timezone, CapacityUnits, InventoryMinutes, SmartMinutes, SampleRetentionDays,
+                RawRetentionDays, BackupsEnabled, BackupDailyCopies, BackupWeeklyCopies, HardwareCpuPercent,
+                HardwareMemoryPercent, HardwareTemperatureC, HardwareSustainedMinutes)
+            VALUES (1, 'America/Phoenix', 'binary', 15, 90, 90, 14, 0, 7, 4,
+                {(invalid ? 0 : 65)}, {(invalid ? 0 : 75)}, 0, {(invalid ? 0 : 120)})
+            """);
         await db.Database.MigrateAsync();db.ChangeTracker.Clear();var settings=await db.Settings.SingleAsync();
         Assert.Equal(invalid?80:65,settings.HardwareCpuPercent);Assert.Equal(invalid?80:75,settings.HardwareMemoryPercent);
         Assert.Equal(invalid?80:0,settings.HardwareTemperatureC);Assert.Equal(invalid?60:120,settings.HardwareSustainedMinutes);

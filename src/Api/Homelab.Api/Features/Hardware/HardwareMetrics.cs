@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Homelab.Api;
 public static class HardwareMetrics
 {
-    public static readonly string[] Kinds = ["processor", "memory", "motherboard", "power-supply", "cooling", "storage-controller", "network-card", "graphics-card", "case", "nas-unit", "other"];
-    public static string Group(string kind) => kind is "processor" or "memory" or "motherboard" ? "Compute" : kind is "power-supply" or "cooling" ? "Power & cooling" : "Expansion & chassis";
+    public static readonly string[] Kinds = ["processor", "memory", "motherboard", "power-supply", "ups", "cooling", "storage-controller", "network-card", "graphics-card", "case", "nas-unit", "other"];
+    public static string Group(string kind) => kind is "processor" or "memory" or "motherboard" ? "Compute" : kind is "power-supply" or "ups" or "cooling" ? "Power & cooling" : "Expansion & chassis";
     public static HardwareSlot[] Slots(HardwareComponent c)
     {
         try
@@ -137,6 +137,14 @@ public static class HardwareMetrics
         }).ToArray();
         var active = views.Where(c => c.Record.RetiredUtc == null).ToArray();
         var summary = new HardwareServerView(server.Id, connection?.Name ?? server.Name, connection is not null && Uri.TryCreate(connection.ApiUri, UriKind.Absolute, out var uri) ? uri.Host : server.Host, server.Platform, server.Version, fresh, stale && server.LastSuccessUtc is not null ? end : server.LastSuccessUtc, server.UptimeSeconds, active.Length, stale ? null : active.Count(c => c.Status.Label is "Watch" or "Act now"), stale ? null : active.Count(c => c.Status.Label == "Near its limit"));
-        return new(summary, Coverage(rows, end, days, server.CollectionStartedUtc), cpu, memory, temperature, power, total, active, rows.Where(r => r.Source == "entered" && r.TakenUtc > end.AddDays(-days)).ToArray(), settings.HardwareCpuPercent, settings.HardwareMemoryPercent, settings.HardwareTemperatureC, settings.HardwareSustainedMinutes, views.Where(c => c.Record.RetiredUtc != null).ToArray());
+        var ups = metricsEnabled && connection is not null && connection.ConfigurationRevision == server.ConfigurationRevision
+            ? StoragePage.Read<UpsSnapshot>(server.UpsSnapshotJson)
+            : null;
+        var monthlyPower = ups?.Devices is { Length: > 0 } devices
+            ? await UpsMonthlyPower.Read(db, server.Id, components, devices, settings.ElectricityRateUsdPerKwh, now, ct)
+            : [];
+        var lastCollection = connection?.LastAttemptUtc ?? server.LastSuccessUtc;
+        return new(summary, Coverage(rows, end, days, server.CollectionStartedUtc), cpu, memory, temperature, power, total, active, rows.Where(r => r.Source == "entered" && r.TakenUtc > end.AddDays(-days)).ToArray(), settings.HardwareCpuPercent, settings.HardwareMemoryPercent, settings.HardwareTemperatureC, settings.HardwareSustainedMinutes, views.Where(c => c.Record.RetiredUtc != null).ToArray(), ups,
+            lastCollection is { } timestamp ? DateTime.SpecifyKind(timestamp, DateTimeKind.Utc) : null, monthlyPower, settings.ElectricityRateUsdPerKwh);
     }
 }

@@ -58,6 +58,15 @@ public sealed class HardwareCollectorTests
         Assert.Equal(2, factory.Calls);
         Assert.Equal(2, factory.InventoryCalls);
 
+        factory.ReportUps = true;
+        Assert.Equal(Collector.CollectionResult.Completed,
+            await collector.CollectAsync(nas, db, default, refresh: Collector.RefreshTarget.Hardware));
+        var server = await db.HardwareServers.SingleAsync();
+        var detail = await HardwareMetrics.Detail(db, server, DateTime.UtcNow, 1, true);
+        Assert.Equal(24, detail.Ups!.Load!.Value);
+        Assert.Null(detail.Power.Latest);
+
+        factory.ReportUps = false;
         factory.Denied = true;
         Assert.Equal(Collector.CollectionResult.Unavailable,
             await collector.CollectAsync(nas, db, default, refresh: Collector.RefreshTarget.Hardware));
@@ -65,6 +74,7 @@ public sealed class HardwareCollectorTests
 
     private sealed class Factory:INasReadClientFactory
     {
+        public bool ReportUps;
         public int Calls;public int InventoryCalls;public bool Denied;public bool Backfill;public bool Malformed;
         public INasReadClient Create()=>new Client(this);
         private sealed class Client(Factory f):INasReadClient
@@ -75,6 +85,16 @@ public sealed class HardwareCollectorTests
                 if (method == "disk.query") f.InventoryCalls++;
                 return Task.FromResult(method=="system.info"?JsonSerializer.SerializeToElement(new{version="TrueNAS-SCALE-24.10.2",model="Fixture CPU",physical_cores=1,cores=2,physmem=4000*1048576d,system_product="Fixture NAS",uptime_seconds=1000}):JsonSerializer.SerializeToElement(Array.Empty<object>()));
             }
+            public Task<JsonElement> ReadUpsMetricsAsync(CancellationToken ct)
+            {
+                if (!f.ReportUps) throw new NasReadException("unsupported");
+                var at = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeSeconds();
+                return Task.FromResult(JsonSerializer.SerializeToElement(new[]
+                {
+                    new { name = "upsload", legend = new[] { "time", "load" }, data = new[] { new[] { at, 24L } } }
+                }));
+            }
+
             public Task<JsonElement> ReadHardwareMetricsAsync(bool backfill,CancellationToken ct)
             {
                 f.Calls++;f.Backfill=backfill;if(f.Denied)throw new NasReadException("denied");

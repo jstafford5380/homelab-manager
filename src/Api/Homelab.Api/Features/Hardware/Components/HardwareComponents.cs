@@ -26,11 +26,19 @@ public static class HardwareComponents
             return "Check the memory slot sizes and maximum.";
         if (input.Kind != "memory" && (input.Slots?.Length > 0 || input.SolderedBytes is not null || input.MaxSupportedBytes is not null))
             return "Memory layout belongs to a memory component.";
+        if (input.Kind != "ups" && (input.UpsDeviceKey is not null || input.UpsPowerFactor is not null || input.UpsNominalVa is not null) ||
+            input.UpsDeviceKey is { } key && (key.Length != 64 || !key.All(Uri.IsHexDigit)) ||
+            input.UpsPowerFactor is { } factor && (!double.IsFinite(factor) || factor <= 0 || factor > 1) ||
+            input.UpsNominalVa is { } va && (!double.IsFinite(va) || va <= 0 || va > 1_000_000))
+            return "Choose a UPS and enter a power factor greater than zero and at most 1, and a valid VA rating.";
         return null;
     }
 
     public static void Apply(HardwareComponent c, HardwareComponentInput input)
     {
+        c.UpsDeviceKey = input.UpsDeviceKey;
+        c.UpsPowerFactor = input.UpsPowerFactor;
+        c.UpsNominalVa = input.UpsNominalVa;
         c.Name = input.Name.Trim();
         c.Model = input.Model.Trim();
         c.Spec = input.Spec.Trim();
@@ -64,6 +72,21 @@ public static class HardwareComponents
             return Results.Conflict(new { error = "This component changed. Reload before saving." });
         if (c.DetectedKey is not null && c.Kind != input.Kind)
             return Results.BadRequest(new { error = "Detected kinds cannot be changed." });
+        if (input.UpsDeviceKey is { } key && key != c.UpsDeviceKey)
+        {
+            var connection = await db.Connections.AsNoTracking().SingleOrDefaultAsync(connection => connection.Id == server.ConnectionId);
+            var snapshot = StoragePage.Read<UpsSnapshot>(server.UpsSnapshotJson);
+            var detected = snapshot?.Devices?.SingleOrDefault(device => device.Key == key);
+            if (connection is not { Enabled: true } || connection.ConfigurationRevision != server.ConfigurationRevision ||
+                !MetricsEnabled(config) || server.LastSuccessUtc < DateTime.UtcNow.AddMinutes(-15) ||
+                detected is null)
+                return Results.Conflict(new { error = "The detected UPS is no longer available. Refresh Hardware before linking it." });
+            if (!detected.HasSerial && !input.ConfirmUpsWithoutSerial)
+                return Results.BadRequest(new { error = "Confirm the device without a serial before linking it." });
+        }
+        if (input.UpsDeviceKey is { } linkedKey && await db.HardwareComponents.AnyAsync(other =>
+            other.ServerId == id && other.Id != c.Id && other.RetiredUtc == null && other.UpsDeviceKey == linkedKey))
+            return Results.Conflict(new { error = "This UPS is already linked to another component." });
         c.Kind = input.Kind;
         Apply(c, input);
         if (componentId is null)

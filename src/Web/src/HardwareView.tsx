@@ -53,6 +53,8 @@ export function HardwareView({
   const [returnFocus, setReturnFocus] = useState<HTMLElement | null>(null),
     [panelFocus, setPanelFocus] = useState<HTMLElement | null>(null);
   const [asOf] = useState(Date.now);
+  const [editUpsId, setEditUpsId] = useState<string>();
+  const [setupUpsKey, setSetupUpsKey] = useState<string>();
   const [formError, setFormError] = useState(""),
     [savingNote, setSavingNote] = useState(false);
   const { time } = useDisplayFormat();
@@ -131,9 +133,12 @@ export function HardwareView({
         (c) => c.record.id === componentId,
       )
     : undefined;
+  const formComponent = editUpsId ? d?.components.find(part => part.record.id === editUpsId) : component;
   const openForm = (value: typeof form, r?: HwReading) => {
     setReturnFocus(document.activeElement as HTMLElement);
     setReading(r);
+    setSetupUpsKey(undefined);
+    setEditUpsId(undefined);
     setFormError("");
     setForm(value);
   };
@@ -363,28 +368,9 @@ export function HardwareView({
                   <div>
                     <h2 id="hw-running">How it’s running</h2>
                     <p className="hw-coverage">
-                      {stale
-                        ? `Last known: samples up to ${time(d.server.lastSuccessUtc)}. `
-                        : ""}
-                      {d.coverage.samples
-                        ? `Based on ${d.coverage.samples.toLocaleString()} of ${d.coverage.expectedSamples.toLocaleString()} five-minute samples${d.coverage.samples < d.coverage.expectedSamples ? ` (${((d.coverage.samples / d.coverage.expectedSamples) * 100).toFixed(1)}%)` : ""}. `
-                        : ""}
-                      {d.coverage.collectionStartedUtc &&
-                      d.coverage.coveredDays < d.coverage.days &&
-                      d.coverage.samples > 0
-                        ? `Covers ${d.coverage.coveredDays} of ${d.coverage.days} days: collection started ${time(d.coverage.collectionStartedUtc)}. `
-                        : ""}
-                      {d.coverage.gaps.length > 0
-                        ? `${d.coverage.gaps.length} gaps of at least three missing intervals. `
-                        : ""}
-                      {d.coverage.downsampled
-                        ? "Older than 30 days is kept as hourly averages. "
-                        : ""}
-                      {!d.coverage.samples
-                        ? d.readings.length
-                          ? `From ${d.readings.length} readings you entered. A few spot readings can miss busy and quiet periods.`
-                          : `No readings in the last ${rangeLabel}.`
-                        : ""}
+                      {d.lastCollectionUtc
+                        ? `Last collection run · ${time(d.lastCollectionUtc)}`
+                        : "No collection run recorded"}
                     </p>
                   </div>
                   <div
@@ -429,6 +415,8 @@ export function HardwareView({
                         type={type}
                         stale={stale}
                         onReading={() => openForm("reading")}
+                        onSetupUps={key => { openForm("component"); setSetupUpsKey(key); }}
+                        onEditUps={id => { openForm("edit"); setEditUpsId(id); }}
                       />
                     ),
                   )}
@@ -652,12 +640,13 @@ export function HardwareView({
                         : form === "replace"
                           ? `Replace ${component?.title}`
                           : form === "edit"
-                            ? `Edit ${component?.title}`
-                            : `Add a component to ${d.server.name}`
+                            ? `Edit ${formComponent?.title}`
+                            : setupUpsKey ? "Set up this UPS" : `Add a component to ${d.server.name}`
                   }
                   description={
                     form === "reading"
                       ? "Copy these from the server’s own dashboard, a power meter or your UPS. Leave blank anything you didn’t measure."
+                      : setupUpsKey ? "Link the detected UPS and enter the values used for power estimates."
                       : form === "component"
                         ? "For parts the app can’t detect, like power supplies, coolers and cards. Detected parts appear on their own."
                         : undefined
@@ -706,8 +695,9 @@ export function HardwareView({
                   ) : (
                     <HardwareComponentForm
                       detail={d}
-                      component={form === "component" ? undefined : component}
+                      component={form === "component" ? undefined : formComponent}
                       replace={form === "replace"}
+                      setupUpsKey={setupUpsKey}
                       saved={saved}
                       cancel={closeForm}
                     />

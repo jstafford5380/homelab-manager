@@ -8,6 +8,7 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 type Settings = DisplayPreferences & {
+  electricityRateUsdPerKwh: number | null;
   hardwareCpuPercent: number;
   hardwareMemoryPercent: number;
   hardwareTemperatureC: number;
@@ -29,7 +30,7 @@ type Settings = DisplayPreferences & {
 type Draft = { [K in keyof Settings]: Settings[K] extends number | null ? Settings[K] | "" : Settings[K] };
 type NumberKey = { [K in keyof Settings]-?: Settings[K] extends number | null ? K : never }[keyof Settings];
 type ToggleKey = { [K in keyof Settings]-?: Settings[K] extends boolean ? K : never }[keyof Settings];
-type Section = "monitoring" | "review-levels" | "data" | "display";
+type Section = "monitoring" | "review-levels" | "data" | "display" | "other";
 type PowerOnHoursRun = { atUtc: string; outcome: string; hoursAvailable: number | null; drives: number | null };
 export type SettingsEnvelope = {
   settings: Settings;
@@ -41,7 +42,7 @@ export type SettingsEnvelope = {
 type Backup = { id: string; createdUtc: string; fileName: string; status: string; sizeBytes: number };
 type RunResult = { name: string; completed: boolean; hoursAvailable: number; unsupported: number; denied: number; unavailable: number };
 
-const titles = { monitoring: "Monitoring", "review-levels": "Review levels", data: "Data & backups", display: "Display" };
+const titles = { monitoring: "Monitoring", "review-levels": "Review levels", data: "Data & backups", display: "Display", other: "Other" };
 const cleanup = "Older pool readings and collection attempts become daily summaries with ranges, peaks, and reading counts, kept for two years. Manual drive evidence and incidents remain unchanged. Cleanup checks hourly and creates a backup before removing details, even if daily backups are off. Without a working backup destination, cleanup waits and history continues growing. Lowering the history window applies at the next cleanup. Increasing it cannot recover removed details.";
 const planning = "Age and warranty thresholds create planning reminders only. They do not predict failure or recommend replacement based on age alone.";
 
@@ -105,7 +106,7 @@ export function OperationsSettings({ section, saved, onSaved, onDirty }: {
         throw new Error("Not saved. Fix the highlighted field and try again.");
       }
       const changes = Object.fromEntries(Object.entries(edits).map(([key, value]) =>
-        [key, value === "" && typeof saved.settings[key as keyof Settings] === "number" ? null : value]));
+        [key, value === "" && (key === "electricityRateUsdPerKwh" || typeof saved.settings[key as keyof Settings] === "number") ? null : value]));
       const response = await fetch(`/api/v1/settings/${section}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "X-Homelab-Request": "1" },
@@ -241,6 +242,7 @@ export function OperationsSettings({ section, saved, onSaved, onDirty }: {
         {number("hardwareSustainedMinutes", "Sustained use", "minutes per day")}
       </>)}
     </>}
+    {section === "other" && group("Electricity", number("electricityRateUsdPerKwh", "Electricity rate", "USD/kWh", "Enter what your utility charges per kWh. Leave blank to hide cost estimates."))}
     {section === "display" && <Card className="settings-group">
       <AppearanceSettings />
       {row("timezone", "Display timezone", <Input {...control("timezone")} value={settings.timezone} onChange={event => change("timezone", event.target.value)} />, "Used for every date and time shown.")}

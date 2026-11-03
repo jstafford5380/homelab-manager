@@ -5,6 +5,9 @@ public sealed class HardwareComponent
     public Guid ServerId { get; set; }
     public Guid Revision { get; set; } = Guid.NewGuid();
     public string Kind { get; set; } = "other";
+    public string? UpsDeviceKey { get; set; }
+    public double? UpsPowerFactor { get; set; }
+    public double? UpsNominalVa { get; set; }
     public string? DetectedKey { get; set; }
     public string? DetectedName { get; set; }
     public string? DetectedSpec { get; set; }

@@ -55,6 +55,12 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config) : Endpoint<Req
             return;
         }
 
+        if (input.Successor.UpsDeviceKey is not null)
+        {
+            await Send.ResultAsync(Results.BadRequest(new { error = "Link the replacement UPS after saving it." }));
+            return;
+        }
+
         if (c.Kind != input.Successor.Kind)
         {
             await Send.ResultAsync(Results.BadRequest(new { error = "The successor must be the same kind of component." }));

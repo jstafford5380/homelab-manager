@@ -13,6 +13,7 @@ import {
   gb,
   hardwareRequest,
   hwKinds,
+  estimateUpsWatts,
   type HwComponent,
   type HwDetail,
   type HwReading,
@@ -298,22 +299,30 @@ export function HardwareComponentForm({
   detail,
   component,
   replace = false,
+  setupUpsKey,
   saved,
   cancel,
 }: {
   detail: HwDetail;
   component?: HwComponent;
   replace?: boolean;
+  setupUpsKey?: string;
   saved: (id?: string) => void;
   cancel: () => void;
 }) {
   const c = component?.record,
-    [kind, setKind] = useState(c?.kind ?? "power-supply"),
+    [kind, setKind] = useState(c?.kind ?? (setupUpsKey ? "ups" : "power-supply")),
     [slots, setSlots] = useState<HwSlot[]>(
       replace ? [] : (component?.slots ?? []),
     );
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [deviceKey, setDeviceKey] = useState(replace ? "" : setupUpsKey ?? c?.upsDeviceKey ?? "");
+  const [factor, setFactor] = useState(replace ? "" : String(c?.upsPowerFactor ?? ""));
+  const [nominalVa, setNominalVa] = useState(replace ? "" : String(c?.upsNominalVa ?? ""));
+  const devices = detail.ups?.devices ?? [];
+  const detected = deviceKey ? devices.find(device => device.key === deviceKey) : undefined;
+  const watts = estimateUpsWatts(detected, factor ? Number(factor) : null, nominalVa ? Number(nominalVa) : null);
   const field = (
     name: string,
     label: string,
@@ -349,6 +358,10 @@ export function HardwareComponentForm({
         const input = {
           revision: c?.revision,
           kind,
+          upsDeviceKey: kind === "ups" && !replace && deviceKey ? deviceKey : null,
+          upsPowerFactor: kind === "ups" && factor ? Number(factor) : null,
+          upsNominalVa: kind === "ups" && nominalVa ? Number(nominalVa) : null,
+          confirmUpsWithoutSerial: form.get("confirmUpsWithoutSerial") === "on",
           name: form.get("name"),
           model: form.get("model"),
           spec: form.get("spec"),
@@ -394,7 +407,7 @@ export function HardwareComponentForm({
         <select
           id="hw-kind"
           value={kind}
-          disabled={!!c && (!!c.detectedKey || replace)}
+          disabled={!!setupUpsKey || !!c && (!!c.detectedKey || replace)}
           onChange={(e) => setKind(e.target.value)}
         >
           {Object.entries(hwKinds).map(([key, label]) => (
@@ -404,7 +417,31 @@ export function HardwareComponentForm({
           ))}
         </select>
       </div>
-      {field("name", "Name", c?.name || c?.detectedName, "text", true)}
+      {field("name", "Name", c?.name || c?.detectedName || (setupUpsKey ? detected?.model ?? detected?.name : undefined), "text", true)}
+      {kind === "ups" && <>
+        {!replace && <div className="field">
+          <Label htmlFor="hw-ups-device">Detected UPS</Label>
+          <select id="hw-ups-device" value={deviceKey} onChange={event => setDeviceKey(event.target.value)}>
+            <option value="">Unlinked UPS component</option>
+            {deviceKey && !detected && <option value={deviceKey}>Previously linked UPS · unavailable</option>}
+            {devices.filter(device => device.key && !detail.components.some(other => other.record.id !== c?.id && other.record.upsDeviceKey === device.key))
+              .map(device => <option key={device.key!} value={device.key!}>{device.model ?? device.name} ({device.name})</option>)}
+          </select>
+        </div>}
+        {detected && !detected.hasSerial && deviceKey !== c?.upsDeviceKey &&
+          <label key={deviceKey}><input type="checkbox" name="confirmUpsWithoutSerial" required /> Confirm this is my UPS. This device has no serial. Review the link if you replace it with the same model.</label>}
+        <div className="field">
+          <Label htmlFor="hw-ups-factor">Power factor for estimates</Label>
+          <Input id="hw-ups-factor" type="number" min="0" max="1" step="any" value={factor} onChange={event => setFactor(event.target.value)} />
+          <small>Enter a value greater than zero and at most 1. Leave blank to omit the estimate.</small>
+        </div>
+        <div className="field">
+          <Label htmlFor="hw-ups-va">Fallback nominal rating (VA)</Label>
+          <Input id="hw-ups-va" type="number" min="0" max="1000000" step="any" value={nominalVa} onChange={event => setNominalVa(event.target.value)} />
+          {detected?.nominalVa != null && <small>The UPS reports {detected.nominalVa.toLocaleString()} VA. The reported rating takes priority.</small>}
+        </div>
+        {watts != null && <p>Preview · ≈{Math.round(watts).toLocaleString()} W estimated at the latest load.</p>}
+      </>}
       {field("model", "Model or part number (you entered)", c?.model)}
       {field("spec", "Key specs (you entered)", c?.spec)}
       <div className="settings-grid">

@@ -309,6 +309,33 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
                 }
             }
 
+            UpsSnapshot? ups = null;
+            // Leave time to commit other sources if reporting is slow.
+            if (hardwareDue && DateTime.UtcNow - started < TimeSpan.FromSeconds(24))
+            {
+                using var upsTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                upsTimeout.CancelAfter(TimeSpan.FromSeconds(5));
+                try
+                {
+                    ups = UpsSnapshot.Read(await client.ReadUpsMetricsAsync(upsTimeout.Token), DateTime.UtcNow);
+                }
+                catch (NasReadException error)
+                {
+                    ups = new(error.Status is "denied" or "unsupported" ? error.Status : "unavailable");
+                }
+                catch (Exception error) when (error is IOException or InvalidDataException or System.Net.WebSockets.WebSocketException or JsonException)
+                {
+                    ups = new("unavailable");
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    ups = new("unavailable");
+                }
+                if (DateTime.UtcNow - started < TimeSpan.FromSeconds(27) &&
+                    await UpsNominalRating.ReadAsync(profile, ct) is { Length: > 0 } devices)
+                    ups = (ups ?? new("no-readings")) with { Devices = devices };
+            }
+
             // Complete network reads before acquiring the writer, then commit one coherent snapshot.
             using var lease = await writes.EnterAsync(ct);
             await db.Entry(profile).ReloadAsync(ct);
@@ -319,7 +346,13 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             profile.Version = Text(system, "version");
             var hardwareServer = await HardwareCollection.StageInventory(db, profile, system, started, ct);
             if (hardwareDue)
+            {
                 hardwareServer.NextAttemptUtc = started.AddMinutes(5);
+                if (ups is not null)
+                    hardwareServer.UpsSnapshotJson = ups.Serialize();
+                if (ups?.Devices is { Length: > 0 } sampledDevices)
+                    await UpsMonthlyPower.Stage(db, hardwareServer.Id, sampledDevices, started, ct);
+            }
             var hardwareSampled = false;
             if (hardwareMetrics is { } hardwareData)
             {
@@ -436,7 +469,7 @@ public sealed class Collector(IServiceScopeFactory scopes, IDataProtectionProvid
             var completed = refresh switch
             {
                 RefreshTarget.Storage => inventoryRead.Status == "supported" && poolRead.Status == "supported",
-                RefreshTarget.Hardware => !hardwareDue || hardwareSampled,
+                RefreshTarget.Hardware => !hardwareDue || hardwareSampled || ups?.Status == "reporting" || ups?.Devices?.Any(device => device.Load is not null || device.Charge is not null || device.Runtime is not null) == true,
                 _ => anyFresh
             };
             return completed ? CollectionResult.Completed : CollectionResult.Unavailable;

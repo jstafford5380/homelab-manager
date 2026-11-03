@@ -528,6 +528,7 @@ test("002 range coverage and entered dots stay separate from collected averages"
 }) => {
   const d = detail();
   d.coverage.downsampled = true;
+  d.lastCollectionUtc = "2026-11-03T20:18:44Z";
   d.cpu.readingCount = 1;
   d.cpu.series.push({
     atUtc: before(1),
@@ -548,7 +549,7 @@ test("002 range coverage and entered dots stay separate from collected averages"
     3,
   );
   await expect(
-    page.getByText(/Older than 30 days is kept as hourly averages/),
+    page.getByText(/Last collection run.*1:18:44 PM MST/),
   ).toBeVisible();
   await expect(page.getByText(/Previous 90/)).toHaveCount(0);
   await audit(page);
@@ -570,4 +571,77 @@ test("Hardware Refresh polls the selected server and reloads its readings", asyn
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   await reloaded;
   await expect(page.getByText("NAS collection complete.")).toBeVisible();
+});
+
+
+test("UPS readings stay separate from wattage and label unknown and stale samples", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = detail();
+  data.ups = {
+    status: "reporting",
+    load: { value: 24, observedUtc: now() },
+    charge: { value: 98, observedUtc: before(1) },
+    runtime: { value: 1260, observedUtc: now() },
+    nominalVa: 1500,
+  };
+  await setup(page, data);
+  await page.goto("/hardware");
+  const ups = page.getByRole("region", { name: "UPS readings" });
+  await expect(ups).toContainText("24%");
+  await expect(ups).toContainText("98%");
+  await expect(ups).toContainText("Last known");
+  await expect(ups).not.toContainText("MST");
+  await expect(ups).toContainText("About 21 min");
+  await expect(ups).toContainText("1,500 VA");
+  await expect(page.getByText("Wattage not measured", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await audit(page);
+});
+
+test("UPS setup binds an estimate to one detected device", async ({ page }) => {
+  const data = detail();
+  const key = "A".repeat(64);
+  const first = { key, name: "ups", model: "Tripp Lite UPS", hasSerial: false,
+    nominalVa: 1500, load: { value: 29, observedUtc: now() }, charge: null, runtime: null };
+  data.ups = { status: "reporting", devices: [
+    first, { ...first, key: "B".repeat(64), name: "other-ups", hasSerial: true },
+  ] };
+  await setup(page, data);
+  await page.route("**/api/v1/hardware/servers/a/components", route => {
+    const input = route.request().postDataJSON();
+    expect(input).toMatchObject({ kind: "ups", upsDeviceKey: key, upsPowerFactor: 0.6, confirmUpsWithoutSerial: true });
+    const linked = component("ups", "linked-ups");
+    Object.assign(linked.record, input);
+    linked.title = input.name;
+    data.electricityRateUsdPerKwh = 0.15;
+    data.upsMonthlyPower = [{ deviceKey: key, medianWatts: 270, sampleCount: 10, daysWithSamples: 2, estimatedCostUsd: 29.16 }];
+    data.components.push(linked);
+    return route.fulfill({ json: { id: linked.record.id } });
+  });
+  await page.goto("/hardware");
+  await page.getByRole("region", { name: "UPS readings for ups", exact: true }).getByRole("button", { name: "Set up this UPS" }).click();
+  const form = page.getByRole("dialog", { name: "Set up this UPS" });
+  await form.getByLabel("Name", { exact: true }).fill("Media UPS");
+  await form.getByLabel("Power factor for estimates").fill("0.6");
+  await form.getByRole("checkbox", { name: /Confirm this is my UPS/ }).check();
+  await expect(form.getByText(/261 W estimated/)).toBeVisible();
+  await form.getByRole("button", { name: "Add component", exact: true }).click();
+  await expect(page.getByRole("region", { name: "UPS readings for Media UPS" })).toContainText("261 W estimated");
+  const linkedUps = page.getByRole("region", { name: "UPS readings for Media UPS" });
+  await expect(linkedUps).toContainText("$29.16 per 30 days");
+  await expect(linkedUps).not.toContainText("270 W median");
+  await linkedUps.getByRole("button", { name: "How monthly cost is calculated" }).focus();
+  await expect(page.getByRole("tooltip")).toContainText("270 W median");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await expect(linkedUps).toHaveText(/Nominal rating[\s\S]*261 W estimated/);
+  await expect(page.getByText("Wattage not measured", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add a reading", exact: true })).toHaveCount(0);
+  const powerHeading = page.locator(".hw-card-heading").filter({ has: page.getByRole("heading", { name: "Power draw", exact: true }) });
+  await powerHeading.getByRole("button", { name: "Edit UPS component Media UPS" }).click();
+  const edit = page.getByRole("dialog", { name: "Edit Media UPS" });
+  await expect(edit.getByLabel("Power factor for estimates")).toHaveValue("0.6");
+  await edit.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("region", { name: "UPS readings for other-ups" })).not.toContainText("W estimated");
+  await audit(page);
 });

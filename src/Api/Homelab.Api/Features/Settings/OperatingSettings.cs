@@ -2,6 +2,7 @@
 namespace Homelab.Api;
 public sealed class OperatingSettings
 {
+    public double? ElectricityRateUsdPerKwh { get; set; }
     public int Id { get; set; } = 1;
     public string Timezone { get; set; } = "America/Phoenix";
     public string CapacityUnits { get; set; } = "binary";

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Homelab.Api;
 public sealed class HomelabDb(DbContextOptions<HomelabDb> options) : DbContext(options)
 {
+    public DbSet<UpsPowerSample> UpsPowerSamples => Set<UpsPowerSample>();
     public DbSet<HardwareHourly> HardwareHourly => Set<HardwareHourly>();
     public DbSet<HardwareServer> HardwareServers => Set<HardwareServer>();
     public DbSet<HardwareComponent> HardwareComponents => Set<HardwareComponent>();
@@ -57,6 +58,9 @@ public sealed class HomelabDb(DbContextOptions<HomelabDb> options) : DbContext(o
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        model.Entity<UpsPowerSample>().HasKey(x => new { x.ServerId, x.DeviceKey, x.BucketUtc });
+        model.Entity<UpsPowerSample>().HasIndex(x => x.BucketUtc);
+        model.Entity<UpsPowerSample>().HasOne<HardwareServer>().WithMany().HasForeignKey(x => x.ServerId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<HardwareHourly>().HasOne<HardwareServer>().WithMany().HasForeignKey(x => x.ServerId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<HardwareHourly>().HasIndex(x => new { x.ServerId, x.ConfigurationRevision, x.HourUtc }).IsUnique();
         model.Entity<HardwareServer>().HasOne<NasConnection>().WithMany().HasForeignKey(x => x.ConnectionId).OnDelete(DeleteBehavior.Restrict);

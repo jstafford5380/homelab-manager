@@ -161,6 +161,12 @@ public sealed class TrueNasClient : INasReadClient
         return CallInternalAsync(method, ReadParameters(method), ct);
     }
 
+    public Task<JsonElement> ReadUpsMetricsAsync(CancellationToken ct) =>
+        CallInternalAsync("reporting.netdata_get_data", UpsParameters(), ct);
+    private static object[] UpsParameters() =>
+        [new[] { new { name = "upsload" }, new { name = "upscharge" }, new { name = "upsruntime" } },
+            new { unit = "HOUR", page = 1, aggregate = false }];
+
     public Task<JsonElement> ReadHardwareMetricsAsync(bool backfill, CancellationToken ct) => CallInternalAsync("reporting.netdata_get_data", HardwareParameters(backfill), ct);
     private static object[] HardwareParameters(bool backfill) => [new[]
     {
@@ -244,7 +250,8 @@ public sealed class TrueNasClient : INasReadClient
     {
         false,
         true
-    }.Any(backfill => JsonSerializer.Serialize(parameters) == JsonSerializer.Serialize(HardwareParameters(backfill))) : method == "disk.smart_attributes" ? parameters.Length == 1 && parameters[0] is string disk && ValidSmartDisk(disk) : ReadMethods.Contains(method) && JsonSerializer.Serialize(parameters) == JsonSerializer.Serialize(ReadParameters(method));
+    }.Any(backfill => JsonSerializer.Serialize(parameters) == JsonSerializer.Serialize(HardwareParameters(backfill))) ||
+        JsonSerializer.Serialize(parameters) == JsonSerializer.Serialize(UpsParameters()) : method == "disk.smart_attributes" ? parameters.Length == 1 && parameters[0] is string disk && ValidSmartDisk(disk) : ReadMethods.Contains(method) && JsonSerializer.Serialize(parameters) == JsonSerializer.Serialize(ReadParameters(method));
     private async Task<JsonElement> CallInternalAsync(string method, object[] parameters, CancellationToken ct)
     {
         // Enforce again at the last RPC boundary, including private callers.

@@ -1,3 +1,3 @@
 
 namespace Homelab.Api;
-public record HardwareComponentInput(Guid? Revision, string Kind, string Name, string Model, string Spec, string Notes, decimal? PricePaid, DateTime? PurchasedUtc, DateTime? InstalledUtc, DateTime? WarrantyEndUtc, bool DatesEstimated, HardwareSlot[]? Slots = null, double? SolderedBytes = null, double? MaxSupportedBytes = null);
+public record HardwareComponentInput(Guid? Revision, string Kind, string Name, string Model, string Spec, string Notes, decimal? PricePaid, DateTime? PurchasedUtc, DateTime? InstalledUtc, DateTime? WarrantyEndUtc, bool DatesEstimated, HardwareSlot[]? Slots = null, double? SolderedBytes = null, double? MaxSupportedBytes = null, string? UpsDeviceKey = null, double? UpsPowerFactor = null, double? UpsNominalVa = null, bool ConfirmUpsWithoutSerial = false);

@@ -9,6 +9,7 @@ public sealed class HardwareServer
     public string? Version { get; set; }
     public double? UptimeSeconds { get; set; }
     public DateTime? LastSuccessUtc { get; set; }
+    public string? UpsSnapshotJson { get; set; }
     public DateTime? LastMetricsUtc { get; set; }
     public DateTime? CollectionStartedUtc { get; set; }
     public Guid ConfigurationRevision { get; set; }

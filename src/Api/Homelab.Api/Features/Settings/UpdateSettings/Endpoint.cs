@@ -37,7 +37,10 @@ public sealed class Endpoint(HomelabDb db, BackupService backups) : Endpoint<Req
         if (stored is null)
             db.Settings.Add(input);
         else
+        {
+            input.ElectricityRateUsdPerKwh ??= stored.ElectricityRateUsdPerKwh;
             db.Entry(stored).CurrentValues.SetValues(input);
+        }
         db.Activity.Add(new() { Action = "Operating settings changed" });
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
