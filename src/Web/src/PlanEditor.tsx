@@ -1,3 +1,6 @@
+import { ReasonChips } from "./ReasonChips";
+import { Pencil } from "lucide-react";
+import { type PlanningReason } from "./planning";
 import { SelectField, SelectOption } from "@/components/SelectField";
 import { useDisplayFormat } from "./displayPreferences";
 import { useEffect, useState } from "react";
@@ -20,6 +23,9 @@ export type Plan = {
   diskId: string | null;
   title: string;
   reason: string;
+  notes?: string;
+  evidence?: PlanningReason[];
+  completedUtc?: string | null;
   owner: string;
   dueUtc: string | null;
   budget: number | null;
@@ -48,7 +54,7 @@ function changes(entry: Change, time: (value: string | null) => string) {
       `Budget: ${money(after)}`,
       `Review by: ${time(after.dueUtc)}`,
       `Status: ${after.status}`,
-      `Evidence: ${after.reason || "None"}`,
+      `Notes: ${after.notes ?? after.reason ?? "None"}`,
     ];
   const result: string[] = [];
   if (before.title !== after.title)
@@ -75,11 +81,13 @@ function changes(entry: Change, time: (value: string | null) => string) {
 export function PlanEditor({
   plan,
   onSaved,
+  addEstimate = false,
 }: {
+  addEstimate?: boolean;
   plan: Plan;
-  onSaved: () => void | Promise<void>;
+  onSaved: (saved?: Plan) => void | Promise<void>;
 }) {
-  const { time } = useDisplayFormat();
+  const { time, timezone } = useDisplayFormat();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(plan);
   const [due, setDue] = useState("");
@@ -146,6 +154,7 @@ export function PlanEditor({
         },
         body: JSON.stringify({
           ...draft,
+          notes: draft.reason,
           budget: budget === "" ? null : Number(budget),
           dueUtc: due ? new Date(due + "Z").toISOString() : null,
         }),
@@ -155,7 +164,7 @@ export function PlanEditor({
         if (response.status === 409) await onSaved();
         throw new Error(result.error || "Could not save the plan.");
       }
-      await onSaved();
+      await onSaved(await response.json());
       setOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the plan.");
@@ -166,11 +175,16 @@ export function PlanEditor({
   return (
     <>
       <Button
-        variant="outline"
+        variant="ghost"
+        className={
+          addEstimate ? "planning-chip tone-warn dashed" : "planning-edit"
+        }
         onClick={() => show(true)}
-        aria-label={`Edit plan ${plan.title}`}
+        aria-label={
+          addEstimate ? `Add estimate for ${plan.title}` : `Edit ${plan.title}`
+        }
       >
-        Edit plan
+        {addEstimate ? "Add estimate" : <Pencil size={15} />}
       </Button>
       <Dialog open={open} onOpenChange={show}>
         <DialogContent
@@ -257,9 +271,7 @@ export function PlanEditor({
                 <SelectField
                   id={`plan-status-${plan.id}`}
                   value={draft.status}
-                  onValueChange={(e) =>
-                    setDraft({ ...draft, status: e })
-                  }
+                  onValueChange={(e) => setDraft({ ...draft, status: e })}
                 >
                   <SelectOption value="planned">Planned</SelectOption>
                   <SelectOption value="ordered">Ordered</SelectOption>
@@ -268,17 +280,21 @@ export function PlanEditor({
               </div>
             </div>
             <div className="field">
-              <Label htmlFor={`plan-reason-${plan.id}`}>
-                Evidence & planning notes
-              </Label>
+              <Label htmlFor={`plan-reason-${plan.id}`}>Notes</Label>
               <Textarea
                 id={`plan-reason-${plan.id}`}
                 rows={5}
                 maxLength={20000}
-                value={draft.reason}
+                value={draft.reason ?? draft.notes ?? ""}
                 onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
               />
             </div>
+            {!!draft.evidence?.length && (
+              <section aria-label="Evidence attached">
+                <h3>Evidence attached</h3>
+                <ReasonChips reasons={draft.evidence} timezone={timezone} />
+              </section>
+            )}
             {draft.diskId && (
               <p className="muted">
                 Linked to a fixed physical drive.{" "}
@@ -306,8 +322,11 @@ export function PlanEditor({
               </Button>
             </div>
           </form>
-          <details className="plan-change-history">
-            <summary>Plan change history</summary>
+          <section
+            className="plan-change-history"
+            aria-label="Plan change history"
+          >
+            <h3>Plan change history</h3>
             {historyError && (
               <p role="alert">
                 {historyError}{" "}
@@ -367,7 +386,7 @@ export function PlanEditor({
                 </Button>
               )}
             </div>
-          </details>
+          </section>
         </DialogContent>
       </Dialog>
     </>

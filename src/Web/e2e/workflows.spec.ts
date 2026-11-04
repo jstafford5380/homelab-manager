@@ -33,32 +33,30 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await expect(page.getByRole('main')).toBeFocused();
  await audit('Overview');
  await page.getByRole('link', { name: 'Planning', exact: true }).click();
- await page.getByRole('button', { name: 'Add plan' }).click();
+ await page.getByRole('button', { name: 'Add plan', exact: true }).first().click();
  await audit('New plan dialog');
- await page.getByLabel('What are you planning?').fill('Buy compatible spare');
- await page.getByLabel('Evidence or reason').fill('No spare available; confirm capacity and interface');
- await page.getByLabel('Budget (USD)').fill('250');
- await page.getByRole('button', { name: 'Save', exact: true }).click();
+ await page.getByLabel('Title', {exact:true}).fill('Buy compatible spare');
+ await page.getByLabel('Notes', {exact:true}).fill('No spare available; confirm capacity and interface');
+ await page.getByLabel('Estimate (optional)').fill('250');
+ await page.getByRole('button', { name: 'Save plan', exact: true }).click();
  await expect(page.getByRole('heading', { name: 'Buy compatible spare' })).toBeVisible();
  await audit('Planning');
- await page.getByRole('button', { name: 'Edit plan Buy compatible spare', exact: true }).click();
+ await page.getByRole('button', { name: 'Edit Buy compatible spare', exact: true }).click();
  const planEditor = page.getByRole('dialog', { name: 'Edit plan', exact: true });
  await planEditor.getByLabel('Plan owner', { exact: true }).fill('Home owner');
  await planEditor.getByLabel('Estimated budget', { exact: true }).fill('325');
  await planEditor.getByLabel('Review by (UTC)', { exact: true }).fill('2027-01-15T12:00');
- await planEditor.getByLabel('Evidence & planning notes', { exact: true }).fill('Confirmed interface; awaiting a final quote.');
+ await planEditor.getByLabel('Notes', { exact: true }).fill('Confirmed interface; awaiting a final quote.');
  await planEditor.getByRole('button', { name: 'Save plan changes' }).click();
  await expect(planEditor).not.toBeVisible();
- await expect(page.getByText('Owner: Home owner', { exact: true })).toBeVisible();
- await page.getByRole('button', { name: 'Edit plan Buy compatible spare', exact: true }).click();
- await planEditor.getByText('Plan change history', { exact: true }).focus();
- await page.keyboard.press('Enter');
+ await expect(page.getByText('Home owner', { exact: true })).toBeVisible();
+ await page.getByRole('button', { name: 'Edit Buy compatible spare', exact: true }).click();
  await expect(planEditor.getByText('Budget: 250 USD → 325 USD', { exact: true })).toBeVisible();
  await expect(planEditor.getByText('Previous evidence: No spare available; confirm capacity and interface', { exact: true })).toBeVisible();
  const editorViewport = page.viewportSize()!;
  await planEditor.getByRole('button', { name: 'Cancel', exact: true }).click();
  await page.setViewportSize({ width: 390, height: 844 });
- await page.getByRole('button', { name: 'Edit plan Buy compatible spare', exact: true }).click();
+ await page.getByRole('button', { name: 'Edit Buy compatible spare', exact: true }).click();
  await expect(planEditor.getByRole('heading', { name: 'Edit plan', exact: true })).toBeVisible();
  await audit('Mobile plan editor');
  await page.screenshot({ path: 'test-results/plan-editor-mobile.png', animations: 'disabled' });
@@ -71,7 +69,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await expect(planEditor.getByRole('alert')).toContainText('This plan changed since you opened it');
  await expect(planEditor.getByLabel('Estimated budget', { exact: true })).toHaveValue('325');
  await planEditor.getByRole('button', { name: 'Cancel', exact: true }).click();
- await page.getByRole('button', { name: 'Edit plan Buy compatible spare', exact: true }).click();
+ await page.getByRole('button', { name: 'Edit Buy compatible spare', exact: true }).click();
  await expect(planEditor.getByLabel('Estimated budget', { exact: true })).toHaveValue('330');
  await planEditor.getByRole('button', { name: 'Cancel', exact: true }).click();
 
@@ -392,7 +390,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
   if (planningMode === 'malformed') return route.fulfill({json:{reviews:null}});
   return route.fulfill({ json: {
   generatedUtc: '2026-10-31T12:00:00Z', ruleVersion: 'drive-planning-v1', trackedDriveCount: 1, driveAgeReviewYears: 5, warrantyNoticeDays: 90,
-  reviews: [{ diskId: '22222222-2222-2222-2222-222222222222', model: 'Fixture drive', serial: 'FIXTURE-01', priority: 'Review media evidence', nextStep: 'Review current evidence and recovery readiness before replacement.', lastSeenUtc: '2026-10-31T12:00:00Z', present: true, mappingConfidence: 'inferred', reasons: [{ kind: 'finding', detail: 'Pending sectors observed: 2. Source fixture, observed 2026-10-31.', findingId: null }], openPlanIds: [] }],
+  reviews: [{ diskId: '22222222-2222-2222-2222-222222222222', model: 'Fixture drive', serial: 'FIXTURE-01', priority: 'Review media evidence', nextStep: 'Review current evidence and recovery readiness before replacement.', lastSeenUtc: '2026-10-31T12:00:00Z', present: true, mappingConfidence: 'inferred', reasons: [{ kind: 'finding', detail: 'Pending sectors observed: 2. Source fixture, observed 2026-10-31.', findingId: null }], openPlanIds: [], spareFit: {status:'unchecked'} }],
   spares: [{ id: 'spare', name: 'Shelf spare', quantity: 1, updatedUtc: '2026-10-31T12:00:00Z', compatibilityNotes: 'Capacity and sector format require verification.', verification: 'unverified', estimatedUnitCost: null, currency: 'USD' }],
   budgets: [{ currency: 'USD', total: 250, withoutEstimate: 1, count: 2 }]
  } }); });
@@ -400,23 +398,22 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await page.route('**/api/v1/plans', async route => { savedReview = route.request().postDataJSON(); await route.fulfill({ json: { id: 'fixture-plan' } }); });
  await page.getByRole('link', { name: 'Planning', exact: true }).click();
  await expect(page.getByRole('heading', { name: 'Fixture drive', exact: true })).toBeVisible();
- const planningRegion = page.getByRole('region', {name:'Evidence-based planning review',exact:true});
+ const planningRegion = page.locator('.planning-page');
  planningMode = 'hung';
  await page.clock.fastForward(30001);
  await expect.poll(() => planningHung).toBe(true);
  await page.clock.fastForward(15001);
- await expect(planningRegion.getByRole('alert')).toContainText('request timed out');
+ await expect(planningRegion.getByRole('status').filter({hasText:'Refresh failed'})).toBeVisible();
  await expect(planningRegion.getByRole('heading',{name:'Fixture drive',exact:true})).toBeVisible();
  planningMode = 'malformed';
- await planningRegion.getByRole('button',{name:'Retry planning review',exact:true}).click();
- await expect(planningRegion.getByRole('alert')).toContainText('invalid response');
- await expect(planningRegion.getByText('Showing previously loaded evidence.',{exact:false})).toBeVisible();
+ await planningRegion.getByRole('button',{name:'Retry',exact:true}).click();
+ await expect(planningRegion.getByRole('status').filter({hasText:'Refresh failed'})).toBeVisible();
+ await expect(planningRegion.getByText('Out of date',{exact:true})).toBeVisible();
  planningMode = 'ready';
- await planningRegion.getByRole('button',{name:'Retry planning review',exact:true}).click();
+ await planningRegion.getByRole('button',{name:'Retry',exact:true}).click();
  await expect(planningRegion.getByRole('alert')).toHaveCount(0);
- await expect(planningRegion.getByText('Review generated',{exact:false})).toBeVisible();
+ await expect(planningRegion.getByText('drive-planning-v1 · generated',{exact:false})).toBeVisible();
 
- await page.getByText('Why this drive is listed (1)', { exact: true }).click();
  await expect(page.getByText('Pending sectors observed: 2. Source fixture, observed 2026-10-31.', { exact: true })).toBeVisible();
  await page.screenshot({ path: 'test-results/planning-mobile.png', fullPage: true });
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
@@ -432,8 +429,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
   }
   return route.fulfill({json:{generatedUtc:new Date().toISOString(),items:spareReview ? [{review:spareReview,status:'reviewed compatible'}] : [],nextBefore:null}});
  });
- await page.getByRole('button',{name:'Review spare compatibility',exact:true}).click();
- await page.getByRole('button',{name:'Record compatibility review',exact:true}).click();
+ await page.getByRole('button',{name:'Check a spare',exact:true}).click();
  await page.getByLabel('Compatibility assessment',{exact:true}).click(); await page.locator('[role="option"][data-value="compatible"]').click();
  await page.getByLabel('Compatibility evidence',{exact:true}).fill('Capacity, interface, sector format and fit checked against fixture manufacturer and enclosure sheets.');
  await page.getByLabel('Review again by (00:00 UTC)',{exact:true}).fill(new Date(Date.now()+30*86400000).toISOString().slice(0,10));
@@ -448,17 +444,19 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
  await page.getByRole('button',{name:'Save compatibility review',exact:true}).click();
  await expect(page.getByText('Compatibility review saved. No stock was reserved.',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Check a spare',exact:true}).click();
  await expect(page.getByText('reviewed compatible',{exact:true})).toBeVisible();
  expect(spareReview).toMatchObject({assetId:'spare',assetUpdatedUtc:'2026-10-31T12:00:00Z',verdict:'compatible',confirmedIdentity:'FIXTURE-01'});
- await page.getByText('Review evidence and author',{exact:true}).click();
+
  await audit('Spare compatibility evidence');
  await page.setViewportSize({width:1440,height:1000});
- await page.getByRole('button', { name: 'Create review plan', exact: true }).click();
- await page.getByLabel('Estimated budget (optional)').fill('300');
- await page.getByRole('button', { name: 'Save review plan', exact: true }).click();
- await expect(page.getByText('Review plan saved. Evidence has been attached to the task.', { exact: true })).toBeVisible();
+ await page.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
+ await page.getByRole('button', { name: 'Plan replacement', exact: true }).click();
+ await page.getByLabel('Estimate (optional)').fill('300');
+ await page.getByRole('button', { name: 'Save plan', exact: true }).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
  expect(savedReview).toMatchObject({ diskId: '22222222-2222-2222-2222-222222222222', budget: 300, currency: 'USD' });
- expect(String(savedReview?.['reason'])).toContain('Pending sectors observed: 2');
+ expect(savedReview?.['evidence']).toEqual([expect.objectContaining({detail:expect.stringContaining('Pending sectors observed: 2')})]);
  const oldId = '33333333-3333-3333-3333-333333333333';
  const findingId = '55555555-5555-5555-5555-555555555555';
  await page.route(`**/api/v1/findings/${findingId}`, route => route.fulfill({ json: {
@@ -522,7 +520,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
   if (overviewMode === 'hang') return new Promise<void>(resolve => { releaseOverview = async () => { await route.abort().catch(() => {}); resolve(); }; });
   return route.fulfill({ status: 503, json: { error: 'Fixture service unavailable' } });
  });
- await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+ await page.clock.fastForward(30001);
  const unavailable = page.getByRole('alert').filter({ hasText: 'Overview refresh unavailable' });
  await expect(unavailable).toContainText('Showing last-known overview data loaded');
  await expect(page.getByRole('status', { name: 'Overview refresh status' })).toContainText('Overview unavailable');
@@ -544,6 +542,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await expect(page.getByRole('status', { name: 'Overview refresh status' })).toContainText('Overview refreshed');
  await expect(page.getByRole('heading', { name: 'Buy compatible spare', exact: true })).toBeVisible();
  // A superseded request must not overwrite a newer successful refresh.
+ await page.getByRole('link', {name:'Activity',exact:true}).click();
  releaseOverview = null; overviewMode = 'hang';
  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
  await expect.poll(() => releaseOverview !== null).toBe(true);

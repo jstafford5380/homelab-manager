@@ -60,6 +60,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Plann
         item.Title = input.Title;
         item.Reason = input.Reason;
         item.Owner = input.Owner;
+        item.CompletedUtc = input.Status == "complete" ? item.Status == "complete" ? item.CompletedUtc : DateTime.UtcNow : null;
         item.Status = input.Status;
         item.Budget = input.Budget;
         item.Currency = input.Currency;

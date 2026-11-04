@@ -67,4 +67,4 @@ Run `npm run gallery` from the repository root, then open http://127.0.0.1:4178/
 | [002](002-hardware/README.md) | Hardware | in progress | 2026-11-01 |
 | [003](003-settings-rework/README.md) | Settings rework | implemented | 2026-11-02 |
 | [004](004-dashboard-layout/README.md) | Dashboard layout | implemented | 2026-11-03 |
-| [005](005-planning-redesign/README.md) | Planning redesign | ready | 2026-11-04 |
+| [005](005-planning-redesign/README.md) | Planning redesign | implemented | 2026-11-04 |

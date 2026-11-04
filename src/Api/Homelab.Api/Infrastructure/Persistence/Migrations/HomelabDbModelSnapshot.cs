@@ -1920,6 +1920,9 @@ namespace Homelab.Api.Migrations
                     b.Property<decimal?>("Budget")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("CompletedUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1928,6 +1931,10 @@ namespace Homelab.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("DueUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Owner")

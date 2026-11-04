@@ -18,7 +18,7 @@ public class DriveRecordIntegrityTests {
   _=>new DiskAnnotation{DiskId=id,Actor="owner",BeforeJson="{\"old\":true}",AfterJson="{\"new\":true}"}
  };
  private static async Task<string> Read(HomelabDb db,string kind)=>kind switch {
-  "plan"=>JsonSerializer.Serialize(await db.Plans.AsNoTracking().SingleAsync()),
+  "plan"=>await db.Database.SqlQueryRaw<string>("SELECT json_object('id',Id,'diskId',DiskId,'title',Title,'reason',Reason,'status',Status,'budget',Budget,'currency',Currency,'due',DueUtc,'owner',Owner,'revision',Revision) AS Value FROM Plans").SingleAsync(),
   "alias"=>JsonSerializer.Serialize(await db.DiskAliases.AsNoTracking().SingleAsync()),
   _=>JsonSerializer.Serialize(await db.DiskAnnotations.AsNoTracking().SingleAsync())
  };

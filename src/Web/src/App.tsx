@@ -1,4 +1,3 @@
-import { SelectField, SelectOption } from "@/components/SelectField";
 import { SettingsPage } from "./SettingsPage";
 import { RefreshServerButton, type ServerRefreshTarget } from "./RefreshServerButton";
 import { BrandIcon } from "./BrandIcon";
@@ -6,7 +5,6 @@ import { ActivityHistory } from "./ActivityHistory";
 import { validScanReports } from "./ScanOverview";
 import { OverviewView, type Snapshot } from "./OverviewView";
 import { DisplayPreferencesContext } from "./displayPreferences";
-import { PlanEditor } from "./PlanEditor";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { FindingDetail } from "./FindingDetail";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
@@ -355,26 +353,22 @@ export default function App() {
       <RefreshCw size={15} /> Refresh
     </Button>
   );
-  const connecting = page === "Settings";
   const editorDialog = (
     <Dialog open={modal} onOpenChange={setModal}>
       <DialogTrigger asChild>
-        <Button><Plus size={16} /> {connecting ? "Connect NAS" : "Add plan"}</Button>
+        <Button><Plus size={16} /> Connect NAS</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>{connecting ? "Enroll a NAS" : "Plan ahead"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Enroll a NAS</DialogTitle></DialogHeader>
         <form onSubmit={event => {
           event.preventDefault();
           const fields = Object.fromEntries(new FormData(event.currentTarget));
-          void action(() => connecting
-            ? request("/connections", {
+          void action(() => request("/connections", {
                 ...fields,
                 connectHost: fields.connectHost || null,
                 connectPort: fields.connectPort ? Number(fields.connectPort) : null,
-              })
-            : request("/plans", { ...fields, budget: fields.budget ? Number(fields.budget) : null, currency: "USD" }));
+              }));
         }}>
-          {connecting ? <>
           <Field
             name="name"
             label="Display name"
@@ -411,26 +405,6 @@ export default function App() {
             SSH tunnel only changes where the connection is
             opened.
           </p>
-          </> : <>
-          <Field
-            name="title"
-            label="What are you planning?"
-            defaultValue={searchParams.get("title") ?? undefined}
-            placeholder="Purchase a compatible spare drive"
-          />
-          <Field
-            name="reason"
-            label="Evidence or reason"
-            defaultValue={searchParams.get("reason") ?? undefined}
-            placeholder="No spare available; review model and capacity"
-          />
-          <Field
-            name="budget"
-            label="Budget (USD)"
-            type="number"
-            required={false}
-          />
-          </>}
           <Button disabled={busy} type="submit">Save</Button>
           {error && <p className="error">{error}</p>}
         </form>
@@ -523,7 +497,7 @@ export default function App() {
                 </Button>
               </section>
             )}
-            <div className={page === "Storage" ? "page-heading storage-page-heading" : "page-heading"}>
+            <div className={page === "Storage" ? "page-heading storage-page-heading" : page === "Planning" ? "page-heading planning-page-heading" : "page-heading"}>
               <div>
                 <p className="eyebrow">HOMELAB CONTROL</p>
                 <h1 ref={headingRef} tabIndex={-1}>
@@ -552,7 +526,7 @@ export default function App() {
               {page === "Storage" ? <div className="storage-heading-actions">
                 <StorageExportButton />
                 {refreshButton}
-              </div> : refreshButton}
+              </div> : page === "Planning" ? <Button onClick={() => setModal(true)}><Plus size={16}/>Add plan</Button> : refreshButton}
             </div>
             {error && (
               <div className="error" role="alert">
@@ -616,90 +590,12 @@ export default function App() {
                 refresh={refresh}
               />
             )}
-            {page === "Planning" && (
-              <PlanningReview
-                timezone={snapshot.settings.timezone}
-                onChanged={refresh}
-                planRevision={JSON.stringify(snapshot.plans)}
-              />
-            )}
-            {page === "Planning" && (
-              <>
-                <div className="section-title">
-                  <h2>
-                    Replacement & maintenance queue
-                  </h2>
-                  {editorDialog}
-                </div>
-                <Card className="list-card">
-                  {snapshot.plans.length ? (
-                      snapshot.plans.map((p) => (
-                        <div className="row" key={p.id} id={"plan-" + p.id} tabIndex={-1}>
-                          <ShoppingBag />
-                          <div>
-                            <h3>{p.title}</h3>
-                            <p className="muted">
-                              Owner: {p.owner || "Unassigned"}
-                            </p>
-                            {p.dueUtc && (
-                              <p className="muted">
-                                Review by{" "}
-                                {new Date(p.dueUtc).toLocaleDateString(
-                                  undefined,
-                                  { timeZone: snapshot.settings.timezone },
-                                )}
-                              </p>
-                            )}
-                            {p.reason.length > 300 ? (
-                              <details className="plan-evidence">
-                                <summary>Evidence & notes</summary>
-                                <p>{p.reason}</p>
-                              </details>
-                            ) : (
-                              <small>{p.reason}</small>
-                            )}
-                          </div>
-                          <strong>
-                            {p.budget !== null
-                              ? new Intl.NumberFormat(undefined, {
-                                  style: "currency",
-                                  currency: p.currency,
-                                }).format(p.budget)
-                              : "No budget set"}
-                          </strong>
-                          <PlanEditor plan={p} onSaved={refresh} />
-                          <SelectField
-                            aria-label={`Status for ${p.title}`}
-                            value={p.status}
-                            onValueChange={(e) =>
-                              void action(() =>
-                                request(
-                                  `/plans/${p.id}`,
-                                  { ...p, status: e },
-                                  "PUT",
-                                ),
-                              )
-                            }
-                          >
-                            <SelectOption value="planned">Planned</SelectOption>
-                            <SelectOption value="ordered">Ordered</SelectOption>
-                            <SelectOption value="complete">Complete</SelectOption>
-                          </SelectField>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="empty">
-                        <ShoppingBag />
-                        <h3>Give future you a head start</h3>
-                        <p>
-                          Add a replacement, spare purchase, or maintenance
-                          review with its evidence and budget.
-                        </p>
-                      </div>
-                    )}
-                </Card>
-              </>
-            )}
+            {page === "Planning" && <PlanningReview timezone={snapshot.settings.timezone} onChanged={async saved => {
+              if (saved?.id && saved.title && saved.status) setSnapshot(current => ({ ...current, plans: [...current.plans.filter(plan => plan.id !== saved.id), saved] }));
+              await refresh();
+            }}
+              plans={snapshot.plans} disks={snapshot.disks} createOpen={modal} onCreateOpenChange={setModal}
+              initialTitle={searchParams.get("title") ?? ""} initialNotes={searchParams.get("reason") ?? ""} />}
             {page === "Settings" && <SettingsPage enrollment={editorDialog} connectionVersion={JSON.stringify(snapshot.connections)}
               onDisplaySaved={settings => setSnapshot(current => ({ ...current, settings }))} />}
             {page === "Activity" && <ActivityHistory />}

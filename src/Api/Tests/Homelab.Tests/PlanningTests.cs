@@ -19,6 +19,24 @@ public sealed class PlanningTests
         Assert.Equal(5, settings.DriveAgeReviewYears); Assert.Equal(90, settings.WarrantyNoticeDays);
         Assert.Equal("UTC", settings.Timezone);
     }
+    [Fact] public async Task BoardUpgradeKeepsNotesAndBackfillsOnlyRecordedCompletionTransitions()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();
+        await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(connection).Options);
+        var previous = db.Database.GetMigrations().Single(x => x.EndsWith("_DailyNotificationQuietPeriod"));
+        await db.GetService<IMigrator>().MigrateAsync(previous);
+        var known = new PlanningItem { Title = "Recorded completion", Reason = "Legacy notes and evidence", Status = "complete" };
+        var unknown = new PlanningItem { Title = "No recorded completion", Status = "complete" };
+        db.Plans.AddRange(known, unknown); await LegacyDiskFixture.SaveAsync(db);
+        var done = new DateTime(2026, 10, 21, 12, 0, 0, DateTimeKind.Utc);
+        db.PlanChanges.Add(new() { PlanId = known.Id, AtUtc = done, BeforeJson = "{\"Status\":\"ordered\"}", AfterJson = "{\"Status\":\"complete\"}" });
+        db.PlanChanges.Add(new() { PlanId = known.Id, AtUtc = done.AddDays(2), BeforeJson = "{\"Status\":\"complete\"}", AfterJson = "{\"Status\":\"complete\"}" });
+        await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+        await db.Database.MigrateAsync();
+        var restored = await db.Plans.SingleAsync(p => p.Id == known.Id);
+        Assert.Equal(done, restored.CompletedUtc); Assert.Equal("Legacy notes and evidence", restored.Notes); Assert.Empty(restored.Evidence);
+        Assert.Null((await db.Plans.SingleAsync(p => p.Id == unknown.Id)).CompletedUtc);
+    }
     private static readonly DateTime Now = new(2026, 10, 31, 12, 0, 0, DateTimeKind.Utc);
     private static DriveReview? Review(Disk disk, Finding[]? findings = null, PlanningItem[]? plans = null, OperatingSettings? settings = null) => Planning.Review(disk, findings ?? [], plans ?? [], settings ?? new(), Now);
 
@@ -68,7 +86,7 @@ public sealed class PlanningTests
     [Fact] public void IdentityGapsAndAbsentDriveStayExplicitAndRetiredDrivesAreExcluded()
     {
         var disk = new Disk { Present = false, MappingConfidence = "ambiguous" };
-        Assert.Equal(2, Review(disk)!.Reasons.Count(x => x.Kind == "identity"));
+        Assert.Equal(2, Review(disk)!.Reasons.Count(x => x.Kind is "absent" or "ambiguous"));
         disk.Lifecycle = "retired"; Assert.Null(Review(disk));
     }
     [Fact] public void OpenPlansAreLinkedToOnlyTheirOwnDisk()

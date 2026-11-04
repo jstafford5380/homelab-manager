@@ -38,6 +38,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Plann
             return;
         }
 
+        item.CompletedUtc = item.Status == "complete" ? DateTime.UtcNow : null;
         item.Id = Guid.NewGuid();
         item.Revision = Guid.NewGuid();
         db.Plans.Add(item);

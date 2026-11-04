@@ -1,7 +1,15 @@
 
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 namespace Homelab.Api;
 public sealed class PlanningItem
 {
+    // Keep Reason as the stored notes field for existing clients and records.
+    [NotMapped] public string Notes { get => Reason; set => Reason = value; }
+    [JsonIgnore] public string EvidenceJson { get; set; } = "[]";
+    [NotMapped] public PlanningReason[] Evidence { get => JsonSerializer.Deserialize<PlanningReason[]>(EvidenceJson) ?? []; set => EvidenceJson = JsonSerializer.Serialize(value); }
+    public DateTime? CompletedUtc { get; set; }
     public Guid Revision { get; set; } = Guid.NewGuid();
     public string Owner { get; set; } = "";
     public Guid Id { get; set; } = Guid.NewGuid();

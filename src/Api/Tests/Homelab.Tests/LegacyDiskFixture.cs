@@ -28,6 +28,16 @@ internal static class LegacyDiskFixture
                 entry.State = EntityState.Unchanged;
             }
         }
+        if (!(await db.Database.GetAppliedMigrationsAsync()).Any(x => x.EndsWith("_PlanningBoard"))) {
+            foreach (var entry in db.ChangeTracker.Entries<PlanningItem>().Where(x => x.State == EntityState.Added).ToArray()) {
+                var p = entry.Entity;
+                await db.Database.ExecuteSqlInterpolatedAsync($"""
+                    INSERT INTO Plans (Id,DiskId,Title,Reason,Status,Budget,Currency,DueUtc,Owner,Revision)
+                    VALUES ({p.Id},{p.DiskId},{p.Title},{p.Reason},{p.Status},{p.Budget},{p.Currency},{p.DueUtc},{p.Owner},{p.Revision})
+                    """);
+                entry.State = EntityState.Unchanged;
+            }
+        }
         await db.SaveChangesAsync();
     }
 }

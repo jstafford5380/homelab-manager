@@ -1,6 +1,6 @@
 # 005 · Planning redesign
 
-- **Status:** ready · 2026-11-04
+- **Status:** implemented · 2026-11-04
 - **Mock:** [mock.html](mock.html). Use the toolbar to switch State, Width and Theme, e.g. `?state=stale&width=mobile&theme=dark`.
 - **Shared preview:** https://claude.ai/artifact/DxLkodeuCcqL2vZVWbJdvT (the exploration version; `mock.html` is the final one)
 - **Affected screens:** **Planning** (`/planning`): the whole page. Today that's `PlanningReview.tsx`, `SpareReview.tsx`, the plan queue in `App.tsx`, and the plan dialogs (`PlanEditor.tsx`, the "Plan ahead" dialog).
@@ -40,15 +40,15 @@ Rejected alternatives:
 
 | ID | Feature | Depends on | Flag | Status |
 | --- | --- | --- | --- | --- |
-| 005.01 | Summary strip: drives to review (stacked bar + legend), open plans (overdue and due-soon pills), estimated spend (ordered/planned bar, without-estimate count) | 005.08 | — | ready |
-| 005.02 | Review rows: reason chips with tooltips and fix links, priority label, location, Next line; prepare-ahead rows on one line; every review shown | 005.08 | — | ready |
-| 005.03 | Main action per priority; *In plan · status* pill that links to the plan | 005.02, 005.05 | — | ready |
-| 005.04 | Spare-fit pill on each review row; *Check a spare* opens the compatibility dialog, which includes that drive's review history | 005.02 | — | ready |
-| 005.05 | Plans board: Planned / Ordered / Done (last 30 days), due pills, one-click advance, edit dialog for everything else | 005.08 | — | ready |
-| 005.06 | Spares rail: quantity tile, checked-drive count, unit price, Inventory link | 005.08 | — | ready |
-| 005.07 | Single rules footer; remove the other planning caveat paragraphs | 005.02 | — | ready |
-| 005.08 | Tokens: `--tone-info-bg`, `--tone-info-border`, `--tone-progress` / `-bg` / `-border`, and bar colours, in light and dark | — | — | ready |
-| 005.09 | Create-plan dialog: evidence attached as chips; notes, estimate, due and owner as separate fields | 005.02 | — | ready |
+| 005.01 | Summary strip: drives to review (stacked bar + legend), open plans (overdue and due-soon pills), estimated spend (ordered/planned bar, without-estimate count) | 005.08 | — | implemented |
+| 005.02 | Review rows: reason chips with tooltips and fix links, priority label, location, Next line; prepare-ahead rows on one line; every review shown | 005.08 | — | implemented |
+| 005.03 | Main action per priority; *In plan · status* pill that links to the plan | 005.02, 005.05 | — | implemented |
+| 005.04 | Spare-fit pill on each review row; *Check a spare* opens the compatibility dialog, which includes that drive's review history | 005.02 | — | implemented |
+| 005.05 | Plans board: Planned / Ordered / Done (last 30 days), due pills, one-click advance, edit dialog for everything else | 005.08 | — | implemented |
+| 005.06 | Spares rail: quantity tile, checked-drive count, unit price, Inventory link | 005.08 | — | implemented |
+| 005.07 | Single rules footer; remove the other planning caveat paragraphs | 005.02 | — | implemented |
+| 005.08 | Tokens: `--tone-info-bg`, `--tone-info-border`, `--tone-progress` / `-bg` / `-border`, and bar colours, in light and dark | — | — | implemented |
+| 005.09 | Create-plan dialog: evidence attached as chips; notes, estimate, due and owner as separate fields | 005.02 | — | implemented |
 
 ## States
 
@@ -139,23 +139,23 @@ None.
 
 ## Acceptance checklist
 
-- [ ] Every state in the table is implemented and reachable.
-- [ ] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
-- [ ] No horizontal page scroll at 390px.
-- [ ] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`), including the new tones on their backgrounds.
-- [ ] Unknown, stale, and unsupported data look different from healthy data.
-- [ ] No claims beyond the evidence (no failure dates or probabilities).
-- [ ] No `<details>` or show-more toggles remain on the Planning page.
-- [ ] Feature-specific checks:
-  - [ ] 005.01: the bar segments and legend counts match the review list. Overdue and due-soon pills count only open plans. With no reviews, the bar is empty and the legend reads "No reminders from the current rules".
-  - [ ] 005.02: every reason renders as a chip with its full detail in a keyboard-reachable tooltip. Prepare-ahead rows are a single line at desktop. All reviews render, with no show-all toggle.
-  - [ ] 005.03: a drive with an open plan shows the In-plan pill with that plan's status, not a create button. Activating the pill focuses the plan card.
-  - [ ] 005.04: the spare-fit pill matches the latest valid review for that drive (expired and superseded rules as today). *Check a spare* opens the dialog with the drive's history, and is hidden when there are no spares on hand.
-  - [ ] 005.05: Mark ordered and Mark done update the status with one request and move the card. Done shows only plans completed in the last 30 days. Due pills use the display timezone.
-  - [ ] 005.06: the quantity tile is amber at 0. The checked-drive count counts only current compatible reviews.
-  - [ ] 005.07: the footer is the only general caveat on the page. The thresholds and rule version match the API.
-  - [ ] 005.08: the new tokens exist in light and dark in `index.css`, and pills using them pass contrast.
-  - [ ] 005.09: saving a plan stores the notes and the attached evidence separately. The estimate is pre-filled only when a compatible spare with a unit price exists.
+- [x] Every state in the table is implemented and reachable.
+- [x] Matches the mock at desktop (≥ 1100px), tablet (~900px), and mobile (390px), in light and dark.
+- [x] No horizontal page scroll at 390px.
+- [x] Axe passes WCAG 2.1 AA in light and dark (extend `src/Web/e2e`), including the new tones on their backgrounds.
+- [x] Unknown, stale, and unsupported data look different from healthy data.
+- [x] No claims beyond the evidence (no failure dates or probabilities).
+- [x] No `<details>` or show-more toggles remain on the Planning page.
+- [x] Feature-specific checks:
+  - [x] 005.01: the bar segments and legend counts match the review list. Overdue and due-soon pills count only open plans. With no reviews, the bar is empty and the legend reads "No reminders from the current rules".
+  - [x] 005.02: every reason renders as a chip with its full detail in a keyboard-reachable tooltip. Prepare-ahead rows are a single line at desktop. All reviews render, with no show-all toggle.
+  - [x] 005.03: a drive with an open plan shows the In-plan pill with that plan's status, not a create button. Activating the pill focuses the plan card.
+  - [x] 005.04: the spare-fit pill matches the latest valid review for that drive (expired and superseded rules as today). *Check a spare* opens the dialog with the drive's history, and is hidden when there are no spares on hand.
+  - [x] 005.05: Mark ordered and Mark done update the status with one request and move the card. Done shows only plans completed in the last 30 days. Due pills use the display timezone.
+  - [x] 005.06: the quantity tile is amber at 0. The checked-drive count counts only current compatible reviews.
+  - [x] 005.07: the footer is the only general caveat on the page. The thresholds and rule version match the API.
+  - [x] 005.08: the new tokens exist in light and dark in `index.css`, and pills using them pass contrast.
+  - [x] 005.09: saving a plan stores the notes and the attached evidence separately. The estimate is pre-filled only when a compatible spare with a unit price exists.
 
 ## Implementation notes
 
@@ -163,39 +163,64 @@ _Codex: one entry per feature ID as it lands: final endpoints and fields, compon
 
 ### 005.01
 
-—
+`PlanningReview.tsx` renders the three summary blocks, linked priority legends and bars, open-plan due counts and per-currency spend. Reviews come from `GET /api/v1/planning/review`; open-plan counts and spend use the current overview snapshot. The review API also exposes `budgets[].planned` and `.ordered` alongside the existing totals. Due counts use calendar days in the configured display timezone.
+
+Deviation: when reviews are unavailable, spend remains available from the independently loaded plans instead of becoming unknown as in the mock. Loading still uses the specified skeleton. The browser suite covers normal/calm/empty/loading/unavailable/stale states, mixed currencies and a UTC timestamp that falls on the previous display day.
 
 ### 005.02
 
-—
+`PlanningReason` now supplies `summary`, `endsUtc`, `purchasedUtc` and `confidence`; identity reminders are split into `absent` and `ambiguous`. `DriveReview` adds `priorityKey`, `label` and `location`, retaining the old priority text and `nextStep` for existing clients. Label uses the recorded nickname with model fallback; location uses the recorded bay, prefixed with “Last seen in” for absent drives. No location is inferred from uncertain topology. `ReasonChips.tsx` uses shadcn Tooltip on focusable chip text, with separate fix/evidence links. Rule-specific self-test and NVMe advice is retained in finding tooltips.
+
+Deviation: Add date opens the drive’s existing Storage record, where Cost & lifespan contains the purchase-date editor; the Hardware page now contains server components rather than drive records. Compact rows wrap when their full facts/actions cannot fit. Recorded purchase/warranty dates keep their calendar date; plan timestamps use the display timezone. Tests cover all five reviews, keyboard tooltips, date labels, breakpoints and both themes.
+
+Follow-up (2026-11-04): Planning now matches Storage’s replacement handling. An absent drive with a non-voided replacement record is excluded from reviews and the tracked-drive count. A voided replacement or a drive that reappears in inventory remains eligible. Historical drive records, findings and plans are preserved. Four API regression cases cover those conditions (including an ordinary missing drive).
 
 ### 005.03
 
-—
+Each priority selects the specified primary action. Open-plan pills use the current overview plans, so failed review refreshes cannot leave an old plan status on a row. Activating a pill scrolls immediately and focuses the matching `plan-<id>` card; existing `?plan=` navigation remains supported. `openPlan: { id, status }` is also included in review responses, with old `openPlanIds` retained for compatibility. Browser tests cover focus, create-to-in-plan changes and completion removing the open-plan action.
 
 ### 005.04
 
-—
+`GET /api/v1/planning/review` includes `reviews[].spareFit: { status, assetId, assetName, validUntilUtc }`. It reads only the latest assessment for each drive/spare pair and applies the existing `SpareCompatibility.Status` rules. A current compatible check takes precedence across available spares; otherwise the latest assessment determines expired/incompatible/unchecked. Inventory edits, identity changes, absent/retired drives and exhausted stock cannot establish a fit.
+
+`SpareReview.tsx` opens the existing compatibility form directly and loads paginated history inside that dialog from `/disks/{id}/spare-reviews`. No expanders remain. Checks are hidden when no units are on hand or a current fit exists. Stale planning data downgrades fit pills and checked counts explicitly, and expiry is rechecked while the page is open.
+
+Deviation: spare-fit pills and check actions also remain visible on prepare-ahead rows, as required by the brief, although the mock omits them there. This can make those rows taller. API tests cover supersession, invalidation and checked counts; browser tests cover history, compatible/expired/incompatible/unchecked/no-spares states and zero stock.
 
 ### 005.05
 
-—
+`PlansBoard.tsx` replaces the old queue with labelled Planned, Ordered and Done regions. Cards sort by due date, with undated cards last; notes clamp to two lines. `PlanEditor.tsx` provides the full notes, attached evidence, backward status changes and visible history. Advance uses one revision-checked `PUT /api/v1/plans/{id}`, announces the move and focuses the moved card. Successful create/edit/advance responses update the app snapshot before refreshing, so a subsequent refresh failure does not hide a saved change.
+
+`PlanningItem.completedUtc` is server-owned: entering complete sets it, editing a complete plan preserves it, reopening clears it. Migration `PlanningBoard` backfills only recorded completion transitions from plan history. Earlier complete plans without a known completion time remain unknown and are excluded from the recent-done board; no date is invented. Drive serials are joined from overview disks. Done cards retain an Edit control so completed plans can be reopened.
+
+Tests cover persisted completion/reopen/history, migration preservation, the 30-day window, unknown completion dates, due-day boundaries, one-request movement/focus, edit conflicts and successful saves followed by refresh failure.
 
 ### 005.06
 
-—
+The spares rail uses `spares[].compatibleDriveCount`, counting current compatible assessments once per drive using the same validity rules as row fit pills. Quantity is green above zero and amber at zero, with optional Inventory unit prices and the Inventory link. The rail follows reviews in the DOM; its items form a two-column grid at tablet widths and one column on mobile. Backend tests verify supersession/inventory invalidation; browser tests cover counts, prices, zero quantities and missing inventory.
 
 ### 005.07
 
-—
+`PlanningReview.tsx` has one general advice/rules footer, showing the API’s thresholds, rule version and generated time, with a link to `/settings/review-levels`. When reviews have never loaded, thresholds are explicitly unavailable rather than guessed. Other general planning caveat paragraphs and every Planning `<details>`/show-more control are removed. Specific compatibility caveats remain inside that assessment dialog. All state tests check the page has no details controls.
 
 ### 005.08
 
-—
+`index.css` adds info background/border, progress foreground/background/border, and saturated `--bar-bad`, `--bar-warn`, `--bar-info`, `--bar-progress` tokens in light, explicit dark and system-dark themes. `Planning.css` maps the layout to the app’s 700px/1100px viewport breakpoints using existing Card/Button/Tooltip components. Mobile keeps the full Add plan label. Axe WCAG 2.1 AA checks cover every designed state at 1440px, 900px and 390px in both themes; screenshots and overflow assertions accompany the checks.
 
 ### 005.09
 
-—
+`CreatePlanDialog.tsx` is shared by generic Add plan and drive-specific actions. Notes, owner, estimate/currency and due date are separate inputs; read-only evidence chips are attached separately. `POST /api/v1/plans` accepts `notes` and structured `evidence[]`. Notes alias the existing stored `Reason` column for backward compatibility, while a new `EvidenceJson` column stores attachments independently. Existing Reason text is preserved verbatim as notes. Attachments remain immutable on later edits and are retained in history.
+
+Only a current compatible check with an on-hand Inventory asset and unit price pre-fills the estimate. Media/issue due dates default to two weeks from the display calendar date; prepare-ahead starts empty. Date-only input is stored at noon in the configured timezone rather than assuming UTC or the browser timezone. Currency is a separate labelled input, preserving the project’s existing free three-letter currency support. Backend/browser tests verify evidence/notes separation, immutable attachments, empty vs sourced estimates, owner, due defaults and round-tripped timestamps.
+
+### Verification · 2026-11-04
+
+- Web production build and solution build pass.
+- Full backend suite: 877 tests pass, including Planning API, immutable evidence, completion transitions, compatibility aggregation and migration preservation.
+- `e2e/planning.spec.ts`: 10 tests pass. Seven designed states each receive axe WCAG 2.1 A/AA checks in light/dark at 1440px, 900px and 390px, screenshots and no-overflow assertions. Interaction cases cover focus, keyboard tooltips, separate notes/evidence, spare histories/statuses, mixed currencies, dates and a saved status move followed by overview refresh failure.
+- Updated `e2e/workflows.spec.ts` passes against the new controls, including actual create/edit/history/conflict workflows and compatibility assessment.
+- Lint completes with existing warnings; `git diff --check` passes.
+- Local API restarted through Aspire. Implementation is in the working tree, ready for Claude’s design review; deliberate visual/contract differences are recorded above. Mocks and design fixtures are unchanged.
 
 ## Change log
 
