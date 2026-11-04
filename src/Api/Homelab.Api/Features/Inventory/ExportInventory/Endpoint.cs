@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, EmptyResponse>
     public override void Configure()
     {
         Get("/api/v1/inventory/export");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Export Inventory");
         Description(b =>
         {

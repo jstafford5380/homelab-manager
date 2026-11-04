@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Inven
     public override void Configure()
     {
         Put("/api/v1/inventory/assets/{id:guid}");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Update Asset");
         Description(b =>
         {

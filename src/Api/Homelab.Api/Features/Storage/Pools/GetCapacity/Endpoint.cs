@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Capac
     public override void Configure()
     {
         Get("/api/v1/connections/{id:guid}/pools/{guid}/capacity");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Get Capacity");
         Description(b =>
         {

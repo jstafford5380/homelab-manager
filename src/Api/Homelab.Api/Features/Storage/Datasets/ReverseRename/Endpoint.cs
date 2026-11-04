@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Datas
     public override void Configure()
     {
         Post("/api/v1/connections/{id:guid}/dataset-renames/{reviewId:long}/reverse");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Reverse Rename");
         Description(b =>
         {

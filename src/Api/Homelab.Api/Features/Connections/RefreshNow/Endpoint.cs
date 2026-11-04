@@ -1,5 +1,4 @@
 using FastEndpoints;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 namespace Homelab.Api.Features.Connections.RefreshNow;
@@ -10,7 +9,7 @@ public sealed class Endpoint(Collector collector, SynologyHardwareCollector syno
     public override void Configure()
     {
         Post("/api/v1/connections/{id:guid}/refresh");
-        AuthSchemes(CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Options(builder => builder.WithMetadata(new OwnsWriteLease()));
         Summary(summary => summary.Summary = "Refresh a server now");
         Description(builder => builder

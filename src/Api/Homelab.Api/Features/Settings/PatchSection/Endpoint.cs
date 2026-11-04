@@ -22,7 +22,7 @@ public sealed class Endpoint(HomelabDb db, BackupService backups) : Endpoint<Req
     public override void Configure()
     {
         Patch("/api/v1/settings/{section}");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Save changes to one settings section");
         Description(b =>
         {

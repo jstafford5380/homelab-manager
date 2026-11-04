@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Plann
     public override void Configure()
     {
         Put("/api/v1/plans/{id:guid}");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Update Plan");
         Description(b =>
         {

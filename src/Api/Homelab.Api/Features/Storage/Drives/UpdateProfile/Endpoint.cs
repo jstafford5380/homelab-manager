@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Drive
     public override void Configure()
     {
         Put("/api/v1/storage/drives/{id:guid}/profile");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Update Profile");
         Description(b =>
         {

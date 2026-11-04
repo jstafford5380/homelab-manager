@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Disk>
     public override void Configure()
     {
         Put("/api/v1/disks/{id:guid}/metadata");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Update Metadata");
         Description(b =>
         {

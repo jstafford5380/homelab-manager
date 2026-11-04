@@ -8,7 +8,7 @@ public sealed class Endpoint(Collector collector) : Endpoint<EmptyRequest, Power
     public override void Configure()
     {
         Post("/api/v1/storage/power-on-hours/run");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Run Power On Hours Collection");
         Options(b => b.WithMetadata(new OwnsWriteLease()));
         Description(b =>

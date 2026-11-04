@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<EmptyRequest, System.Colle
     public override void Configure()
     {
         Get("/api/v1/backups");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "List Backups");
         Description(b =>
         {

@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Spare
     public override void Configure()
     {
         Post("/api/v1/disks/{id:guid}/spare-reviews");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Review Spare");
         Description(b =>
         {

@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Backu
     public override void Configure()
     {
         Post("/api/v1/recovery/{id:guid}/runs");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Record Backup Run");
         Description(b =>
         {

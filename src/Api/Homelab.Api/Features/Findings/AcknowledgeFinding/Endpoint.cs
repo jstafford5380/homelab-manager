@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, EmptyResponse>
     public override void Configure()
     {
         Post("/api/v1/findings/{id:guid}/acknowledge");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Acknowledge Finding");
         Description(b =>
         {

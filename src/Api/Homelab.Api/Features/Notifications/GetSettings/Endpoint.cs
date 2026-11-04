@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<EmptyRequest, Response>
     public override void Configure()
     {
         Get("/api/v1/notifications");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Get Settings");
         Description(b =>
         {

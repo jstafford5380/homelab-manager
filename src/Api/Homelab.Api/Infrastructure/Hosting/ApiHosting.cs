@@ -1,4 +1,5 @@
 using Homelab.Api.Infrastructure.OpenApi;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +19,18 @@ public static class ApiHosting
         Directory.CreateDirectory(dataPath);
         builder.Services.AddDbContext<HomelabDb>(o => o.UseSqlite($"Data Source={Path.Combine(dataPath, "homelab.db")}"));
         DeploymentSecurity.Configure(builder, dataPath);
-        builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = ApiAccess.Scheme;
+            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultSignOutScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        }).AddPolicyScheme(ApiAccess.Scheme, null, options =>
+        {
+            // An explicit credential must never silently fall back to a browser session.
+            options.ForwardDefaultSelector = context => context.Request.Headers.ContainsKey("Authorization")
+                ? ApiAccess.KeyScheme : CookieAuthenticationDefaults.AuthenticationScheme;
+        }).AddScheme<AuthenticationSchemeOptions, ApiKeyHandler>(ApiAccess.KeyScheme, _ => { }).AddCookie(o =>
         {
             o.Cookie.Name = "homelab.session";
             o.Cookie.HttpOnly = true;
@@ -36,7 +48,7 @@ public static class ApiHosting
                 return Task.CompletedTask;
             };
         });
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(ApiAccess.Configure);
         builder.Services.AddRateLimiter(o => o.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "local", _ => new() { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })));
         builder.Services.AddSingleton<PasswordHasher<Owner>>();
         builder.Services.AddSingleton<WriteCoordinator>();

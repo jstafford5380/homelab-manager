@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Drive
     public override void Configure()
     {
         Put("/api/v1/disks/{id:guid}/acquisition");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Update Acquisition");
         Description(b =>
         {

@@ -40,6 +40,7 @@ public sealed class HomelabDb(DbContextOptions<HomelabDb> options) : DbContext(o
     public DbSet<DiskAnnotation> DiskAnnotations => Set<DiskAnnotation>();
     public DbSet<OperatingSettings> Settings => Set<OperatingSettings>();
     public DbSet<BackupRecord> Backups => Set<BackupRecord>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<Owner> Owners => Set<Owner>();
     public DbSet<NasConnection> Connections => Set<NasConnection>();
     public DbSet<Disk> Disks => Set<Disk>();
@@ -168,6 +169,9 @@ public sealed class HomelabDb(DbContextOptions<HomelabDb> options) : DbContext(o
         model.Entity<Observation>().HasIndex(x => new { x.DiskId, x.Metric, x.Id });
         model.Entity<Observation>().HasIndex(x => new { x.DiskId, x.Metric, x.ReceivedUtc });
         model.Entity<Disk>().HasIndex(x => new { x.ConnectionId, x.IdentityKey });
+        model.Entity<ApiKey>().HasOne<Owner>().WithMany().HasForeignKey(key => key.OwnerId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<ApiKey>().Property(key => key.Name).HasMaxLength(100);
+        model.Entity<ApiKey>().Property(key => key.Access).HasMaxLength(20);
         model.Entity<Owner>().HasIndex(x => x.Username).IsUnique();
     }
 }

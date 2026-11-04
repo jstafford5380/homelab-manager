@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<EmptyRequest, System.Colle
     public override void Configure()
     {
         Get("/api/v1/recovery");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "List Policies");
         Description(b =>
         {

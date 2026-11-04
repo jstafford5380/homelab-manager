@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, WriteCoordinat
     public override void Configure()
     {
         Get("/api/v1/hardware/servers");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "List Servers");
         Description(b =>
         {

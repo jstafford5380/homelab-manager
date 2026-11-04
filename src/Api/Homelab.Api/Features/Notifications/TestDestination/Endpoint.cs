@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db, NotificationEngine engine) : Endpoint
     public override void Configure()
     {
         Post("/api/v1/notifications/test");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Test Destination");
         Options(b => b.WithMetadata(new OwnsWriteLease()));
         Description(b =>

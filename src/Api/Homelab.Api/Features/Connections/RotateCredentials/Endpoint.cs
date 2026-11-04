@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db, Microsoft.AspNetCore.DataProtection.I
     public override void Configure()
     {
         Put("/api/v1/connections/{id:guid}/credentials");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Rotate Credentials");
         Description(b =>
         {

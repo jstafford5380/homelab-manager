@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Asset
     public override void Configure()
     {
         Post("/api/v1/inventory/dependencies");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Add Dependency");
         Description(b =>
         {

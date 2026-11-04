@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<EmptyRequest, Response>
     public override void Configure()
     {
         Get("/api/v1/overview");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Get Overview");
         Description(b =>
         {

@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, EmptyResponse>
     public override void Configure()
     {
         Post("/api/v1/notifications/deliveries/{id:guid}/retry");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Retry Delivery");
         Description(b =>
         {

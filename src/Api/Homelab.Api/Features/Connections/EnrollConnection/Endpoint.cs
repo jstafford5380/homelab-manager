@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db, IDataProtectionProvider protection) :
     public override void Configure()
     {
         Post("/api/v1/connections");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Enroll Connection");
         Description(b =>
         {

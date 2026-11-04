@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, IDataProtectio
     public override void Configure()
     {
         Post("/api/v1/hardware/synology");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Add Server");
         Description(b =>
         {

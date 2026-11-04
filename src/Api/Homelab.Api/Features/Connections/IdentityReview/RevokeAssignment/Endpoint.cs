@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Disco
     public override void Configure()
     {
         Post("/api/v1/connections/{id:guid}/identity-review/{assignmentId:guid}/revoke");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Revoke Assignment");
         Description(b =>
         {

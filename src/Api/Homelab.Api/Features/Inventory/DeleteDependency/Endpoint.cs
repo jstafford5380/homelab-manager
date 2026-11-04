@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, EmptyResponse>
     public override void Configure()
     {
         Delete("/api/v1/inventory/dependencies/{id:guid}");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Delete Dependency");
         Description(b =>
         {

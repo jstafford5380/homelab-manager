@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, EmptyResponse>
     public override void Configure()
     {
         Post("/api/v1/storage/drives/{id:guid}/notes");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Add Note");
         Description(b =>
         {

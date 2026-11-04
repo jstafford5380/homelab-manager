@@ -9,7 +9,7 @@ public sealed class Endpoint : Endpoint<EmptyRequest, EmptyResponse>
     public override void Configure()
     {
         Post("/api/v1/logout");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Sign Out");
         Description(b =>
         {

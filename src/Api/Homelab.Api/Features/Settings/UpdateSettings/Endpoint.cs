@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db, BackupService backups) : Endpoint<Req
     public override void Configure()
     {
         Put("/api/v1/settings");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Update Settings");
         Description(b =>
         {

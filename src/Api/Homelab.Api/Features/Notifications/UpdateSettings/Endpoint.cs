@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, IDataProtectio
     public override void Configure()
     {
         Put("/api/v1/notifications");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Update Settings");
         Description(b =>
         {

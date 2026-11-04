@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.DiskR
     public override void Configure()
     {
         Post("/api/v1/replacements/{id:guid}/void");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Void Replacement");
         Description(b =>
         {

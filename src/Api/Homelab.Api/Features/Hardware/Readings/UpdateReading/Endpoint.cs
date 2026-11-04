@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config) : Endpoint<Req
     public override void Configure()
     {
         Put("/api/v1/hardware/servers/{id:guid}/readings/{readingId:guid}");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Update Reading");
         Description(b =>
         {

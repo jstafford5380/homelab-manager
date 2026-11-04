@@ -28,7 +28,7 @@ public sealed class ApiArchitectureTests(ApiFactory factory) : IClassFixture<Api
         var expected = await File.ReadAllLinesAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "api-routes.txt"));
         var actual = endpoints.SelectMany(e => e.Metadata.GetRequiredMetadata<HttpMethodMetadata>().HttpMethods.Select(m => m + " " + e.RoutePattern.RawText)).Order().ToArray();
         Assert.Equal(expected.Order(), actual);
-        Assert.Equal(110, endpoints.Length);
+        Assert.Equal(113, endpoints.Length);
         Assert.Equal(3, endpoints.Count(e => e.Metadata.GetMetadata<OwnsWriteLease>() is not null));
         foreach (var endpoint in endpoints)
         {
@@ -47,7 +47,7 @@ public sealed class ApiArchitectureTests(ApiFactory factory) : IClassFixture<Api
         using var client = factory.CreateClient();
         var json = await client.GetFromJsonAsync<JsonElement>("/openapi/v1.json");
         var paths = json.GetProperty("paths");
-        Assert.Equal(110, paths.EnumerateObject().Sum(p => p.Value.EnumerateObject().Count(o => o.Name is "get" or "post" or "put" or "delete" or "patch")));
+        Assert.Equal(113, paths.EnumerateObject().Sum(p => p.Value.EnumerateObject().Count(o => o.Name is "get" or "post" or "put" or "delete" or "patch")));
         var profile = paths.GetProperty("/api/v1/storage/drives/{id}/profile").GetProperty("put");
         Assert.Equal("3.0.4", json.GetProperty("openapi").GetString());
         Assert.True(profile.TryGetProperty("requestBody", out _));

@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config) : Endpoint<Req
     public override void Configure()
     {
         Post("/api/v1/hardware/servers/{id:guid}/components");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Add Component");
         Description(b =>
         {

@@ -9,7 +9,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.Smart
     public override void Configure()
     {
         Post("/api/v1/disks/{id:guid}/smart-reports/preview");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Write);
         Summary(s => s.Summary = "Preview Report");
         Description(b =>
         {

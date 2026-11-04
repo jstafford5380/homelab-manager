@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useBeforeUnload, useBlocker, useLocation } from "react-router";
-import { Ellipsis, Bell, Database, Gauge, Monitor, Plug, SlidersHorizontal, TriangleAlert } from "lucide-react";
+import { KeyRound, Ellipsis, Bell, Database, Gauge, Monitor, Plug, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ApiKeySettings } from "./ApiKeySettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { ConnectionSettings, connectionStatus, type Connection } from "./ConnectionSettings";
 import { HardwareSettings } from "./HardwareSettings";
@@ -19,6 +20,7 @@ const sections = {
   notifications: { title: "Notifications", icon: Bell, hint: "Where findings are sent. Delivery turns on only after a successful test." },
   data: { title: "Data & backups", icon: Database, hint: "Keep monitoring history and back up Homelab Control’s own data." },
   display: { title: "Display", icon: Monitor, hint: "Theme applies right away in this browser. Timezone and units apply everywhere and save with the button below." },
+  "api-keys": { title: "API keys", icon: KeyRound, hint: "Give integrations access to Homelab Control. Issue a separate key for each client so you can revoke it independently." },
   other: { title: "Other", icon: Ellipsis, hint: "Set the electricity rate used to estimate UPS energy costs." },
 };
 type Section = keyof typeof sections;
@@ -136,9 +138,10 @@ export function SettingsPage({ enrollment, connectionVersion, onDisplaySaved }: 
               onConnections={setConnections} onDirty={setDirty} /> : <p role="status">Loading connections…</p>}
             {!id && <HardwareSettings />}
           </>}
+          {section === "api-keys" && <ApiKeySettings onDirty={setDirty} />}
           {section === "notifications" && <NotificationSettings onDirty={setDirty} />}
           {section === "display" && !saved && <Card className="settings-group"><AppearanceSettings /></Card>}
-          {saved && section !== "connections" && section !== "notifications" &&
+          {saved && section !== "connections" && section !== "notifications" && section !== "api-keys" &&
             <OperationsSettings key={section} section={section} saved={saved} onDirty={setDirty}
               onSaved={next => { setSaved(next); if (section === "display") onDisplaySaved(next.settings); }} />}
         </>}

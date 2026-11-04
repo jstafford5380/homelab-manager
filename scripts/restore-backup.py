@@ -45,6 +45,9 @@ def restore(archive, destination):
             if db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name='NotificationChannels'").fetchone()[0]:
                 db.execute("UPDATE NotificationChannels SET Enabled=0, TestedUtc=NULL, ProtectedUrl=''")
                 db.execute("UPDATE Deliveries SET Status='cancelled-after-restore' WHERE Status='pending'")
+            if db.execute("SELECT COUNT(*) FROM sqlite_master WHERE name='ApiKeys'").fetchone()[0]:
+                # Restoring an old archive must never reactivate a revoked credential.
+                db.execute("UPDATE ApiKeys SET RevokedUtc=COALESCE(RevokedUtc, datetime('now'))")
             db.execute("INSERT INTO Activity (AtUtc, Actor, Action, Detail) VALUES (datetime('now'), 'operator', 'Backup restored', 'Collectors disabled; integration credentials require re-enrollment')")
         # The archived database can retain WAL mode. Checkpoint committed safety changes
         # before moving the main file; a context manager commits but does not close sqlite3.

@@ -20,6 +20,10 @@ public sealed class BackupTests
             await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(new SqliteConnectionStringBuilder { DataSource = Path.Combine(data, "homelab.db"), Pooling = false }.ToString()).Options);
             DatabaseLifecycle.Initialize(db, data);
             db.Plans.Add(new() { Title = "Spare purchase", Budget = 250 });
+            var owner = new Owner { Username = "backup-owner", PasswordHash = "fixture" };
+            db.Owners.Add(owner);
+            await db.SaveChangesAsync();
+            db.ApiKeys.Add(new() { OwnerId = owner.Id, Name = "Backup regression", SecretHash = [1, 2, 3], ExpiresUtc = DateTime.UtcNow.AddDays(30) });
             db.Settings.Add(new() { BackupsEnabled = true });
             db.Connections.Add(new() { Name = "NAS", ProtectedApiKey = "encrypted-reference", Enabled = true });
             db.HardwareServers.Add(new() { Name = "Synology", Platform = "synology", ProtectedCommunity = "encrypted-snmp-reference", Connected = true });
@@ -48,6 +52,7 @@ public sealed class BackupTests
             Assert.False((await restoreDb.Connections.SingleAsync()).Enabled);
             Assert.Equal("", (await restoreDb.Connections.SingleAsync()).ProtectedApiKey);
             Assert.False((await restoreDb.Settings.SingleAsync()).BackupsEnabled);
+            Assert.NotNull((await restoreDb.ApiKeys.SingleAsync()).RevokedUtc);
             var synology = await restoreDb.HardwareServers.SingleAsync();
             Assert.False(synology.Connected); Assert.Null(synology.ProtectedCommunity);
         } finally { Directory.Delete(root, true); }

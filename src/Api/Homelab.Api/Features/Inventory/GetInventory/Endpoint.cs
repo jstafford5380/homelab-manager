@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<EmptyRequest, Response>
     public override void Configure()
     {
         Get("/api/v1/inventory");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Get Inventory");
         Description(b =>
         {

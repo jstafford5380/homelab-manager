@@ -10,7 +10,7 @@ Related operations and their shared concepts stay together. For example, `Storag
 
 The existing `/api/v1` URLs, JSON shapes, cookie sessions, owner setup, rate limits, and read-only NAS behavior are preserved. `[FromBody]` on a request property keeps an existing JSON body at the root while route/query inputs stay separate. Domain validation retains existing error messages and conflict rules. Slice validators reject null bodies before a handler runs, and framework binding/validation errors use the existing `{ "error": "..." }` response shape.
 
-Mutations still require `X-Homelab-Request: 1`. Database mutations are serialized through `WriteCoordinator`. Operations that perform network calls and acquire their own short leases declare `OwnsWriteLease` metadata, so the global middleware does not hold a writer lease during network waits. New endpoints require authentication unless they explicitly call `AllowAnonymous()`.
+Mutations still require `X-Homelab-Request: 1`. Database mutations are serialized through `WriteCoordinator`. Operations that perform network calls and acquire their own short leases declare `OwnsWriteLease` metadata, so the global middleware does not hold a writer lease during network waits. New endpoints require an owner session unless they explicitly select an API access policy or call `AllowAnonymous()`.
 
 ## OpenAPI, Scalar, and NSwag
 
@@ -56,3 +56,30 @@ dotnet ef migrations has-pending-model-changes --project src/Api/Homelab.Api
 To add a storage integration, implement the storage provider and read session, register it, and wire its settings flow to select its ID. Translate remote responses at the provider boundary into the app's inventory, alert, hardware, and evidence inputs. Preserve the distinction between a successful empty read, unsupported data, and a failed read. Add transport and response translation fixtures for the new provider. Keep remote operations read-only and use explicit allowlists where the transport accepts method names.
 
 Workers own scheduling, configuration revision checks, and evidence persistence. Hardware sources share detected components and collected readings while retaining their own acquisition and timing rules. Extend an existing capability when the data has the same meaning. Add a separate capability when the device reports a different kind of evidence.
+
+## API keys
+
+Settings → API keys issues named, revocable keys with `read` or `read-write` access and a mandatory expiry (1–365 days; UI defaults to 90). The full secret is returned only by issuance. A key contains 256 random secret bits; SQLite stores its SHA-256 hash, identifier, owner reference, scope and lifecycle metadata. Comparison uses `CryptographicOperations.FixedTimeEquals`. Key hashes are not included in list responses, activity records, or OpenAPI response schemas. Keep secrets in a client secret store and send them only over HTTPS:
+
+```http
+Authorization: Bearer <full-key-from-settings>
+X-Homelab-Request: 1
+```
+
+The request guard remains mandatory for all writes, including API key clients. Keys are not accepted from query strings or cookies. When Authorization is supplied, it takes precedence over the browser session, including invalid or insufficient credentials; there is no fallback to a more privileged cookie. Invalid/expired/revoked keys receive 401; insufficient access receives 403. Production HTTPS enforcement applies to API keys too.
+
+`ApiKeyHandler` derives from ASP.NET Core `AuthenticationHandler<AuthenticationSchemeOptions>`. A policy scheme selects it or the existing cookie handler. Named authorization policies use framework requirements:
+
+- `ApiAccess.Read`: owner session or a `read`/`read-write` key.
+- `ApiAccess.Write`: owner session or a `read-write` key. This permits application records and supported collection requests, preserving the read-only NAS contract.
+- `ApiAccess.Owner`: owner session only. Key issuance/list/revocation, session logout, connection configuration/credentials/identity assignment, Synology settings, application settings, notification administration, and backups use this policy.
+
+The default authorization policy is owner-only so new endpoints must deliberately opt into key access. Each current protected operation declares its policy. OpenAPI documents cookie access and, where permitted, bearer-key access as alternatives. The implementation follows Microsoft's [policy scheme](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/policyschemes?view=aspnetcore-10.0) and [authorization policy](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/policies?view=aspnetcore-10.0) guidance, using the ASP.NET Core shared framework and .NET cryptography rather than an additional authentication dependency.
+
+Management endpoints (owner session and the mutation guard required for writes):
+
+- `GET /api/v1/api-keys`: metadata only.
+- `POST /api/v1/api-keys`: `{ "name": "Desktop client", "access": "read", "expiresInDays": 90 }`; 201 returns `{ "key": { ...metadata }, "secret": "..." }` with `Cache-Control: no-store`. At most 100 unexpired, unrevoked keys may exist.
+- `DELETE /api/v1/api-keys/{id}`: idempotently revoke a known key; 204, or 404 if it does not exist.
+
+Revocation and expiry are checked against SQLite for every authentication. Requests already authenticated before revocation may finish. Last-used time is recorded at most once every five minutes to limit writes. Key-originated application changes use a distinct actor containing key name and ID. Restart preserves issued keys; the supported backup restore script revokes every restored key so an old archive cannot reactivate a credential revoked later. Reissue keys after restore.

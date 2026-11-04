@@ -108,3 +108,6 @@ PUT /api/v1/storage/drives/{id:guid}/location
 PUT /api/v1/storage/drives/{id:guid}/nickname
 PUT /api/v1/storage/drives/{id:guid}/profile
 GET /api/v1/storage/export.csv
+GET /api/v1/api-keys
+POST /api/v1/api-keys
+DELETE /api/v1/api-keys/{id:guid}

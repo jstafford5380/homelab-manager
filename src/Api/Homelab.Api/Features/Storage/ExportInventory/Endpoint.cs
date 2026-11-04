@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : EndpointWithoutRequest
     public override void Configure()
     {
         Get("/api/v1/storage/export.csv");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Export complete saved storage inventory as a restorable CSV");
         Description(b => {
             b.WithName("StorageExportInventory").WithTags("Storage");

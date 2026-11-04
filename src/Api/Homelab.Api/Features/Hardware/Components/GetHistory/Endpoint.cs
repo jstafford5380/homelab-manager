@@ -8,7 +8,7 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config) : Endpoint<Req
     public override void Configure()
     {
         Get("/api/v1/hardware/servers/{id:guid}/components/{componentId:guid}/history");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Get History");
         Description(b =>
         {

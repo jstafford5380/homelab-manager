@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Response>
     public override void Configure()
     {
         Get("/api/v1/connections/{id:guid}/pools/{guid}/scans");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Read);
         Summary(s => s.Summary = "Get Scan History");
         Description(b =>
         {

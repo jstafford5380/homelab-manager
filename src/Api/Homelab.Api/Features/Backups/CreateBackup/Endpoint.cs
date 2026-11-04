@@ -7,7 +7,7 @@ public sealed class Endpoint(HomelabDb db, BackupService backups) : Endpoint<Emp
     public override void Configure()
     {
         Post("/api/v1/backups");
-        AuthSchemes(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        Policies(ApiAccess.Owner);
         Summary(s => s.Summary = "Create Backup");
         Description(b =>
         {
