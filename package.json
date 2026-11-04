@@ -11,6 +11,9 @@
     "test": "dotnet test src/Api/Homelab.sln",
     "test:web": "cd src/Web && npx playwright test",
     "lint": "npm --prefix src/Web run lint",
-    "gallery": "node scripts/gallery.mjs"
+    "gallery": "node scripts/gallery.mjs",
+    "lint:fix": "npm --prefix src/Web run lint:fix",
+    "typecheck": "npm --prefix src/Web run typecheck",
+    "check:web": "npm --prefix src/Web run check"
   }
 }

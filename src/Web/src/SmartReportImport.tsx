@@ -1,5 +1,5 @@
 import { useDisplayFormat } from "./displayPreferences";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -168,7 +168,7 @@ export function SmartReportImport({
   const [historyPage, setHistoryPage] = useState<{ asOf: string; nextOffset: number | null } | null>(null);
   const [historyBusy, setHistoryBusy] = useState(false);
   const historyRequest = useRef<AbortController | null>(null);
-  async function loadHistory(older = false) {
+  const loadHistory = useCallback(async (cursor?: { asOf: string; nextOffset: number | null }) => {
     historyRequest.current?.abort();
     const controller = new AbortController();
     historyRequest.current = controller;
@@ -176,7 +176,7 @@ export function SmartReportImport({
     setHistoryBusy(true);
     setHistoryError("");
     try {
-      const query = older && historyPage ? `?asOf=${encodeURIComponent(historyPage.asOf)}&offset=${historyPage.nextOffset}` : "";
+      const query = cursor ? `?asOf=${encodeURIComponent(cursor.asOf)}&offset=${cursor.nextOffset}` : "";
       const response = await fetch(`/api/v1/disks/${disk.id}/smart-reports/history${query}`, { signal: controller.signal });
       if (!response.ok) throw new Error();
       const page = await response.json();
@@ -192,7 +192,7 @@ export function SmartReportImport({
       clearTimeout(timer);
       if (historyRequest.current === controller) setHistoryBusy(false);
     }
-  }
+  }, [disk.id]);
   useEffect(() => {
     setHistory([]);
     setHistoryPage(null);
@@ -202,7 +202,7 @@ export function SmartReportImport({
       historyRequest.current?.abort();
       historyRequest.current = null;
     };
-  }, [open, disk.id]);
+  }, [open, disk.id, loadHistory]);
   function edit() {
     setPreview(null);
     setSerial("");
@@ -439,7 +439,7 @@ export function SmartReportImport({
                 <ReportDetails report={saved.report} />
               </details>
             ))}
-            {historyPage?.nextOffset !== null && historyPage && <Button variant="outline" disabled={historyBusy} onClick={() => void loadHistory(true)}>Older reports</Button>}
+            {historyPage?.nextOffset !== null && historyPage && <Button variant="outline" disabled={historyBusy} onClick={() => void loadHistory(historyPage)}>Older reports</Button>}
             {historyPage && historyPage.nextOffset === null && history.length > 0 && <p className="muted">End of saved report history.</p>}
 
           </details>

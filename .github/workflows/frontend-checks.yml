@@ -1,0 +1,27 @@
+name: Frontend checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-checks:
+    name: Lint and type-check React
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Web/package-lock.json
+      - name: Install frontend dependencies
+        run: npm run install:web
+      - name: Lint and type-check
+        run: npm run check:web
