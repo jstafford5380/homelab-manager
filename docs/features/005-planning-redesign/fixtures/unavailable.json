@@ -1,0 +1,54 @@
+{
+  "review": null,
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z",
+    "error": "Drive reviews couldn't be loaded. The server returned 503."
+  }
+}

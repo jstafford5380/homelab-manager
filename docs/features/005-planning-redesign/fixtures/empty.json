@@ -1,0 +1,16 @@
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:52:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 0,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [],
+    "spares": [],
+    "budgets": []
+  },
+  "plans": [],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z"
+  }
+}

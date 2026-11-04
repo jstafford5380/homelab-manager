@@ -1,0 +1,1347 @@
+<!doctype html>
+<!--
+  005 · Planning redesign. Mock built from docs/features/_template.
+
+  - Design tokens are copied from src/Web/src/index.css. The tokens marked "Proposed (005.08)" are new.
+  - Mock-only chrome (the toolbar) lives in .mock-toolbar. Everything inside #app is the design.
+  - The page is rendered by script from the inline fixtures (one per state), which mirror fixtures/<state>.json.
+    `_mock` in a fixture holds mock-only values: the fixed "now", error and stale text, and which dialog is open.
+  - Responsive rules use @container app so the Width switcher reflows the design.
+    Map them to the app's @media breakpoints (1100px, 700px).
+  - The [data-tip] hover box stands in for shadcn Tooltip.
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>005 Planning redesign · Mock</title>
+<style>
+  :root {
+    color-scheme: light;
+    --background: #ffffff; --foreground: #1f2933; --card: #ffffff; --card-foreground: #1f2933;
+    --primary: #24303d; --primary-foreground: #ffffff; --secondary: #eef1f4; --muted: #f1f3f5;
+    --muted-foreground: #56616d; --border: #e1e5ea; --input: #7d8794; --ring: #3d5f86;
+    --page: #f6f7f8; --surface-soft: #f3f5f7; --surface-stripe: #fafbfc; --text-secondary: var(--muted-foreground);
+    --error-background: #fff0ed; --error-border: #f3d1c7; --error-foreground: #9e4938;
+    --warning-background: #fff6e8; --warning-border: #dfc9a0; --warning-foreground: #69471e;
+    --tone-ok: #1e6b45; --tone-ok-bg: #e7f4ec; --tone-ok-border: #bcdcc8;
+    --tone-warn: #7a4a0e; --tone-warn-bg: #fff4e0; --tone-warn-border: #e6c98f;
+    --tone-bad: #a1301f; --tone-bad-bg: #fdece8; --tone-bad-border: #efc0b5;
+    --tone-neutral: #56616d; --tone-neutral-bg: #f1f3f5; --tone-neutral-border: #8a95a1;
+    --tone-info: #3f6487; --link: #3d5f86;
+    /* Proposed (005.08) */
+    --tone-info-bg: #e9f1f9; --tone-info-border: #bcd1e6;
+    --tone-progress: #5a4699; --tone-progress-bg: #f1edfb; --tone-progress-border: #cdc2ec;
+    --bar-bad: #c2412d; --bar-warn: #d08a1c; --bar-info: #4d7cab; --bar-progress: #7a62c4; --bar-ok: #2f8a5c; --bar-track: #e8ecf0;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --background: #14181c; --foreground: #e6e9ed; --card: #1a1f24; --card-foreground: #e6e9ed;
+    --primary: #dfe5ec; --primary-foreground: #14181c; --secondary: #262d35; --muted: #1f252b;
+    --muted-foreground: #a7b0ba; --border: #353d46; --input: #7f8a96; --ring: #9dbad8;
+    --page: #0f1215; --surface-soft: #1f252b; --surface-stripe: #1d2227;
+    --error-background: #38221e; --error-border: #a46b5f; --error-foreground: #ffc1b5;
+    --warning-background: #34291b; --warning-border: #82683e; --warning-foreground: #f3d4a0;
+    --tone-ok: #8fd9b1; --tone-ok-bg: #142a20; --tone-ok-border: #2c5a43;
+    --tone-warn: #f3cf92; --tone-warn-bg: #33281a; --tone-warn-border: #6e5531;
+    --tone-bad: #ffb4a6; --tone-bad-bg: #3a201b; --tone-bad-border: #7a3f34;
+    --tone-neutral: #a7b0ba; --tone-neutral-bg: #1f252b; --tone-neutral-border: #56606b;
+    --tone-info: #9dbad8; --link: #9dbad8;
+    --tone-info-bg: #16222e; --tone-info-border: #34506c;
+    --tone-progress: #c7b8f6; --tone-progress-bg: #221d36; --tone-progress-border: #4c4176;
+    --bar-bad: #e0725f; --bar-warn: #e3a948; --bar-info: #78a3cf; --bar-progress: #9f88e6; --bar-ok: #5fbf8c; --bar-track: #2a3139;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--foreground); background: var(--page); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+  h1, h2, h3, p, ul { margin: 0; }
+  ul { padding: 0; list-style: none; }
+  h1 { font-size: 30px; letter-spacing: -1px; font-weight: 600; }
+  h2 { font-size: 17px; font-weight: 600; }
+  h3 { font-size: 15px; font-weight: 600; }
+  small, .muted { color: var(--text-secondary); font-size: 12px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-secondary); }
+  .num { font-variant-numeric: tabular-nums; }
+  .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 600; color: var(--text-secondary); }
+  .card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground); white-space: nowrap; text-decoration: none !important; }
+  .btn.outline { background: var(--background); color: var(--foreground); border-color: var(--border); }
+  .btn.ghost { background: transparent; color: var(--foreground); }
+  .btn.ghost:hover, .btn.outline:hover { background: var(--secondary); }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 13px; }
+  .btn.danger { background: var(--bar-bad); color: #fff; }
+  .btn svg { width: 15px; height: 15px; }
+  .btn:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .tone-ok { --tone: var(--tone-ok); --tone-bg: var(--tone-ok-bg); --tone-border: var(--tone-ok-border); --bar: var(--bar-ok); }
+  .tone-warn { --tone: var(--tone-warn); --tone-bg: var(--tone-warn-bg); --tone-border: var(--tone-warn-border); --bar: var(--bar-warn); }
+  .tone-bad { --tone: var(--tone-bad); --tone-bg: var(--tone-bad-bg); --tone-border: var(--tone-bad-border); --bar: var(--bar-bad); }
+  .tone-neutral { --tone: var(--tone-neutral); --tone-bg: var(--tone-neutral-bg); --tone-border: var(--tone-neutral-border); --bar: var(--tone-neutral-border); }
+  .tone-info { --tone: var(--tone-info); --tone-bg: var(--tone-info-bg); --tone-border: var(--tone-info-border); --bar: var(--bar-info); }
+  .tone-progress { --tone: var(--tone-progress); --tone-bg: var(--tone-progress-bg); --tone-border: var(--tone-progress-border); --bar: var(--bar-progress); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); white-space: nowrap; }
+  .pill svg.i { width: 13px; height: 13px; }
+  .pill.dashed { border-style: dashed; background: transparent; }
+  a.pill:hover { text-decoration: none; filter: brightness(.97); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bar); display: inline-block; flex: none; }
+
+  /* Tooltip stand-in for shadcn Tooltip */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after, [data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; width: max-content; max-width: 300px; white-space: normal; padding: 7px 10px; border-radius: 6px; background: var(--primary); color: var(--primary-foreground); font-size: 12px; font-weight: 400; line-height: 1.45; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
+
+  /* Mock frame */
+  #app { container: app / inline-size; margin: 0 auto; padding: 36px 38px 48px; max-width: 1440px; }
+  html[data-width="tablet"] #app { max-width: 900px; }
+  html[data-width="mobile"] #app { max-width: 390px; padding: 24px 16px; }
+  html[data-width="tablet"] body, html[data-width="mobile"] body { background: var(--muted); }
+  html[data-width="tablet"] #app, html[data-width="mobile"] #app { background: var(--page); min-height: calc(100vh - 49px); box-shadow: 0 0 0 1px var(--border); }
+  .mock-toolbar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: #1b1f1d; color: #e8ece9; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .mock-toolbar strong { margin-right: auto; }
+  .mock-toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+  .mock-toolbar select { font: inherit; background: #2b312e; color: inherit; border: 1px solid #47504b; border-radius: 4px; padding: 3px 6px; }
+
+  /* ---- Page ---- */
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .page-head p.muted { font-size: 14px; margin-top: 6px; }
+  .stack { display: flex; flex-direction: column; gap: 24px; }
+
+  /* 005.01 Summary strip */
+  .summary { display: grid; grid-template-columns: 1.3fr 1fr 1fr; }
+  .summary > div { padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .summary > div + div { border-left: 1px solid var(--border); }
+  .summary .label { font-size: 12px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+  .summary .big { font-size: 26px; font-weight: 600; letter-spacing: -.5px; line-height: 1.1; }
+  .summary .big small { font-size: 13px; font-weight: 500; letter-spacing: 0; margin-left: 4px; }
+  .bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--bar-track); gap: 2px; }
+  .bar > span { background: var(--bar); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+  .legend a, .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--foreground); }
+  .chips-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* Body grid */
+  .body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+  .rail { display: flex; flex-direction: column; gap: 24px; padding-top: 38px; }
+  .plan .foot { flex-wrap: wrap; }
+  .review.tone-bad { background: linear-gradient(90deg, var(--tone-bg), transparent 55%); }
+  .section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .section-title h2 { display: flex; align-items: center; gap: 10px; }
+  .count { font-size: 12px; font-weight: 600; padding: 0 8px; border-radius: 99px; background: var(--secondary); color: var(--text-secondary); }
+
+  /* 005.02 Review queue */
+  .queue { overflow: hidden; }
+  .review { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 14px; padding: 16px 18px; align-items: start; }
+  .review + .review { border-top: 1px solid var(--border); }
+  .review.tone-bad { background: linear-gradient(90deg, var(--tone-bg), transparent 70%); }
+  .review.compact { padding-block: 11px; align-items: center; }
+  .tile { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: var(--tone-bg); color: var(--tone); border: 1px solid var(--tone-border); }
+  .compact .tile { width: 28px; height: 28px; border-radius: 7px; margin-inline: 4px; }
+  .compact .tile svg.i { width: 14px; height: 14px; }
+  .review-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .compact .review-main { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+  .review-head { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; }
+  .review-head .prio { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--tone); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 9px; border-radius: 6px; background: var(--tone-bg); color: var(--tone); border: 1px solid var(--tone-border); cursor: default; }
+  .chip.dashed { border-style: dashed; background: transparent; }
+  .chip svg.i { width: 13px; height: 13px; }
+  .chip a { font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .next { font-size: 13px; }
+  .next b { font-weight: 600; }
+  .review-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .compact .review-side { flex-direction: row; align-items: center; }
+  .review-side .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .fit { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .banner { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--tone-border); background: var(--tone-bg); color: var(--tone); margin-bottom: 12px; flex-wrap: wrap; }
+  .banner p { flex: 1; min-width: 200px; font-size: 13px; }
+  .banner b { font-weight: 600; }
+  .quiet { display: flex; gap: 14px; align-items: center; padding: 18px; }
+  .quiet p + p { margin-top: 2px; }
+
+  /* 005.05 Plans board */
+  .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .col { border-radius: 12px; background: var(--surface-soft); padding: 12px; display: flex; flex-direction: column; gap: 10px; border-top: 3px solid var(--bar); }
+  .col-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; padding: 2px 4px; }
+  .col-head .count { margin-left: auto; background: var(--card); }
+  .plan { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .plan h3 { font-size: 14px; line-height: 1.35; text-wrap: balance; }
+  .plan .notes { font-size: 12.5px; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .plan .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .plan .foot { display: flex; align-items: center; gap: 8px; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
+  .plan .money { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .plan.done { padding: 10px 14px; gap: 4px; }
+  .plan.done h3 { font-weight: 500; }
+  .col-empty { font-size: 12.5px; color: var(--text-secondary); padding: 10px 6px; text-align: center; }
+
+  /* 005.06 Rail */
+  .rail .card { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .rail h2 { font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .spare { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .qty { height: 40px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; font-size: 17px; background: var(--tone-bg); color: var(--tone); border: 1px solid var(--tone-border); font-variant-numeric: tabular-nums; }
+  .spare b { font-weight: 600; display: block; font-size: 13.5px; }
+  .spend-row { display: flex; justify-content: space-between; font-size: 13px; }
+  .spend-row span { display: inline-flex; align-items: center; gap: 6px; }
+  .rail .foot-link { font-size: 13px; font-weight: 500; display: inline-flex; gap: 4px; align-items: center; }
+
+  .rules { font-size: 12px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 4px 16px; padding-top: 4px; }
+  .rules b { color: var(--foreground); font-weight: 600; }
+
+  /* Empty / onboarding */
+  .onboard { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .onboard .card { padding: 20px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .onboard .tile { width: 40px; height: 40px; }
+  .onboard p { font-size: 13px; color: var(--text-secondary); flex: 1; }
+
+  /* Skeleton */
+  .sk { background: linear-gradient(90deg, var(--muted), var(--surface-stripe), var(--muted)); background-size: 200% 100%; animation: sk 1.4s infinite linear; border-radius: 6px; }
+  @keyframes sk { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+  /* Dialog (005.09) */
+  .scrim { position: fixed; inset: 0; background: rgb(10 14 18 / .45); z-index: 25; display: grid; place-items: center; padding: 16px; }
+  .dialog { width: 100%; max-width: 520px; max-height: calc(100vh - 80px); overflow: auto; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgb(0 0 0 / .25); }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 500; }
+  .input { height: 36px; border: 1px solid var(--input); border-radius: 6px; padding: 0 10px; font: inherit; background: var(--background); color: var(--foreground); display: flex; align-items: center; justify-content: space-between; }
+  textarea.input { height: 70px; padding: 8px 10px; resize: vertical; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .attached { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--surface-stripe); }
+  .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Responsive (app: 1100px / 700px) */
+  @container app (max-width: 1100px) {
+    .body { grid-template-columns: minmax(0, 1fr); }
+    .rail { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding-top: 0; }
+  }
+  @container app (max-width: 700px) {
+    .summary { grid-template-columns: 1fr 1fr; }
+    .summary > div:first-child { grid-column: 1 / -1; }
+    .summary > div:nth-child(2) { border-left: 0; }
+    .summary > div:nth-child(n+2) { border-top: 1px solid var(--border); }
+    .summary .big { font-size: 22px; }
+    .rail, .board, .onboard { grid-template-columns: minmax(0, 1fr); }
+    .review { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 14px; }
+    .review .tile { width: 28px; height: 28px; border-radius: 7px; margin: 0; }
+    .review-side, .compact .review-side { grid-column: 2; align-items: flex-start; flex-direction: column; }
+    .review-side .row { justify-content: flex-start; }
+    .grid2 { grid-template-columns: 1fr; }
+    h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-issue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 15 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-drive" viewBox="0 0 24 24"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M6 16h.01M10 16h.01"/></symbol>
+  <symbol id="i-pkg" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+
+<div class="mock-toolbar" role="region" aria-label="Mock controls (not part of the design)">
+  <strong>MOCK · 005 Planning redesign</strong>
+  <label>State <select id="mock-state"></select></label>
+  <label>Width <select id="mock-width"><option value="desktop">Desktop</option><option value="tablet">Tablet 900</option><option value="mobile">Mobile 390</option></select></label>
+  <label>Theme <select id="mock-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+</div>
+
+<main id="app"></main>
+
+<!-- Inline copies of fixtures/*.json. Keep in sync. -->
+<script type="application/json" data-fixture="normal">
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:52:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 14,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [
+      {
+        "diskId": "d1",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z9K21",
+        "location": "tank · raidz2-0",
+        "priority": "media",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-101",
+            "summary": "12 pending sectors, up from 0",
+            "detail": "Pending sectors increased: 0 → 12 between Oct 28 and Nov 4. Last recorded Nov 4, 16:40; state open."
+          },
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-08-14",
+            "detail": "Recorded warranty ended 2026-08-14. Confirm terms and purchase records before budgeting."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2019-03-02",
+            "confidence": "estimated",
+            "detail": "Estimated purchase date 2019-03-02 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": {
+          "id": "p1",
+          "status": "ordered"
+        },
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d2",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K3QX9",
+        "location": "tank · raidz2-1",
+        "priority": "issue",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-102",
+            "summary": "3 checksum errors in latest scrub",
+            "detail": "ZFS reported 3 checksum errors on this member during the Nov 2 scrub. A transport error alone does not establish failed media."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d3",
+        "model": "Samsung SSD 870 EVO 1TB",
+        "label": "Samsung 870 EVO 1 TB",
+        "serial": "S6PNNX0T412345",
+        "location": "boot-pool",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-12-20",
+            "detail": "Recorded warranty ends 2026-12-20, within the 90-day notice window. Review coverage and purchase records."
+          }
+        ],
+        "openPlan": {
+          "id": "p3",
+          "status": "planned"
+        },
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d4",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z4410",
+        "location": "tank · raidz2-0",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "age-unknown",
+            "detail": "Purchase date is unknown. Add a receipt or an explicitly estimated date; first discovery is not purchase or installation date."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d5",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K2PL0",
+        "location": "last seen in tank · raidz2-1",
+        "priority": "prepare",
+        "present": false,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "absent",
+            "detail": "This drive was absent from the last inventory snapshot. Verify its current location and identity before planning a physical action."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2021-05-18",
+            "confidence": "receipt",
+            "detail": "Receipt purchase date 2021-05-18 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      }
+    ],
+    "spares": [
+      {
+        "id": "s1",
+        "name": "WD Red Plus 8 TB (WD80EFPX)",
+        "quantity": 1,
+        "estimatedUnitCost": 189.99,
+        "currency": "USD",
+        "compatibleDriveCount": 2
+      },
+      {
+        "id": "s2",
+        "name": "Crucial MX500 1 TB",
+        "quantity": 2,
+        "estimatedUnitCost": 64,
+        "currency": "USD",
+        "compatibleDriveCount": 0
+      }
+    ],
+    "budgets": [
+      {
+        "currency": "USD",
+        "planned": 79,
+        "ordered": 189.99,
+        "withoutEstimate": 1,
+        "count": 3
+      }
+    ]
+  },
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z"
+  }
+}
+</script>
+<script type="application/json" data-fixture="calm">
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:52:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 14,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [],
+    "spares": [
+      {
+        "id": "s1",
+        "name": "WD Red Plus 8 TB (WD80EFPX)",
+        "quantity": 1,
+        "estimatedUnitCost": 189.99,
+        "currency": "USD",
+        "compatibleDriveCount": 2
+      },
+      {
+        "id": "s2",
+        "name": "Crucial MX500 1 TB",
+        "quantity": 2,
+        "estimatedUnitCost": 64,
+        "currency": "USD",
+        "compatibleDriveCount": 0
+      }
+    ],
+    "budgets": [
+      {
+        "currency": "USD",
+        "planned": 0,
+        "ordered": 0,
+        "withoutEstimate": 1,
+        "count": 1
+      }
+    ]
+  },
+  "plans": [
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z"
+  }
+}
+</script>
+<script type="application/json" data-fixture="empty">
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:52:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 0,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [],
+    "spares": [],
+    "budgets": []
+  },
+  "plans": [],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z"
+  }
+}
+</script>
+<script type="application/json" data-fixture="loading">
+{
+  "review": null,
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z"
+  }
+}
+</script>
+<script type="application/json" data-fixture="unavailable">
+{
+  "review": null,
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z",
+    "error": "Drive reviews couldn't be loaded. The server returned 503."
+  }
+}
+</script>
+<script type="application/json" data-fixture="stale">
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:31:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 14,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [
+      {
+        "diskId": "d1",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z9K21",
+        "location": "tank · raidz2-0",
+        "priority": "media",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-101",
+            "summary": "12 pending sectors, up from 0",
+            "detail": "Pending sectors increased: 0 → 12 between Oct 28 and Nov 4. Last recorded Nov 4, 16:40; state open."
+          },
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-08-14",
+            "detail": "Recorded warranty ended 2026-08-14. Confirm terms and purchase records before budgeting."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2019-03-02",
+            "confidence": "estimated",
+            "detail": "Estimated purchase date 2019-03-02 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": {
+          "id": "p1",
+          "status": "ordered"
+        },
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d2",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K3QX9",
+        "location": "tank · raidz2-1",
+        "priority": "issue",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-102",
+            "summary": "3 checksum errors in latest scrub",
+            "detail": "ZFS reported 3 checksum errors on this member during the Nov 2 scrub. A transport error alone does not establish failed media."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d3",
+        "model": "Samsung SSD 870 EVO 1TB",
+        "label": "Samsung 870 EVO 1 TB",
+        "serial": "S6PNNX0T412345",
+        "location": "boot-pool",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-12-20",
+            "detail": "Recorded warranty ends 2026-12-20, within the 90-day notice window. Review coverage and purchase records."
+          }
+        ],
+        "openPlan": {
+          "id": "p3",
+          "status": "planned"
+        },
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d4",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z4410",
+        "location": "tank · raidz2-0",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "age-unknown",
+            "detail": "Purchase date is unknown. Add a receipt or an explicitly estimated date; first discovery is not purchase or installation date."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d5",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K2PL0",
+        "location": "last seen in tank · raidz2-1",
+        "priority": "prepare",
+        "present": false,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "absent",
+            "detail": "This drive was absent from the last inventory snapshot. Verify its current location and identity before planning a physical action."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2021-05-18",
+            "confidence": "receipt",
+            "detail": "Receipt purchase date 2021-05-18 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      }
+    ],
+    "spares": [
+      {
+        "id": "s1",
+        "name": "WD Red Plus 8 TB (WD80EFPX)",
+        "quantity": 1,
+        "estimatedUnitCost": 189.99,
+        "currency": "USD",
+        "compatibleDriveCount": 2
+      },
+      {
+        "id": "s2",
+        "name": "Crucial MX500 1 TB",
+        "quantity": 2,
+        "estimatedUnitCost": 64,
+        "currency": "USD",
+        "compatibleDriveCount": 0
+      }
+    ],
+    "budgets": [
+      {
+        "currency": "USD",
+        "planned": 79,
+        "ordered": 189.99,
+        "withoutEstimate": 1,
+        "count": 3
+      }
+    ]
+  },
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z",
+    "stale": "Refresh failed at 4:58 PM."
+  }
+}
+</script>
+<script type="application/json" data-fixture="dialog">
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:52:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 14,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [
+      {
+        "diskId": "d1",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z9K21",
+        "location": "tank · raidz2-0",
+        "priority": "media",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-101",
+            "summary": "12 pending sectors, up from 0",
+            "detail": "Pending sectors increased: 0 → 12 between Oct 28 and Nov 4. Last recorded Nov 4, 16:40; state open."
+          },
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-08-14",
+            "detail": "Recorded warranty ended 2026-08-14. Confirm terms and purchase records before budgeting."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2019-03-02",
+            "confidence": "estimated",
+            "detail": "Estimated purchase date 2019-03-02 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": {
+          "id": "p1",
+          "status": "ordered"
+        },
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d2",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K3QX9",
+        "location": "tank · raidz2-1",
+        "priority": "issue",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-102",
+            "summary": "3 checksum errors in latest scrub",
+            "detail": "ZFS reported 3 checksum errors on this member during the Nov 2 scrub. A transport error alone does not establish failed media."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d3",
+        "model": "Samsung SSD 870 EVO 1TB",
+        "label": "Samsung 870 EVO 1 TB",
+        "serial": "S6PNNX0T412345",
+        "location": "boot-pool",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-12-20",
+            "detail": "Recorded warranty ends 2026-12-20, within the 90-day notice window. Review coverage and purchase records."
+          }
+        ],
+        "openPlan": {
+          "id": "p3",
+          "status": "planned"
+        },
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d4",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z4410",
+        "location": "tank · raidz2-0",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "age-unknown",
+            "detail": "Purchase date is unknown. Add a receipt or an explicitly estimated date; first discovery is not purchase or installation date."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d5",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K2PL0",
+        "location": "last seen in tank · raidz2-1",
+        "priority": "prepare",
+        "present": false,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "absent",
+            "detail": "This drive was absent from the last inventory snapshot. Verify its current location and identity before planning a physical action."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2021-05-18",
+            "confidence": "receipt",
+            "detail": "Receipt purchase date 2021-05-18 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      }
+    ],
+    "spares": [
+      {
+        "id": "s1",
+        "name": "WD Red Plus 8 TB (WD80EFPX)",
+        "quantity": 1,
+        "estimatedUnitCost": 189.99,
+        "currency": "USD",
+        "compatibleDriveCount": 2
+      },
+      {
+        "id": "s2",
+        "name": "Crucial MX500 1 TB",
+        "quantity": 2,
+        "estimatedUnitCost": 64,
+        "currency": "USD",
+        "compatibleDriveCount": 0
+      }
+    ],
+    "budgets": [
+      {
+        "currency": "USD",
+        "planned": 79,
+        "ordered": 189.99,
+        "withoutEstimate": 1,
+        "count": 3
+      }
+    ]
+  },
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z",
+    "dialog": "d2"
+  }
+}
+</script>
+
+<script>
+const FIX = Object.fromEntries([...document.querySelectorAll("[data-fixture]")].map(el => [el.dataset.fixture, JSON.parse(el.textContent)]));
+const BASE = FIX.normal;
+const STATES = { normal: "Normal (mixed)", calm: "Calm (no reviews)", empty: "Empty (new install)", loading: "Loading reviews", unavailable: "Reviews unavailable", stale: "Stale reviews", dialog: "Create plan dialog" };
+
+const NOW = Date.parse(BASE._mock.now);
+const DAY = 86400000;
+const ic = (id, cls = "i") => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+const money = (v, c = "USD") => new Intl.NumberFormat("en-US", { style: "currency", currency: c }).format(v);
+const date = s => new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const dateY = s => new Date(s).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+const time = s => new Date(s).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+const PRIO = {
+  media:   { tone: "bad",  icon: "alert", label: "Media evidence", next: "Check recovery readiness, then line up a compatible replacement.", action: "Plan replacement", btn: "" },
+  issue:   { tone: "warn", icon: "issue", label: "Observed issue", next: "Review the evidence and the drive's path (cable, port, backplane) before deciding.", action: "Plan a review", btn: "outline" },
+  prepare: { tone: "info", icon: "cal",   label: "Prepare ahead",  next: "", action: "Add to plan", btn: "outline" },
+};
+const STATUS = {
+  planned:  { tone: "info", icon: "list", label: "Planned", advance: "Mark ordered" },
+  ordered:  { tone: "progress", icon: "truck", label: "Ordered", advance: "Mark done" },
+  complete: { tone: "ok", icon: "check", label: "Done", advance: "" },
+};
+
+function reasonChip(r, prio) {
+  const tip = `data-tip="${esc(r.detail)}" tabindex="0"`;
+  switch (r.kind) {
+    case "finding": return `<li class="chip tone-${PRIO[prio].tone}" ${tip}>${ic(PRIO[prio].icon)}${esc(r.summary)} <a href="#finding-${r.findingId}">Evidence</a></li>`;
+    case "warranty": {
+      const ended = Date.parse(r.endsUtc) < NOW;
+      const days = Math.ceil((Date.parse(r.endsUtc) - NOW) / DAY);
+      return ended ? `<li class="chip tone-neutral" ${tip}>${ic("shield")}Out of warranty since ${dateY(r.endsUtc)}</li>`
+                   : `<li class="chip tone-warn" ${tip}>${ic("shield")}Warranty ends ${date(r.endsUtc)} · ${days} days</li>`;
+    }
+    case "age-review": {
+      const yrs = Math.floor((NOW - Date.parse(r.purchasedUtc)) / (365.25 * DAY));
+      return `<li class="chip tone-info" ${tip}>${ic("clock")}${yrs} years since purchase${r.confidence === "estimated" ? " (estimated)" : ""}</li>`;
+    }
+    case "age-unknown": return `<li class="chip dashed tone-neutral" ${tip}>${ic("help")}Purchase date unknown <a href="#hardware">Add date</a></li>`;
+    case "absent": return `<li class="chip tone-warn" ${tip}>${ic("pin")}Missing from last inventory <a href="#storage">Locate</a></li>`;
+    case "ambiguous": return `<li class="chip tone-warn" ${tip}>${ic("help")}Identity ambiguous <a href="#storage">Resolve</a></li>`;
+  }
+  return "";
+}
+
+function spareFit(f, hasSpares) {
+  if (f.status === "compatible") return `<span class="fit"><span class="pill tone-ok" data-tip="Your compatibility check. Review again by ${date(f.validUntilUtc)}. A check doesn't reserve a unit." tabindex="0">${ic("check")}Spare fits · ${esc(f.assetName)}</span></span>`;
+  if (f.status === "incompatible") return `<span class="fit"><span class="pill tone-bad">${ic("x")}Spare doesn't fit</span></span>`;
+  if (f.status === "expired") return `<span class="fit"><span class="pill tone-warn">${ic("clock")}Spare check expired</span></span>`;
+  if (!hasSpares) return `<span class="fit"><span class="pill dashed tone-neutral">${ic("pkg")}No spares recorded</span></span>`;
+  return `<span class="fit"><span class="pill dashed tone-neutral">${ic("pkg")}Spare not checked</span></span>`;
+}
+
+function reviewRow(r, hasSpares) {
+  const p = PRIO[r.priority];
+  const compact = r.priority === "prepare";
+  const planned = r.openPlan ? STATUS[r.openPlan.status] : null;
+  const primary = planned
+    ? `<a class="pill tone-${planned.tone}" href="#plan-${r.openPlan.id}">${ic(planned.icon)}In plan · ${planned.label}</a>`
+    : `<button class="btn sm ${p.btn}">${r.priority === "media" ? ic("plus") : ""}${p.action}</button>`;
+  const spareBtn = hasSpares && r.spareFit.status !== "compatible" && !compact ? `<button class="btn sm ghost">${ic("pkg")}Check a spare</button>` : "";
+  const chips = `<ul class="chips-row">${r.reasons.map(x => reasonChip(x, r.priority)).join("")}</ul>`;
+  const head = `<div class="review-head">${compact ? "" : `<span class="prio">${p.label}</span>`}<h3>${esc(r.label)}</h3><span class="mono">${esc(r.serial)}</span>${compact ? "" : `<small>${esc(r.location)}</small>`}</div>`;
+  return `<article class="review tone-${p.tone}${compact ? " compact" : ""}" aria-label="${esc(r.label)} ${esc(r.serial)}, ${p.label}">
+    <div class="tile" aria-hidden="true">${ic(p.icon)}</div>
+    <div class="review-main">${head}${chips}${p.next ? `<p class="next"><b>Next:</b> ${p.next}</p>` : ""}</div>
+    <div class="review-side">${compact ? primary : `<div class="row">${spareBtn}${primary}</div>${spareFit(r.spareFit, hasSpares)}`}</div>
+  </article>`;
+}
+
+function summary(f) {
+  const rv = f.review;
+  const open = f.plans.filter(p => p.status !== "complete");
+  const overdue = open.filter(p => p.dueUtc && Date.parse(p.dueUtc) < NOW).length;
+  const soon = open.filter(p => p.dueUtc && Date.parse(p.dueUtc) >= NOW && Date.parse(p.dueUtc) - NOW <= 14 * DAY).length;
+  let drives;
+  if (!rv) {
+    drives = f._mock.error
+      ? `<div><span class="label">Drives to review</span><span class="big">Unknown</span><span class="pill tone-bad" style="align-self:flex-start">${ic("alert")}Reviews unavailable</span></div>`
+      : `<div><span class="label">Drives to review</span><span class="sk" style="height:28px;width:120px"></span><span class="sk" style="height:8px"></span><span class="sk" style="height:12px;width:70%"></span></div>`;
+  } else {
+    const c = k => rv.reviews.filter(r => r.priority === k).length;
+    const n = rv.reviews.length;
+    const seg = (k, tone) => c(k) ? `<span class="tone-${tone}" style="flex:${c(k)}"></span>` : "";
+    drives = `<div><span class="label">Drives to review ${f._mock.stale ? `<span class="pill tone-warn">${ic("clock")}Out of date</span>` : ""}</span>
+      <span class="big num">${n}<small>of ${rv.trackedDriveCount} tracked</small></span>
+      <div class="bar" role="img" aria-label="${c("media")} media evidence, ${c("issue")} observed issue, ${c("prepare")} prepare ahead">${seg("media", "bad")}${seg("issue", "warn")}${seg("prepare", "info")}</div>
+      <div class="legend">${n ? `<a href="#queue" class="tone-bad"><i class="dot"></i>${c("media")} media evidence</a><a href="#queue" class="tone-warn"><i class="dot"></i>${c("issue")} observed issue</a><a href="#queue" class="tone-info"><i class="dot"></i>${c("prepare")} prepare ahead</a>` : `<span>No reminders from the current rules</span>`}</div></div>`;
+  }
+  const plans = `<div><span class="label">Open plans</span><span class="big num">${open.length}</span>
+    <div class="chips-row">${overdue ? `<a class="pill tone-bad" href="#plans">${ic("clock")}${overdue} overdue</a>` : ""}${soon ? `<a class="pill tone-warn" href="#plans">${ic("cal")}${soon} due in 2 weeks</a>` : ""}${!overdue && !soon ? `<span class="muted">Nothing due in the next 2 weeks</span>` : ""}</div></div>`;
+  const b = rv?.budgets?.[0];
+  const spend = b ? `<div><span class="label">Estimated spend</span><span class="big num">${money(b.planned + b.ordered, b.currency)}</span>
+    ${b.planned + b.ordered ? `<div class="bar"><span class="tone-progress" style="flex:${b.ordered}"></span><span class="tone-info" style="flex:${b.planned}"></span></div>` : ""}
+    <div class="legend">${b.ordered ? `<span class="tone-progress"><i class="dot"></i>${money(b.ordered)} ordered</span>` : ""}${b.planned ? `<span class="tone-info"><i class="dot"></i>${money(b.planned)} planned</span>` : ""}${b.withoutEstimate ? `<a href="#plans" class="tone-warn"><i class="dot"></i>${b.withoutEstimate} without an estimate</a>` : ""}</div></div>`
+    : `<div><span class="label">Estimated spend</span>${rv === null && !f._mock.error ? `<span class="sk" style="height:28px;width:110px"></span>` : `<span class="big">Unknown</span><span class="muted">Comes with drive reviews</span>`}</div>`;
+  return `<section class="card summary" aria-label="Planning summary">${drives}${plans}${spend}</section>`;
+}
+
+function queue(f) {
+  const rv = f.review;
+  const head = `<div class="section-title"><h2>Drives to review ${rv ? `<span class="count num">${rv.reviews.length}</span>` : ""}</h2>${rv ? `<small>Sorted by evidence, then serial</small>` : ""}</div>`;
+  if (!rv && f._mock.error) return `<section id="queue">${head}<div class="banner tone-bad" role="alert">${ic("alert")}<p><b>${f._mock.error}</b> Your plans below are current.</p><button class="btn sm outline">${ic("refresh")}Retry</button></div></section>`;
+  if (!rv) return `<section id="queue" aria-busy="true">${head}<div class="card queue">${[1, 2, 3].map(() => `<div class="review"><span class="sk" style="width:36px;height:36px"></span><div class="review-main"><span class="sk" style="height:16px;width:45%"></span><span class="sk" style="height:22px;width:75%"></span></div><span class="sk" style="width:110px;height:30px"></span></div>`).join("")}</div></section>`;
+  const stale = f._mock.stale ? `<div class="banner tone-warn" role="status">${ic("clock")}<p><b>Showing reviews from ${time(rv.generatedUtc)}.</b> ${f._mock.stale} Plans you add now still save.</p><button class="btn sm outline">${ic("refresh")}Retry</button></div>` : "";
+  if (!rv.reviews.length) return `<section id="queue">${head}<div class="card quiet"><div class="tile tone-info">${ic("check")}</div><div><p><b>No drives match the planning rules.</b></p><p class="muted">This isn't a health check. <a href="#storage">Check coverage in Storage</a>.</p></div></div></section>`;
+  const has = rv.spares.some(s => s.quantity > 0);
+  return `<section id="queue">${head}${stale}<div class="card queue">${rv.reviews.map(r => reviewRow(r, has)).join("")}</div></section>`;
+}
+
+function planCard(p) {
+  const s = STATUS[p.status];
+  if (p.status === "complete") return `<article class="plan done" id="plan-${p.id}"><h3>${esc(p.title)}</h3><div class="meta"><small>Done ${date(p.completedUtc)}</small>${p.budget !== null ? `<small>· ${money(p.budget, p.currency)}</small>` : ""}</div></article>`;
+  let due = "";
+  if (p.dueUtc) {
+    const d = Math.ceil((Date.parse(p.dueUtc) - NOW) / DAY);
+    due = d < 0 ? `<span class="pill tone-bad">${ic("clock")}Overdue ${-d} day${d === -1 ? "" : "s"}</span>`
+        : d <= 14 ? `<span class="pill tone-warn">${ic("cal")}Due ${date(p.dueUtc)} · ${d} day${d === 1 ? "" : "s"}</span>`
+        : `<span class="pill tone-neutral">${ic("cal")}Due ${date(p.dueUtc)}</span>`;
+  }
+  return `<article class="plan" id="plan-${p.id}" tabindex="-1">
+    <h3>${esc(p.title)}</h3>
+    <div class="meta">${due}${p.diskSerial ? `<a class="pill tone-neutral" href="#queue">${ic("drive")}${esc(p.diskSerial)}</a>` : ""}<small>${p.owner ? esc(p.owner) : "Unassigned"}</small></div>
+    ${p.notes ? `<p class="notes">${esc(p.notes)}</p>` : ""}
+    <div class="foot">
+      ${p.budget !== null ? `<span class="money">${money(p.budget, p.currency)}</span>` : `<a href="#edit" class="pill dashed tone-warn">${ic("plus")}Add estimate</a>`}
+      <span style="display:flex;gap:4px"><button class="btn sm ghost" aria-label="Edit ${esc(p.title)}">${ic("pencil")}</button><button class="btn sm outline">${s.advance}${ic("arrow")}</button></span>
+    </div>
+  </article>`;
+}
+
+function board(f) {
+  const recent = f.plans.filter(p => p.status === "complete" && NOW - Date.parse(p.completedUtc) <= 30 * DAY);
+  const col = (k, label, items, empty) => `<div class="col tone-${STATUS[k].tone}" role="region" aria-label="${label}">
+    <div class="col-head" style="color:var(--tone)">${ic(STATUS[k].icon)}<span style="color:var(--foreground)">${label}</span><span class="count num">${items.length}</span></div>
+    ${items.length ? items.map(planCard).join("") : `<p class="col-empty">${empty}</p>`}</div>`;
+  const byDue = (a, b) => (a.dueUtc ? Date.parse(a.dueUtc) : Infinity) - (b.dueUtc ? Date.parse(b.dueUtc) : Infinity);
+  return `<section id="plans"><div class="section-title"><h2>Plans</h2><button class="btn sm outline">${ic("plus")}Add plan</button></div>
+    <div class="board">
+      ${col("planned", "Planned", f.plans.filter(p => p.status === "planned").sort(byDue), "Nothing planned")}
+      ${col("ordered", "Ordered", f.plans.filter(p => p.status === "ordered").sort(byDue), "Nothing on order")}
+      ${col("complete", "Done · last 30 days", recent, "Nothing finished recently")}
+    </div></section>`;
+}
+
+function rail(f) {
+  const rv = f.review;
+  let spares;
+  if (!rv) spares = `<div class="card"><h2>${ic("pkg")}Spares</h2>${f._mock.error ? `<p class="muted">Unavailable with drive reviews.</p>` : `<span class="sk" style="height:40px"></span><span class="sk" style="height:40px"></span>`}</div>`;
+  else spares = `<div class="card"><h2>${ic("pkg")}Spares</h2>
+    ${rv.spares.length ? rv.spares.map(s => `<div class="spare"><span class="qty ${s.quantity ? "tone-ok" : "tone-warn"}" aria-label="${s.quantity} on hand">${s.quantity}</span><div><b>${esc(s.name)}</b><small>${s.compatibleDriveCount ? `<span style="color:var(--tone-ok)">Checked for ${s.compatibleDriveCount} drive${s.compatibleDriveCount > 1 ? "s" : ""}</span>` : "Not checked against any drive"}${s.estimatedUnitCost !== null ? ` · ${money(s.estimatedUnitCost, s.currency)} each` : ""}</small></div></div>`).join("")
+      : `<p class="muted">No spares recorded.</p>`}
+    <a class="foot-link" href="#inventory">Manage in Inventory ${ic("arrow")}</a></div>`;
+  return `<aside class="rail" aria-label="Spares">${spares}</aside>`;
+}
+
+function footer(f) {
+  const rv = f.review || FIX.normal.review;
+  return `<p class="rules"><span><b>Advice only.</b> Reminders come from your records and observed evidence. They don't predict failures.</span>
+    <span>Review after <b>${rv.driveAgeReviewYears} years</b> · warranty notice <b>${rv.warrantyNoticeDays} days</b> · <a href="#settings">Change in Settings</a></span>
+    ${f.review ? `<span>${rv.ruleVersion} · generated ${time(rv.generatedUtc)}</span>` : ""}</p>`;
+}
+
+function empty() {
+  return `<section class="onboard" aria-label="Get started">
+    <div class="card"><div class="tile tone-info">${ic("plug")}</div><h3>Connect a NAS</h3><p>Drive reviews appear after the first inventory. They flag evidence, warranty dates and drive age.</p><a class="btn sm" href="#settings">Connect a NAS</a></div>
+    <div class="card"><div class="tile tone-ok">${ic("pkg")}</div><h3>Record your spares</h3><p>Add spare drives in Inventory so you can check which drives they fit.</p><a class="btn sm outline" href="#inventory">Open Inventory</a></div>
+    <div class="card"><div class="tile tone-progress">${ic("list")}</div><h3>Add a plan</h3><p>Track a purchase, replacement or maintenance task with a budget and a date.</p><button class="btn sm outline">${ic("plus")}Add plan</button></div>
+  </section>`;
+}
+
+function dialog(f) {
+  const r = f.review.reviews.find(x => x.diskId === f._mock.dialog);
+  const fit = r.spareFit.status === "compatible" ? f.review.spares.find(s => s.name.startsWith(r.spareFit.assetName)) : null;
+  return `<div class="scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="section-title" style="margin:0"><h2 id="dlg-t">Plan a review</h2><button class="btn sm ghost" aria-label="Close">${ic("x")}</button></div>
+    <p class="muted" style="margin-top:-8px">Saved in Homelab Control. Nothing is ordered and the NAS isn't changed.</p>
+    <div class="field"><label for="t">Title</label><div class="input" id="t">Review ${esc(r.label)} ${esc(r.serial)}</div></div>
+    <div class="attached"><small><b style="color:var(--foreground)">Evidence attached</b> · ${r.label} ${r.serial}</small><ul class="chips-row">${r.reasons.map(x => reasonChip(x, r.priority)).join("")}</ul></div>
+    <div class="field"><label for="n">Notes</label><textarea class="input" id="n" placeholder="What you'll check, and what would change the plan"></textarea></div>
+    <div class="grid2">
+      <div class="field"><label for="b">Estimate (optional)</label><div class="input" id="b"><span>${fit && fit.estimatedUnitCost !== null ? fit.estimatedUnitCost.toFixed(2) : `<span class="muted">0.00</span>`}</span><small>USD ▾</small></div><small>${fit ? `From your Inventory price for ${esc(fit.name)}` : "Check a spare to fill in its Inventory price."}</small></div>
+      <div class="field"><label for="d">Due (optional)</label><div class="input" id="d"><span>Nov 18, 2026</span>${ic("cal")}</div><small>Two weeks from today</small></div>
+    </div>
+    <div class="field"><label for="o">Owner (optional)</label><div class="input" id="o"><span class="muted">Unassigned</span></div></div>
+    <div class="dialog-foot"><button class="btn outline">Cancel</button><button class="btn">Save plan</button></div>
+  </div></div>`;
+}
+
+function render(state) {
+  const f = FIX[state];
+  const app = document.getElementById("app");
+  const head = `<div class="page-head"><div><p class="eyebrow">HOMELAB CONTROL</p><h1>Planning</h1><p class="muted">Turn observations into a practical replacement plan.</p></div><button class="btn">${ic("plus")}Add plan</button></div>`;
+  if (state === "empty") { app.innerHTML = head + `<div class="stack">${empty()}${footer(f)}</div>`; return; }
+  app.innerHTML = head + `<div class="stack">${summary(f)}<div class="body">${queue(f)}${rail(f)}</div>${board(f)}${footer(f)}</div>` + (f._mock.dialog ? dialog(f) : "");
+}
+
+const params = new URLSearchParams(location.search);
+const stateSelect = document.getElementById("mock-state");
+const widthSelect = document.getElementById("mock-width");
+const themeSelect = document.getElementById("mock-theme");
+for (const [value, label] of Object.entries(STATES)) stateSelect.add(new Option(label, value));
+function apply() {
+  render(stateSelect.value);
+  document.documentElement.dataset.width = widthSelect.value;
+  document.documentElement.dataset.theme = themeSelect.value;
+  try { history.replaceState(null, "", "?" + new URLSearchParams({ state: stateSelect.value, width: widthSelect.value, theme: themeSelect.value })); } catch {}
+}
+stateSelect.value = STATES[params.get("state")] ? params.get("state") : "normal";
+widthSelect.value = params.get("width") || "desktop";
+themeSelect.value = params.get("theme") === "dark" ? "dark" : (params.get("theme") === "light" ? "light" : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+[stateSelect, widthSelect, themeSelect].forEach(el => el.addEventListener("change", apply));
+apply();
+</script>
+</body>
+</html>

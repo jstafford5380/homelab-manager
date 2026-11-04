@@ -1,0 +1,221 @@
+{
+  "review": {
+    "generatedUtc": "2026-11-04T16:52:00Z",
+    "ruleVersion": "drive-planning-v1",
+    "trackedDriveCount": 14,
+    "driveAgeReviewYears": 5,
+    "warrantyNoticeDays": 90,
+    "reviews": [
+      {
+        "diskId": "d1",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z9K21",
+        "location": "tank · raidz2-0",
+        "priority": "media",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-101",
+            "summary": "12 pending sectors, up from 0",
+            "detail": "Pending sectors increased: 0 → 12 between Oct 28 and Nov 4. Last recorded Nov 4, 16:40; state open."
+          },
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-08-14",
+            "detail": "Recorded warranty ended 2026-08-14. Confirm terms and purchase records before budgeting."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2019-03-02",
+            "confidence": "estimated",
+            "detail": "Estimated purchase date 2019-03-02 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": {
+          "id": "p1",
+          "status": "ordered"
+        },
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d2",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K3QX9",
+        "location": "tank · raidz2-1",
+        "priority": "issue",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "finding",
+            "findingId": "f-102",
+            "summary": "3 checksum errors in latest scrub",
+            "detail": "ZFS reported 3 checksum errors on this member during the Nov 2 scrub. A transport error alone does not establish failed media."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d3",
+        "model": "Samsung SSD 870 EVO 1TB",
+        "label": "Samsung 870 EVO 1 TB",
+        "serial": "S6PNNX0T412345",
+        "location": "boot-pool",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "warranty",
+            "endsUtc": "2026-12-20",
+            "detail": "Recorded warranty ends 2026-12-20, within the 90-day notice window. Review coverage and purchase records."
+          }
+        ],
+        "openPlan": {
+          "id": "p3",
+          "status": "planned"
+        },
+        "spareFit": {
+          "status": "unchecked"
+        }
+      },
+      {
+        "diskId": "d4",
+        "model": "WDC WD80EFZZ",
+        "label": "WD Red Plus 8 TB",
+        "serial": "WD-CA7Z4410",
+        "location": "tank · raidz2-0",
+        "priority": "prepare",
+        "present": true,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "age-unknown",
+            "detail": "Purchase date is unknown. Add a receipt or an explicitly estimated date; first discovery is not purchase or installation date."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "compatible",
+          "assetName": "WD Red Plus 8 TB",
+          "validUntilUtc": "2027-01-15"
+        }
+      },
+      {
+        "diskId": "d5",
+        "model": "ST8000VN004",
+        "label": "Seagate IronWolf 8 TB",
+        "serial": "ZA1K2PL0",
+        "location": "last seen in tank · raidz2-1",
+        "priority": "prepare",
+        "present": false,
+        "mappingConfidence": "exact",
+        "reasons": [
+          {
+            "kind": "absent",
+            "detail": "This drive was absent from the last inventory snapshot. Verify its current location and identity before planning a physical action."
+          },
+          {
+            "kind": "age-review",
+            "purchasedUtc": "2021-05-18",
+            "confidence": "receipt",
+            "detail": "Receipt purchase date 2021-05-18 exceeds the 5-year planning review threshold. Age alone is not evidence of failure."
+          }
+        ],
+        "openPlan": null,
+        "spareFit": {
+          "status": "unchecked"
+        }
+      }
+    ],
+    "spares": [
+      {
+        "id": "s1",
+        "name": "WD Red Plus 8 TB (WD80EFPX)",
+        "quantity": 1,
+        "estimatedUnitCost": 189.99,
+        "currency": "USD",
+        "compatibleDriveCount": 2
+      },
+      {
+        "id": "s2",
+        "name": "Crucial MX500 1 TB",
+        "quantity": 2,
+        "estimatedUnitCost": 64,
+        "currency": "USD",
+        "compatibleDriveCount": 0
+      }
+    ],
+    "budgets": [
+      {
+        "currency": "USD",
+        "planned": 79,
+        "ordered": 189.99,
+        "withoutEstimate": 1,
+        "count": 3
+      }
+    ]
+  },
+  "plans": [
+    {
+      "id": "p1",
+      "title": "Replace WD-CA7Z9K21 in tank",
+      "diskSerial": "WD-CA7Z9K21",
+      "owner": "Jess",
+      "dueUtc": "2026-11-08T12:00:00Z",
+      "budget": 189.99,
+      "currency": "USD",
+      "status": "ordered",
+      "notes": "Ordered from B&H on Nov 2, arriving Thursday. Resilver Saturday morning once the spare is burned in."
+    },
+    {
+      "id": "p2",
+      "title": "Buy a cold spare for the IronWolf vdev",
+      "diskSerial": null,
+      "owner": "",
+      "dueUtc": "2026-11-01T12:00:00Z",
+      "budget": null,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Check whether a WD Red Plus 8 TB is an acceptable mixed-vendor spare for raidz2-1."
+    },
+    {
+      "id": "p3",
+      "title": "Review boot SSD warranty",
+      "diskSerial": "S6PNNX0T412345",
+      "owner": "Jess",
+      "dueUtc": "2026-12-15T12:00:00Z",
+      "budget": 79,
+      "currency": "USD",
+      "status": "planned",
+      "notes": "Find the receipt. If coverage lapses, keep the MX500 as the cold spare."
+    },
+    {
+      "id": "p4",
+      "title": "Replace UPS battery",
+      "diskSerial": null,
+      "owner": "Jess",
+      "dueUtc": null,
+      "budget": 54,
+      "currency": "USD",
+      "status": "complete",
+      "completedUtc": "2026-10-21T18:00:00Z",
+      "notes": ""
+    }
+  ],
+  "_mock": {
+    "now": "2026-11-04T17:00:00Z",
+    "dialog": "d2"
+  }
+}
