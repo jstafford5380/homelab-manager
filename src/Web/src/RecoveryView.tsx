@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { RecoveryHistory } from "./RecoveryHistory";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -103,11 +104,11 @@ function Select({
   return (
     <div className="field">
       <Label htmlFor={"recovery-" + name}>{label}</Label>
-      <select id={"recovery-" + name} name={name} defaultValue={value}>
+      <SelectField id={"recovery-" + name} name={name} defaultValue={value}>
         {values.map((v) => (
-          <option key={v}>{v}</option>
+          <SelectOption key={v}>{v}</SelectOption>
         ))}
-      </select>
+      </SelectField>
     </div>
   );
 }

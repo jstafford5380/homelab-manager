@@ -389,7 +389,7 @@ for (const state of [
       ).toBeVisible();
     }
     if (state === "stale")
-      await expect(page.locator(".hw-facts > :last-child dd")).toContainText(
+      await expect(page.locator(".hw-facts > div").filter({ hasText: "Needs a look" }).locator("dd")).toContainText(
         "Unknown",
       );
     if (state === "manual")

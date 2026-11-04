@@ -217,3 +217,26 @@ for (const state of Object.keys(cases) as (keyof typeof cases)[]) {
     }
   });
 }
+
+
+test("Drive age icon warns at five years and turns red past seven", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
+  await page.route("**/api/v1/session", r => r.fulfill({ json: { authenticated: true, setupRequired: false } }));
+  let purchasedUtc = "2021-11-04T12:00:00Z";
+  await page.route("**/api/v1/overview", r => r.fulfill({ json: {
+    ...calm, settings: { timezone: "UTC" }, plans: [], findings: [], recovery: [], recoveryAssessments: [], activity: [],
+    disks: [{ id: "age-drive", purchasedUtc, lifecycle: "active", present: true }]
+  }}));
+  await page.route("**/api/v1/planning/review", r => r.fulfill({ json: {
+    driveAgeReviewYears: 5, reviews: [{ diskId: "age-drive", reasons: [{ kind: "age-review" }] }], spares: [], budgets: []
+  }}));
+  const icon = page.getByRole("link", { name: "1 drive past your 5-year review age" }).locator("xpath=../..").locator("svg");
+  await page.goto("/");
+  await expect(icon).toHaveAttribute("style", /--tone-warn/);
+  purchasedUtc = "2019-11-04T12:00:00Z";
+  await page.reload();
+  await expect(icon).toHaveAttribute("style", /--tone-warn/);
+  purchasedUtc = "2019-11-04T11:59:59Z";
+  await page.reload();
+  await expect(icon).toHaveAttribute("style", /--tone-bad/);
+});

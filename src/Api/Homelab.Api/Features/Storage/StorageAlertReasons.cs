@@ -12,7 +12,9 @@ public static class StorageAlertReasons
     {
         var serialUnique = disks.Count(d => d.Serial == disk.Serial) == 1 && disk.MappingConfidence != "ambiguous";
         var aliasCurrent = inventoryCurrent && disk.Present && disk.MappingConfidence != "ambiguous" &&
-            disks.Count(d => d.Present && d.Alias == disk.Alias) == 1;
+            // Device names are recycled after replacement. An alias-only alert cannot
+            // identify its physical drive once another inventoried drive has used it.
+            disks.Count(d => d.Alias == disk.Alias) == 1;
         var matched = alerts.Where(a => a.ConnectionId == disk.ConnectionId && !a.DismissedOnNas && a.AbsentSinceUtc is null)
             .Select(a => new { a.Class, Message = Regex.Replace(WebUtility.HtmlDecode(Regex.Replace(a.Message, "<[^>]*>", " ")), @"\s+", " ").Trim() })
             .Where(a => serialUnique && Names(a.Message, disk.Serial) || aliasCurrent && Names(a.Message, disk.Alias))

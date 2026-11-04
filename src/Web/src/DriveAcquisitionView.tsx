@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,13 +81,13 @@ export default function DriveAcquisitionView({ diskId, timezone }: { diskId: str
         finally { setBusy(false); }
       }}>
         <div className="field"><Label htmlFor="acquisition-installation">Installation date (optional)</Label><Input id="acquisition-installation" name="installedUtc" type="date" defaultValue={record?.installedUtc?.slice(0,10) || ""} /></div>
-        <div className="field"><Label htmlFor="acquisition-installation-confidence">Installation-date confidence</Label><select id="acquisition-installation-confidence" name="installationConfidence" defaultValue={record?.installationConfidence || "unknown"}>{["unknown","estimated","documented"].map(x => <option key={x}>{x}</option>)}</select></div>
+        <div className="field"><Label htmlFor="acquisition-installation-confidence">Installation-date confidence</Label><SelectField id="acquisition-installation-confidence" name="installationConfidence" defaultValue={record?.installationConfidence || "unknown"}>{["unknown","estimated","documented"].map(x => <SelectOption key={x}>{x}</SelectOption>)}</SelectField></div>
         <div className="field"><Label htmlFor="acquisition-installation-evidence">Installation evidence or estimate basis</Label><textarea id="acquisition-installation-evidence" name="installationEvidence" rows={2} maxLength={4000} defaultValue={record?.installationEvidence || ""} /></div>
         <div className="settings-grid">
           <div className="field"><Label htmlFor="acquisition-cost">Original purchase cost (optional)</Label><Input id="acquisition-cost" name="purchaseCost" type="number" min={0} max={1000000000} step="any" defaultValue={record?.purchaseCost ?? ""} /></div>
           <div className="field"><Label htmlFor="acquisition-currency">Purchase currency (three letters)</Label><Input id="acquisition-currency" name="currency" maxLength={3} defaultValue={record?.currency || ""} /></div>
         </div>
-        <div className="field"><Label htmlFor="acquisition-cost-confidence">Purchase-cost confidence</Label><select id="acquisition-cost-confidence" name="costConfidence" defaultValue={record?.costConfidence || "unknown"}>{["unknown","estimated","documented"].map(x => <option key={x}>{x}</option>)}</select></div>
+        <div className="field"><Label htmlFor="acquisition-cost-confidence">Purchase-cost confidence</Label><SelectField id="acquisition-cost-confidence" name="costConfidence" defaultValue={record?.costConfidence || "unknown"}>{["unknown","estimated","documented"].map(x => <SelectOption key={x}>{x}</SelectOption>)}</SelectField></div>
         <div className="field"><Label htmlFor="acquisition-purchase-evidence">Receipt reference or purchase evidence</Label><textarea id="acquisition-purchase-evidence" name="purchaseEvidence" rows={2} maxLength={4000} defaultValue={record?.purchaseEvidence || ""} /></div>
         <p className="muted">Leave unknown dates and costs blank with unknown confidence. A zero cost means the drive was free. Record references, never payment credentials. Purchase date and warranty remain in Drive notes.</p>
         {error && <p role="alert" tabIndex={-1} ref={alertRef} className="error">{error}</p>}

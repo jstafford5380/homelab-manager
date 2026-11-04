@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,8 +80,8 @@ export default function SpareReview({ diskId, spares, timezone }: { diskId: stri
       finally { setBusy(false); }
     }}>
       {message && <p role="status" className="error" tabIndex={-1} ref={messageRef}>{message}</p>}
-      <div className="field"><Label htmlFor={`spare-${diskId}`}>Spare inventory item</Label><select id={`spare-${diskId}`} name="asset" required>{choices.map(s => <option key={s.id} value={s.id}>{s.name} · {s.quantity} on hand</option>)}</select></div>
-      <div className="field"><Label htmlFor={`verdict-${diskId}`}>Compatibility assessment</Label><select id={`verdict-${diskId}`} name="verdict" defaultValue="unknown"><option value="unknown">Unknown — needs investigation</option><option value="compatible">Compatible — manually reviewed</option><option value="incompatible">Incompatible</option></select></div>
+      <div className="field"><Label htmlFor={`spare-${diskId}`}>Spare inventory item</Label><SelectField id={`spare-${diskId}`} name="asset" required>{choices.map(s => <SelectOption key={s.id} value={s.id}>{s.name} · {s.quantity} on hand</SelectOption>)}</SelectField></div>
+      <div className="field"><Label htmlFor={`verdict-${diskId}`}>Compatibility assessment</Label><SelectField id={`verdict-${diskId}`} name="verdict" defaultValue="unknown"><SelectOption value="unknown">Unknown — needs investigation</SelectOption><SelectOption value="compatible">Compatible — manually reviewed</SelectOption><SelectOption value="incompatible">Incompatible</SelectOption></SelectField></div>
       <div className="field"><Label htmlFor={`evidence-${diskId}`}>Compatibility evidence</Label><textarea id={`evidence-${diskId}`} name="evidence" required maxLength={4000} rows={4} aria-describedby={`help-${diskId}`} /><small id={`help-${diskId}`}>Record checked capacity, interface, sector format, physical fit and the source of those requirements. State anything unknown.</small></div>
       <div className="field"><Label htmlFor={`until-${diskId}`}>Review again by (00:00 UTC)</Label><Input id={`until-${diskId}`} name="until" type="date" required /></div>
       <div className="field"><Label htmlFor={`identity-${diskId}`}>Confirm drive serial or WWN</Label><Input id={`identity-${diskId}`} name="identity" required maxLength={256} autoComplete="off" /></div>

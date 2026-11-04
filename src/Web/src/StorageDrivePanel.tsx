@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import {
   lazy,
   Suspense,
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDisplayFormat } from "./displayPreferences";
-import { StorageBar, StoragePill } from "./StorageView";
+import { StorageBar, StoragePill, resilverEstimate } from "./StorageView";
 import { StorageHealth } from "./StorageHealth";
 import {
   age,
@@ -95,8 +96,12 @@ export function StorageDrivePanel({
     [newDisk, setNewDisk] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const feedbackRef = useRef<HTMLParagraphElement>(null);
   const initialMode = useRef(true);
   const noteRequest = useRef(crypto.randomUUID());
+  useEffect(() => {
+    if (error || notice) feedbackRef.current?.focus();
+  }, [error, notice]);
   const { bytes, time } = useDisplayFormat();
   const month = (v: string) =>
     new Date(v).toLocaleDateString("en-US", {
@@ -111,7 +116,7 @@ export function StorageDrivePanel({
     }
     if (mode)
       formRef.current
-        ?.querySelector<HTMLInputElement | HTMLSelectElement>("input,select")
+        ?.querySelector<HTMLElement>('input:not([type="hidden"]), [role="combobox"]')
         ?.focus();
   }, [mode]);
   const disk = d.disk,
@@ -232,8 +237,8 @@ export function StorageDrivePanel({
           membershipEvidence: text("membershipEvidence"),
           reason: text("reason"),
           evidence: text("evidence"),
-          confirmedOldIdentity: text("confirmedOldIdentity"),
-          confirmedNewIdentity: text("confirmedNewIdentity"),
+          confirmedOldIdentity: text("confirmedOldIdentity").trim(),
+          confirmedNewIdentity: text("confirmedNewIdentity").trim(),
         });
       }
       await saved();
@@ -259,7 +264,7 @@ export function StorageDrivePanel({
       >
         Cancel
       </Button>
-      <Button disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+      <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
     </div>
   );
   const form = (children: ReactNode) => (
@@ -269,6 +274,11 @@ export function StorageDrivePanel({
       onSubmit={(e) => void submit(e)}
     >
       {children}
+      {error && (
+        <p ref={feedbackRef} tabIndex={-1} role="alert" className="error">
+          {error}
+        </p>
+      )}
       {controls}
     </form>
   );
@@ -279,7 +289,7 @@ export function StorageDrivePanel({
   );
   const title = (
     <>
-      <StoragePill status={d.status} />
+      <StoragePill status={d.status} resilverEstimate={resilverEstimate(server.pools.find(p => p.guid === d.poolGuid), server.freshness !== "Reporting")} />
       <div className="storage-inline">
         {mobile ? (
           driveHeading
@@ -322,13 +332,8 @@ export function StorageDrivePanel({
         {title}
       </header>
       <div className="storage-panel-body">
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
         {notice && (
-          <p role="status" className="storage-confirmed">
+          <p ref={feedbackRef} tabIndex={-1} role="status" className="storage-confirmed">
             {notice}
           </p>
         )}
@@ -627,19 +632,19 @@ export function StorageDrivePanel({
               <>
                 <div className="field">
                   <Label htmlFor="storage-newDisk">New drive</Label>
-                  <select
+                  <SelectField
                     id="storage-newDisk"
                     value={newDisk}
-                    onChange={(e) => setNewDisk(e.target.value)}
+                    onValueChange={(e) => setNewDisk(e)}
                     required
                   >
-                    <option value="">Choose a drive</option>
+                    <SelectOption value="">Choose a drive</SelectOption>
                     {candidates.map((x) => (
-                      <option key={x.disk.id} value={x.disk.id}>
+                      <SelectOption key={x.disk.id} value={x.disk.id}>
                         {x.title} · {x.disk.serial}
-                      </option>
+                      </SelectOption>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
                 <p className="storage-secondary">
                   The new drive's install date will be set to today. This

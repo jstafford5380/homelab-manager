@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useDisplayFormat } from "./displayPreferences";
@@ -8,7 +9,7 @@ export function RecoveryHistory({policyId,revision,asset}:{policyId:string;revis
  const [open,setOpen]=useState(false);const [kind,setKind]=useState('runs');
  return <section aria-label={`Recovery history for ${asset}`}>
   <Button variant="outline" aria-expanded={open} onClick={()=>setOpen(value=>!value)}>{open?'Hide full recovery history':'Browse all recovery evidence'}</Button>
-  {open && <><label style={{display:'block',marginTop:16}}>Evidence type <select aria-label={`Evidence type for ${asset}`} value={kind} onChange={event=>setKind(event.target.value)}><option value="runs">Backup runs</option><option value="exercises">Restore exercises</option></select></label>
+  {open && <><label style={{display:'block',marginTop:16}}>Evidence type <SelectField aria-label={`Evidence type for ${asset}`} value={kind} onValueChange={event=>setKind(event)}><SelectOption value="runs">Backup runs</SelectOption><SelectOption value="exercises">Restore exercises</SelectOption></SelectField></label>
   <HistoryPage key={`${policyId}:${revision}:${kind}`} policyId={policyId} revision={revision} kind={kind}/></>}
  </section>;
 }

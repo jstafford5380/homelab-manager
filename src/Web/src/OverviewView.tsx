@@ -1,3 +1,4 @@
+import { HoverTip } from "@/components/HoverTip";
 import { formatInvestment } from "./investment";
 import type { InvestmentTotal } from "./investment";
 import { useEffect, useState } from "react";
@@ -169,9 +170,9 @@ function freshness(connection: Connection, now: number) {
 function Time({ value, now }: { value: string; now: number }) {
   const { time } = useDisplayFormat();
   return (
-    <time dateTime={value} title={time(value)}>
+    <HoverTip content={time(value)}><time dateTime={value} tabIndex={0}>
       {when(value, now)}
-    </time>
+    </time></HoverTip>
   );
 }
 
@@ -382,6 +383,7 @@ export function OverviewView({
   ];
 
   type Upcoming = {
+    iconTone?: "warn" | "bad";
     key: string;
     at: string | null;
     title: string;
@@ -437,9 +439,16 @@ export function OverviewView({
     const undated = planning.reviews.filter((r) =>
       r.reasons.some((x) => x.kind === "age-unknown"),
     );
+    const sevenYearsAgo = new Date(now);
+    sevenYearsAgo.setUTCFullYear(sevenYearsAgo.getUTCFullYear() - 7);
+    const hasOlderDrive = aged.some(review => {
+      const purchased = disks.find(disk => disk.id === review.diskId)?.purchasedUtc;
+      return purchased != null && Date.parse(purchased) < sevenYearsAgo.getTime();
+    });
     if (aged.length)
       upcoming.push({
         key: "age-review",
+        iconTone: hasOlderDrive ? "bad" : "warn",
         at: null,
         title: `${plural(aged.length, "drive")} past your ${planning.driveAgeReviewYears}-year review age`,
         detail: "Worth budgeting for. Age alone is not evidence of failure.",
@@ -737,7 +746,7 @@ export function OverviewView({
                         <ul>
                           {b.items.map((item) => (
                             <li key={item.key}>
-                              <item.icon size={16} aria-hidden="true" />
+                              <item.icon size={16} aria-hidden="true" style={item.iconTone ? { color: `var(--tone-${item.iconTone})` } : undefined} />
                               <div>
                                 <Link to={item.to}>{item.title}</Link>
                                 <small>
@@ -1024,7 +1033,7 @@ function OverviewSystems({
                 <Database size={16} aria-hidden="true" />
                 <div>
                   <strong>{name}</strong>
-                  <small title={connection.status}>{connection.status}</small>
+                  <HoverTip content={connection.status}><small tabIndex={0}>{connection.status}</small></HoverTip>
                 </div>
               </div>
               <div className="ov-system-row-status" role="cell">

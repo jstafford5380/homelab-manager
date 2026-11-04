@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,11 +89,11 @@ function Choice({
   return (
     <div className="field">
       <Label htmlFor={"inventory-" + name}>{label}</Label>
-      <select id={"inventory-" + name} name={name} defaultValue={value}>
+      <SelectField id={"inventory-" + name} name={name} defaultValue={value}>
         {values.map((v) => (
-          <option key={v}>{v}</option>
+          <SelectOption key={v}>{v}</SelectOption>
         ))}
-      </select>
+      </SelectField>
     </div>
   );
 }
@@ -163,17 +164,17 @@ export function InventoryView() {
         proof of a cause.
       </p>
       <div className="section-title">
-        <select
+        <SelectField
           aria-label="Inventory filter"
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onValueChange={(e) => setFilter(e)}
         >
-          <option value="all">All active assets</option>
+          <SelectOption value="all">All active assets</SelectOption>
           {types.map((t) => (
-            <option key={t}>{t}</option>
+            <SelectOption key={t}>{t}</SelectOption>
           ))}
-          <option value="archived">Archived</option>
-        </select>
+          <SelectOption value="archived">Archived</SelectOption>
+        </SelectField>
         <Button variant="outline" asChild>
           <a href="/api/v1/inventory/export?redacted=true" download>
             Export redacted inventory
@@ -458,13 +459,13 @@ export function InventoryView() {
                             ? "Source asset"
                             : "Dependency / destination"}
                         </Label>
-                        <select id={"inventory-" + name} name={name}>
+                        <SelectField id={"inventory-" + name} name={name}>
                           {active.map((a) => (
-                            <option key={a.id} value={a.id}>
+                            <SelectOption key={a.id} value={a.id}>
                               {a.name}
-                            </option>
+                            </SelectOption>
                           ))}
-                        </select>
+                        </SelectField>
                       </div>
                     ))}
                   </div>

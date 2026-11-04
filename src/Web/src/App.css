@@ -14,7 +14,7 @@ body {
 button,
 a,
 input,
-select {
+[data-slot="select-trigger"] {
   font: inherit;
 }
 button,
@@ -251,7 +251,7 @@ main {
   font-size: 11px;
   color: var(--text-secondary);
 }
-.row select {
+.row [data-slot="select-trigger"] {
   padding: 5px;
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -401,7 +401,7 @@ main {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
-.settings-grid select {
+.settings-grid [data-slot="select-trigger"] {
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -642,7 +642,7 @@ main {
   max-height: 90dvh;
   overflow-y: auto;
 }
-.replacement-dialog select {
+.replacement-dialog [data-slot="select-trigger"] {
   width: 100%;
   padding: 8px;
   border: 1px solid var(--border);
@@ -783,13 +783,13 @@ h1[tabindex="-1"]:focus {
 
 .capacity-planning { padding: 18px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 16px 0; overflow-wrap: anywhere; }
 .capacity-planning .section-title { flex-wrap: wrap; gap: 12px; }
-.capacity-planning select { padding: 6px; border: 1px solid var(--border); border-radius: 6px; margin-left: 8px; }
+.capacity-planning [data-slot="select-trigger"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; margin-left: 8px; }
 .capacity-planning p { margin: 10px 0; }
 .capacity-planning summary { cursor: pointer; font-weight: 600; margin-top: 14px; }
 
 .skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; padding: 12px 18px; background: var(--card); color: var(--brand); border: 2px solid var(--nav-active-foreground); border-radius: 8px; transform: translateY(-160%); }
 .skip-link:focus { transform: translateY(0); }
-:where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--nav-active-foreground); outline-offset: 3px; }
+:where(button, a, input, [data-slot="select-trigger"], textarea, summary):focus-visible { outline: 2px solid var(--nav-active-foreground); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition: none !important; scroll-behavior: auto !important; } }
 
 .storage-refresh-heading { flex-wrap: wrap; gap: 12px; }
@@ -838,10 +838,10 @@ h1[tabindex="-1"]:focus {
 .evidence-coverage-summary p { margin-block: 0 8px; }
 .report-reading p.muted { font-size: 0.875rem; font-weight: 400; line-height: 1.55; }
 
-select, textarea { background-color: var(--background); color: var(--foreground); }
+[data-slot="select-trigger"], textarea { background-color: var(--background); color: var(--foreground); }
 .appearance-settings { padding: 20px; gap: 12px; margin-bottom: 24px; }
 .appearance-settings .field { margin: 0; max-width: 320px; }
-.appearance-settings select { border: 1px solid var(--input); border-radius: 6px; padding: 8px 12px; }
+.appearance-settings [data-slot="select-trigger"] { border: 1px solid var(--input); border-radius: 6px; padding: 8px 12px; }
 
 .drive-maintenance { margin-top: 24px; min-width: 0; }
 .drive-maintenance > .section-title { flex-wrap: wrap; gap: 12px; }
@@ -849,14 +849,14 @@ select, textarea { background-color: var(--background); color: var(--foreground)
 .maintenance-entry .section-title { flex-wrap: wrap; gap: 8px; margin: 0; }
 .maintenance-entry h4, .maintenance-form h4 { font-weight: 600; }
 .maintenance-form p { margin-block: 10px 16px; }
-.drive-maintenance select, .drive-maintenance textarea { border: 1px solid var(--input); border-radius: 6px; padding: 8px; width: 100%; }
+.drive-maintenance [data-slot="select-trigger"], .drive-maintenance textarea { border: 1px solid var(--input); border-radius: 6px; padding: 8px; width: 100%; }
 .maintenance-entry summary { cursor: pointer; font-weight: 500; }
 .maintenance-entry details p, .maintenance-entry details button { margin-block: 10px; }
 .maintenance-message { margin-block: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
 
 .vdev-evidence { margin-top: 1rem; }
 .vdev-evidence > div > label { display: block; margin-bottom: .4rem; font-weight: 600; }
-.vdev-evidence select { max-width: 100%; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); margin-bottom: .75rem; }
+.vdev-evidence [data-slot="select-trigger"] { max-width: 100%; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); margin-bottom: .75rem; }
 .vdev-identifier { overflow-wrap: anywhere; }
 .vdev-member-list { display: grid; gap: .75rem; margin-block: 1rem; }
 

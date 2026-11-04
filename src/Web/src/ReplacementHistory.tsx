@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -273,19 +274,19 @@ export function ReplacementHistory({
             </p>
             <div className="field">
               <Label htmlFor="replacement-new">New physical drive</Label>
-              <select
+              <SelectField
                 id="replacement-new"
                 required
                 value={newId}
-                onChange={(e) => setNewId(e.target.value)}
+                onValueChange={(e) => setNewId(e)}
               >
-                <option value="">Choose an identified drive</option>
+                <SelectOption value="">Choose an identified drive</SelectOption>
                 {candidates.map((d) => (
-                  <option value={d.id} key={d.id}>
+                  <SelectOption value={d.id} key={d.id}>
                     {d.model} · {identity(d)}
-                  </option>
+                  </SelectOption>
                 ))}
-              </select>
+              </SelectField>
             </div>
             <div className="settings-grid">
               <div className="field">
@@ -326,14 +327,14 @@ export function ReplacementHistory({
               </div>
               <div className="field">
                 <Label htmlFor="replacement-confidence">Date confidence</Label>
-                <select
+                <SelectField
                   id="replacement-confidence"
                   name="confidence"
                   defaultValue="documented"
                 >
-                  <option value="documented">Documented</option>
-                  <option value="estimated">Estimated</option>
-                </select>
+                  <SelectOption value="documented">Documented</SelectOption>
+                  <SelectOption value="estimated">Estimated</SelectOption>
+                </SelectField>
               </div>
             </div>
             <div className="field">

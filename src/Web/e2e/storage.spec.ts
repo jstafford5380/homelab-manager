@@ -600,14 +600,17 @@ test("001 profile, nickname, bay confirmation, notes and replacement plans save 
     "href",
     "/planning?plan=plan-one",
   );
+  let rejectReplacement = true;
   await page.route("**/api/v1/replacements", (r) => {
     posted = r.request().postDataJSON();
+    if (rejectReplacement)
+      return r.fulfill({ status: 400, json: { error: "Retype each drive's serial to confirm the link." } });
     return r.fulfill({ json: { id: "replacement-one" } });
   });
   await panel
     .getByRole("button", { name: "Mark as replaced", exact: true })
     .click();
-  await panel.getByLabel("New drive", { exact: true }).selectOption("spare");
+  await panel.getByLabel("New drive", { exact: true }).click(); await page.locator('[role="option"][data-value="spare"]').click();
   await panel
     .getByLabel("Retype old drive serial (or WWN)", { exact: true })
     .fill("SERIAL-one");
@@ -622,6 +625,14 @@ test("001 profile, nickname, bay confirmation, notes and replacement plans save 
     .getByLabel("What you checked", { exact: true })
     .fill("Physical labels");
   await panel.getByRole("button", { name: "Save", exact: true }).click();
+  const replacementError = panel.getByRole("alert");
+  await expect(replacementError).toHaveText("Retype each drive's serial to confirm the link.");
+  await expect(replacementError).toBeFocused();
+  await expect(panel.getByLabel("What you checked", { exact: true })).toHaveValue("Physical labels");
+  rejectReplacement = false;
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel.getByRole("status")).toHaveText("Saved");
+  await expect(panel.getByRole("status")).toBeFocused();
   expect(posted).toMatchObject({
     oldDiskId: "one",
     newDiskId: "spare",
@@ -938,4 +949,71 @@ test("Storage Refresh polls the selected server and reloads its inventory", asyn
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   await reloaded;
   await expect(page.getByText("NAS collection complete.")).toBeVisible();
+});
+
+
+test("001.06 resilver breathes and shows only an active source estimate", async ({ page }) => {
+  const data = fixture();
+  const scan = data.servers[0].pools[0].scan!;
+  scan.scanFunction = "RESILVER";
+  scan.scanState = "SCANNING";
+  scan.scanRemainingSeconds = 194408;
+  await setup(page, data);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/storage");
+  const line = page.locator(".storage-scan").first();
+  await expect(line).toContainText("about 2 d 6 h remaining");
+  await expect(line).toHaveCSS("animation-name", "storage-scan-breathe");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(line).toHaveCSS("animation-name", "none");
+  scan.scanState = "PAUSED";
+  await page.reload();
+  await expect(line).toContainText("paused");
+  await expect(line).not.toContainText("remaining");
+  await expect(line).not.toHaveClass(/storage-scan-active/);
+  scan.scanState = "SCANNING";
+  scan.scanRemainingSeconds = null;
+  await page.reload();
+  await expect(line).toContainText("Resilvering");
+  await expect(line).not.toContainText("remaining");
+  data.servers[0].freshness = "Out of date";
+  scan.scanRemainingSeconds = 300;
+  await page.reload();
+  await expect(line).toContainText("last known");
+  await expect(line).not.toContainText("remaining");
+  await expect(line).not.toHaveClass(/storage-scan-active/);
+});
+
+
+test("Shared shadcn selectors and badge tooltips support keyboard and accessible popups", async ({ page }) => {
+  const data = fixture();
+  const pool = data.servers[0].pools[0];
+  pool.scan!.scanFunction = "RESILVER";
+  pool.scan!.scanState = "SCANNING";
+  pool.scan!.scanRemainingSeconds = 7200;
+  pool.drives[0].status = { label: "Resilvering", tone: "neutral", why: "Replacement in progress" };
+  await setup(page, data);
+  await page.goto("/storage");
+  const badge = page.locator(".storage-table .storage-pill-resilvering").first();
+  await badge.focus();
+  await expect(page.getByRole("tooltip")).toContainText("About 2 h remaining");
+  await expect(badge).not.toHaveAttribute("title");
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "WD Red Plus 8TB", exact: true }).click();
+  const panel = page.getByRole("dialog");
+  await panel.getByRole("button", { name: "Mark as replaced", exact: true }).click();
+  const selector = panel.getByRole("combobox", { name: "New drive", exact: true });
+  await panel.getByLabel("Retype old drive serial (or WWN)", { exact: true }).fill("SERIAL-one");
+  await panel.getByLabel(/Retype new drive serial/).fill("SERIAL-spare");
+  await panel.getByLabel("Pool membership checked").fill("Checked tank membership");
+  await panel.getByLabel("Reason", { exact: true }).fill("Replacement");
+  await panel.getByLabel("What you checked", { exact: true }).fill("Physical labels");
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText("Choose an option before saving.");
+  await expect(selector).toBeFocused();
+  await selector.press("ArrowDown");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await audit(page, "Replacement selector");
+  await page.locator('[role="option"][data-value="spare"]').click();
+  await expect(selector).toContainText("SERIAL-spare");
 });

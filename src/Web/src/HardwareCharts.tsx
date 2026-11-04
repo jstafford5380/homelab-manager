@@ -1,5 +1,5 @@
 import { Info, Pencil } from "lucide-react";
-import { Tooltip } from "radix-ui";
+import { HoverTip } from "@/components/HoverTip";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Card } from "@/components/ui/card";
@@ -82,35 +82,22 @@ export function HardwareChart({
       {metric.series
         .filter((p) => p.source === "entered")
         .map((p, i) => (
-          <circle
-            key={p.readingId ?? i}
+          <HoverTip key={p.readingId ?? i} content={`${number(p.value)} · entered by you · ${new Date(p.atUtc).toLocaleString()}`}><circle
+            tabIndex={0}
             cx={x(p.atUtc)}
             cy={y(p.value)}
             r="3.4"
             className="hw-dot"
           >
-            <title>
-              {number(p.value)} · entered by you ·{" "}
-              {new Date(p.atUtc).toLocaleString()}
-            </title>
-          </circle>
+          </circle></HoverTip>
         ))}
     </svg>
   );
 }
 function EstimateInfo({ label, children }: { label: string; children: ReactNode }) {
-  return <Tooltip.Provider delayDuration={150}>
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="hw-estimate-info" aria-label={label}>
-          <Info aria-hidden="true" size={15} />
-        </Button>
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content className="hw-estimate-tooltip" sideOffset={6}>{children}</Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  </Tooltip.Provider>;
+  return <HoverTip content={children}><Button type="button" variant="ghost" size="icon" className="hw-estimate-info" aria-label={label}>
+    <Info aria-hidden="true" size={15} />
+  </Button></HoverTip>;
 }
 
 function UpsReadings({ ups, stale, device, component, onSetup, watts = null, monthly, electricityRate }: {

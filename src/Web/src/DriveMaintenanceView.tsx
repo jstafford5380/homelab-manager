@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,10 +74,10 @@ export function DriveMaintenanceView({disk, days}: {disk: {id: string; serial: s
     }}>
       <h4>Record work performed outside Homelab Control</h4>
       <p className="muted">Drive identity: {identity}. Bay verification remains separate. Describe observed work and evidence, without assuming it fixed the problem.</p>
-      <div className="field"><Label htmlFor={`${id}-kind`}>Work category</Label><select id={`${id}-kind`} name="kind"><option value="inspection">Inspection</option><option value="cabling">Cabling or connection work</option><option value="firmware">Firmware work</option><option value="relocation">Physical relocation</option><option value="other">Other maintenance</option></select></div>
+      <div className="field"><Label htmlFor={`${id}-kind`}>Work category</Label><SelectField id={`${id}-kind`} name="kind"><SelectOption value="inspection">Inspection</SelectOption><SelectOption value="cabling">Cabling or connection work</SelectOption><SelectOption value="firmware">Firmware work</SelectOption><SelectOption value="relocation">Physical relocation</SelectOption><SelectOption value="other">Other maintenance</SelectOption></SelectField></div>
       <div className="field"><Label htmlFor={`${id}-time`}>Work time (UTC)</Label><Input id={`${id}-time`} name="occurredUtc" type="datetime-local" required /></div>
-      <div className="field"><Label htmlFor={`${id}-confidence`}>Date confidence</Label><select id={`${id}-confidence`} name="dateConfidence"><option value="documented">Documented</option><option value="estimated">Estimated</option></select></div>
-      <div className="field"><Label htmlFor={`${id}-outcome`}>Work outcome</Label><select id={`${id}-outcome`} name="outcome" defaultValue="unknown"><option value="unknown">Unknown</option><option value="completed">Completed — not a health verdict</option><option value="incomplete">Incomplete</option></select></div>
+      <div className="field"><Label htmlFor={`${id}-confidence`}>Date confidence</Label><SelectField id={`${id}-confidence`} name="dateConfidence"><SelectOption value="documented">Documented</SelectOption><SelectOption value="estimated">Estimated</SelectOption></SelectField></div>
+      <div className="field"><Label htmlFor={`${id}-outcome`}>Work outcome</Label><SelectField id={`${id}-outcome`} name="outcome" defaultValue="unknown"><SelectOption value="unknown">Unknown</SelectOption><SelectOption value="completed">Completed — not a health verdict</SelectOption><SelectOption value="incomplete">Incomplete</SelectOption></SelectField></div>
       <div className="field"><Label htmlFor={`${id}-summary`}>Work summary</Label><Input id={`${id}-summary`} name="summary" maxLength={2000} required /></div>
       <div className="field"><Label htmlFor={`${id}-evidence`}>Maintenance evidence</Label><textarea id={`${id}-evidence`} name="evidence" maxLength={4000} rows={3} required /></div>
       <div className="field"><Label htmlFor={`${id}-identity`}>Confirm drive serial or WWN</Label><Input id={`${id}-identity`} name="confirmedIdentity" autoComplete="off" required /></div>

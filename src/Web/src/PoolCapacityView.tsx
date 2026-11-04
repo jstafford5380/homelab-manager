@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useDisplayFormat } from "./displayPreferences";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -74,17 +75,17 @@ export function PoolCapacityView({
         <h4>Capacity planning</h4>
         <label>
           Growth window{" "}
-          <select
+          <SelectField
             aria-label="Capacity growth window"
             value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
+            onValueChange={(e) => setDays(Number(e))}
           >
             {[7, 30, 90].map((d) => (
-              <option key={d} value={d}>
+              <SelectOption key={d} value={d}>
                 {d} days
-              </option>
+              </SelectOption>
             ))}
-          </select>
+          </SelectField>
         </label>
       </div>
       {error ? (

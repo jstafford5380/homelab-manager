@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { Link } from "react-router";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export default function VdevEvidenceView({entries}: {entries: {id: string; label
   return <details className="vdev-evidence">
     <summary>Member error history</summary>
     <p className="muted">Historical ZFS members. These identifiers and aliases are not verified physical drive or bay mappings. Counts do not predict a failure date.</p>
-    {entries.length > 1 && <div><label htmlFor={id}>Saved snapshot</label><select id={id} value={entry?.id ?? ""} onChange={e => {setSelected(e.target.value); setLimit(20);}}>{entries.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}</select></div>}
+    {entries.length > 1 && <div><label htmlFor={id}>Saved snapshot</label><SelectField id={id} value={entry?.id ?? ""} onValueChange={e => {setSelected(e); setLimit(20);}}>{entries.map(e => <SelectOption key={e.id} value={e.id}>{e.label}</SelectOption>)}</SelectField></div>}
     {!evidence && <p>{invalid ? "Member evidence could not be read safely." : "Member counters were not retained for this snapshot."}</p>}
     {evidence && <>
       <p className="muted">{evidence.explanation}</p>

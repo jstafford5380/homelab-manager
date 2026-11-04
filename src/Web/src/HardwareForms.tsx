@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
@@ -404,29 +405,29 @@ export function HardwareComponentForm({
       )}
       <div className="field">
         <Label htmlFor="hw-kind">Kind</Label>
-        <select
+        <SelectField
           id="hw-kind"
           value={kind}
           disabled={!!setupUpsKey || !!c && (!!c.detectedKey || replace)}
-          onChange={(e) => setKind(e.target.value)}
+          onValueChange={(e) => setKind(e)}
         >
           {Object.entries(hwKinds).map(([key, label]) => (
-            <option key={key} value={key}>
+            <SelectOption key={key} value={key}>
               {label}
-            </option>
+            </SelectOption>
           ))}
-        </select>
+        </SelectField>
       </div>
       {field("name", "Name", c?.name || c?.detectedName || (setupUpsKey ? detected?.model ?? detected?.name : undefined), "text", true)}
       {kind === "ups" && <>
         {!replace && <div className="field">
           <Label htmlFor="hw-ups-device">Detected UPS</Label>
-          <select id="hw-ups-device" value={deviceKey} onChange={event => setDeviceKey(event.target.value)}>
-            <option value="">Unlinked UPS component</option>
-            {deviceKey && !detected && <option value={deviceKey}>Previously linked UPS · unavailable</option>}
+          <SelectField id="hw-ups-device" value={deviceKey} onValueChange={event => setDeviceKey(event)}>
+            <SelectOption value="">Unlinked UPS component</SelectOption>
+            {deviceKey && !detected && <SelectOption value={deviceKey}>Previously linked UPS · unavailable</SelectOption>}
             {devices.filter(device => device.key && !detail.components.some(other => other.record.id !== c?.id && other.record.upsDeviceKey === device.key))
-              .map(device => <option key={device.key!} value={device.key!}>{device.model ?? device.name} ({device.name})</option>)}
-          </select>
+              .map(device => <SelectOption key={device.key!} value={device.key!}>{device.model ?? device.name} ({device.name})</SelectOption>)}
+          </SelectField>
         </div>}
         {detected && !detected.hasSerial && deviceKey !== c?.upsDeviceKey &&
           <label key={deviceKey}><input type="checkbox" name="confirmUpsWithoutSerial" required /> Confirm this is my UPS. This device has no serial. Review the link if you replace it with the same model.</label>}

@@ -29,7 +29,12 @@ export type Acquisition = {
   costConfidence: string;
 };
 export type Drive = {
-  apiPowerOnHours?: { status: string; hours: number | null; fetchedUtc: string | null; detail: string } | null;
+  apiPowerOnHours?: {
+    status: string;
+    hours: number | null;
+    fetchedUtc: string | null;
+    detail: string;
+  } | null;
   temperatureNote?: string | null;
   group?: { id: string; name: string; role: string } | null;
   disk: StorageDisk;
@@ -83,6 +88,7 @@ export type Pool = {
     scanStartedUtc: string | null;
     scanEndedUtc: string | null;
     scanErrors: number | null;
+    scanRemainingSeconds?: number | null;
   } | null;
   capacityOutlook: {
     status: string;
@@ -154,9 +160,24 @@ export function validStorageData(value: unknown): value is StorageData {
       return false;
     if (v.apiPowerOnHours != null) {
       const h = v.apiPowerOnHours;
-      if (!object(h) || !["disabled", "supported", "unsupported", "denied", "not_reported", "unavailable", "stale"].includes(String(h.status)) ||
-          !number(h.hours) || (typeof h.hours === "number" && (!Number.isSafeInteger(h.hours) || h.hours < 0)) ||
-          !time(h.fetchedUtc) || !text(h.detail)) return false;
+      if (
+        !object(h) ||
+        ![
+          "disabled",
+          "supported",
+          "unsupported",
+          "denied",
+          "not_reported",
+          "unavailable",
+          "stale",
+        ].includes(String(h.status)) ||
+        !number(h.hours) ||
+        (typeof h.hours === "number" &&
+          (!Number.isSafeInteger(h.hours) || h.hours < 0)) ||
+        !time(h.fetchedUtc) ||
+        !text(h.detail)
+      )
+        return false;
     }
     if (v.smart != null) {
       const s = v.smart;
@@ -275,6 +296,11 @@ export function validStorageData(value: unknown): value is StorageData {
             (object(p.scan) &&
               [p.scan.scanFunction, p.scan.scanState].every(optionalText) &&
               [p.scan.scanPercentage, p.scan.scanErrors].every(number) &&
+              (p.scan.scanRemainingSeconds === undefined ||
+                p.scan.scanRemainingSeconds === null ||
+                (typeof p.scan.scanRemainingSeconds === "number" &&
+                  Number.isSafeInteger(p.scan.scanRemainingSeconds) &&
+                  p.scan.scanRemainingSeconds >= 0)) &&
               [p.scan.scanStartedUtc, p.scan.scanEndedUtc].every(time))) &&
           (p.capacityOutlook === null ||
             (object(p.capacityOutlook) &&

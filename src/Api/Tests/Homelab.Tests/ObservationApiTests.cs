@@ -144,7 +144,11 @@ public sealed class ObservationApiTests
             var telegramInput = new ChannelInput(null, false, true, null, "telegram", "123456:abcdefghijklmnopqrstuvwxyz", "-100123456");
             Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync("/api/v1/notifications", telegramInput with { ChatId = "" })).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync("/api/v1/notifications", telegramInput)).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync("/api/v1/notifications", telegramInput with { QuietStart = "22:00" })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync("/api/v1/notifications", telegramInput with { QuietStart = "22:00", QuietEnd = "22:00" })).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync("/api/v1/notifications", telegramInput with { QuietStart = "22:00", QuietEnd = "07:00" })).StatusCode);
             var telegramSettings = await client.GetStringAsync("/api/v1/notifications");
+            Assert.Contains("22:00", telegramSettings); Assert.Contains("07:00", telegramSettings);
             Assert.Contains("telegram", telegramSettings);
             Assert.DoesNotContain(telegramInput.BotToken!, telegramSettings); Assert.DoesNotContain(telegramInput.ChatId!, telegramSettings);
             Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync("/api/v1/notifications", new ChannelInput(null, true, true, null, "telegram"))).StatusCode);
@@ -884,6 +888,10 @@ public sealed class ObservationApiTests
             var replacementTime=DateTime.UtcNow;
             Assert.Equal(HttpStatusCode.OK,(await client.PostAsJsonAsync("/api/v1/replacements",new ReplacementInput(storageDisk.Id,storageNew.Id,replacementTime,"documented","","Membership unknown","Owner replacement","Physical labels compared","STORAGE-ONE","STORAGE-TWO"))).StatusCode);
             await using(var check=new HomelabDb(options)){Assert.Equal(replacementTime,(await check.DriveAcquisitions.SingleAsync(x=>x.DiskId==storageNew.Id)).InstalledUtc);}
+            var recordedReplacements = await client.GetFromJsonAsync<DiskReplacement[]>($"/api/v1/disks/{storageDisk.Id}/replacements");
+            Assert.Single(recordedReplacements!, x => x.NewDiskId == storageNew.Id && x.OccurredUtc == replacementTime);
+            var replacedHistory = await client.GetFromJsonAsync<StorageHistoryItem[]>(storageBase+"/history");
+            Assert.Contains(replacedHistory!, x => x.Kind == "replacement" && x.Text == "Replaced by STORAGE-TWO");
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/logout", new { })).StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized,(await client.GetAsync("/api/v1/storage/overview")).StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync($"/api/v1/disks/{disk.Id}/observations")).StatusCode);

@@ -20,11 +20,32 @@ public sealed class NotificationTests
         await fixture.Engine.DeliverOneAsync(db, fixture.Channel, DateTime.UtcNow.AddSeconds(1), default);
         Assert.Equal("accepted", (await db.Deliveries.SingleAsync()).Status);
         var payload = fixture.Sender.Payloads.Single();
-        Assert.Equal(!mask, payload.Contains("PRIVATE-EVIDENCE"));
+        Assert.Equal(!mask, payload.Contains("PRIVATE-TITLE"));
+        Assert.DoesNotContain("PRIVATE-EVIDENCE", payload);
         Assert.DoesNotContain("abcdefghijklmnopqrstuvwxyz", payload);
         using var json = System.Text.Json.JsonDocument.Parse(payload);
         Assert.Equal("-123456", json.RootElement.GetProperty("chat_id").GetString());
         Assert.Equal("api.telegram.org", fixture.Sender.Uris.Single().Host);
+    }
+    [Fact] public async Task DailyQuietHoursDeferNoncriticalQueueAndPendingSendsButAllowCritical()
+    {
+        using var fixture = new Fixture(); await using var db = fixture.Db;
+        db.Settings.Add(new() { Timezone = "UTC" });
+        fixture.Channel.QuietStart = "22:00"; fixture.Channel.QuietEnd = "07:00";
+        db.Findings.Add(new() { ConnectionId = fixture.Nas.Id, Title = "Review", Severity = "urgent" });
+        await db.SaveChangesAsync();
+        var day = DateTime.UtcNow.Date.AddDays(1);
+        await fixture.Engine.QueueAsync(db, fixture.Channel, day.AddHours(21), default);
+        var queued = await db.Deliveries.SingleAsync();
+        await fixture.Engine.DeliverOneAsync(db, fixture.Channel, day.AddHours(23), default);
+        Assert.Equal(0, fixture.Sender.Calls); Assert.Equal(0, queued.Attempts);
+        db.Findings.Add(new() { ConnectionId = fixture.Nas.Id, Title = "Critical", Severity = "critical" });
+        await db.SaveChangesAsync();
+        await fixture.Engine.QueueAsync(db, fixture.Channel, day.AddHours(23), default);
+        await fixture.Engine.DeliverOneAsync(db, fixture.Channel, day.AddHours(23), default);
+        Assert.Equal(1, fixture.Sender.Calls);
+        await fixture.Engine.DeliverOneAsync(db, fixture.Channel, day.AddDays(1).AddHours(7), default);
+        Assert.Equal(2, fixture.Sender.Calls);
     }
     [Fact] public async Task QueueDeduplicatesAndRetryStopsAfterFiveAttempts()
     {

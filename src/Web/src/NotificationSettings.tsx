@@ -1,3 +1,5 @@
+import { Switch } from "@/components/ui/switch";
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useDisplayFormat } from "./displayPreferences";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -13,6 +15,8 @@ type Channel = {
   maskIdentifiers: boolean;
   testedUtc: string | null;
   maintenanceUntilUtc: string | null;
+  quietStart?: string | null;
+  quietEnd?: string | null;
 };
 type Delivery = {
   id: string;
@@ -22,17 +26,12 @@ type Delivery = {
   createdUtc: string;
 };
 type Attempt = { id: number; deliveryId: string; atUtc: string; result: string; httpStatus: number | null };
-function localTime(value: string | null | undefined) {
-  if (!value) return "";
-  const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-}
 const attemptLabel = (result: string) => ({
   accepted: "Receiver accepted", rejected: "Receiver rejected", unavailable: "Receiver unavailable",
   "outcome-unknown": "Receiver outcome unknown",
 }[result] ?? result);
 export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) => void }) {
-  const { time } = useDisplayFormat();
+  const { time, timezone } = useDisplayFormat();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -44,12 +43,13 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
   const [mask, setMask] = useState(true);
-  const [maintenance, setMaintenance] = useState("");
+  const [quietStart, setQuietStart] = useState("");
+  const [quietEnd, setQuietEnd] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [preferenceError, setPreferenceError] = useState("");
   const [quietError, setQuietError] = useState("");
-  const changes = channel ? Number(mask !== channel.maskIdentifiers) + Number(maintenance !== localTime(channel.maintenanceUntilUtc)) : 0;
+  const changes = channel ? Number(mask !== channel.maskIdentifiers) + Number(quietStart !== (channel.quietStart ?? "") || quietEnd !== (channel.quietEnd ?? "")) : 0;
   const destinationDirty = !!(url || botToken || chatId) || kind !== (channel?.kind ?? "webhook");
   useEffect(() => { onDirty(changes > 0 || destinationDirty); }, [changes, destinationDirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
@@ -59,7 +59,7 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
 
   function discardPreferences() {
     setMask(channel?.maskIdentifiers ?? true);
-    setMaintenance(localTime(channel?.maintenanceUntilUtc));
+    setQuietStart(channel?.quietStart ?? ""); setQuietEnd(channel?.quietEnd ?? "");
     setPreferenceError("");
     setQuietError("");
   }
@@ -73,7 +73,7 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
     if (data.channel) {
       if (!keepPreferences) {
         setMask(data.channel.maskIdentifiers);
-        setMaintenance(localTime(data.channel.maintenanceUntilUtc));
+        setQuietStart(data.channel.quietStart ?? ""); setQuietEnd(data.channel.quietEnd ?? "");
       }
       setKind(data.channel.kind ?? "webhook");
     }
@@ -97,8 +97,8 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        if (preferences && data.errors?.maintenanceUntilUtc) {
-          setQuietError(data.errors.maintenanceUntilUtc.join(" "));
+        if (preferences && data.errors?.quietStart) {
+          setQuietError(data.errors.quietStart.join(" "));
           throw new Error("Not saved. Fix the highlighted field and try again.");
         }
         throw new Error(data.error || "Request failed");
@@ -114,7 +114,7 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
       if (path === "" && !destination && !preferences && (body as { enabled?: boolean }).enabled) setShowEnableStep(false);
       setMessage(
         path === "/test"
-          ? `Accepted means received by ${channel?.kind === "telegram" ? "Telegram" : "the webhook receiver"}, not read.`
+          ? "Test notification sent."
           : "Notification settings saved.",
       );
     } catch (e) {
@@ -131,25 +131,27 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
   const editingDestination = changing || !channel;
   const summary = channel?.kind === "telegram" ? "Telegram" : channel?.host;
   function savedBody(enabled: boolean) {
-    return { kind: channel?.kind, enabled, maskIdentifiers: channel?.maskIdentifiers, maintenanceUntilUtc: channel?.maintenanceUntilUtc };
+    return { kind: channel?.kind, enabled, maskIdentifiers: channel?.maskIdentifiers, maintenanceUntilUtc: channel?.maintenanceUntilUtc, quietStart: channel?.quietStart ?? null, quietEnd: channel?.quietEnd ?? null };
   }
-  const toggleDelivery = <label className="backup-checkbox"><input type="checkbox" role="switch"
-    checked={!!channel?.enabled} disabled={busy || !channel?.testedUtc || editingDestination}
-    onChange={event => void act("", savedBody(event.target.checked), "PUT")} /> Delivery enabled</label>;
   return (
     <section className="settings-form">
       <Card className="settings-group">
         <div className="settings-group-heading"><h3>Delivery setup</h3>
           <Badge variant="outline">{channel?.enabled ? "Delivering" : channel ? "Delivery off" : "Not set up"}</Badge>
         </div>
-        {channel?.testedUtc && !showEnableStep && !editingDestination ? <div className="settings-row">
+        {channel?.testedUtc && !showEnableStep && !editingDestination ? <><div className="settings-row settings-delivery-summary">
           <div><strong>{summary}</strong><p className="muted">Test accepted {time(channel.testedUtc)}.</p></div>
           <div className="settings-actions">
             <Button variant="outline" onClick={() => setChanging(true)} disabled={busy}>Change</Button>
             <Button variant="outline" onClick={() => void act("/test", {})} disabled={busy}>Send another</Button>
-            {toggleDelivery}
           </div>
-        </div> : <ol className="settings-steps">
+        </div>
+        <div className="settings-row settings-delivery-toggle">
+          <div><Label htmlFor="notification-delivery-enabled">Delivery enabled</Label><p className="muted" id="notification-delivery-help">Send automatic alerts to this destination.</p></div>
+          <Switch id="notification-delivery-enabled" aria-describedby="notification-delivery-help"
+            checked={!!channel?.enabled} disabled={busy || !channel?.testedUtc || editingDestination}
+            onCheckedChange={enabled => void act("", savedBody(enabled), "PUT")} />
+        </div></> : <ol className="settings-steps">
           <li><h4>1. Choose a destination</h4>
             {editingDestination ? <form onSubmit={event => {
               event.preventDefault();
@@ -162,9 +164,9 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
             }}>
           <div className="field">
             <Label htmlFor="notification-kind">Notification service</Label>
-            <select id="notification-kind" value={kind} disabled={busy} onChange={e => { setKind(e.target.value as "webhook" | "telegram"); setUrl(""); setBotToken(""); setChatId(""); }}>
-              <option value="webhook">HTTPS webhook</option><option value="telegram">Telegram</option>
-            </select>
+            <SelectField id="notification-kind" value={kind} disabled={busy} onValueChange={e => { setKind(e as "webhook" | "telegram"); setUrl(""); setBotToken(""); setChatId(""); }}>
+              <SelectOption value="webhook">HTTPS webhook</SelectOption><SelectOption value="telegram">Telegram</SelectOption>
+            </SelectField>
           </div>
           <p className="muted">Save the destination, send a test, then enable delivery. Changing the destination requires a new successful test.</p>
           {kind === "telegram" ? <>
@@ -200,7 +202,7 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
       </Card>
       {channel && <Card className="settings-group">
         <form onSubmit={event => { event.preventDefault(); void act("", {
-          ...savedBody(channel.enabled), maskIdentifiers: mask, maintenanceUntilUtc: maintenance ? new Date(maintenance).toISOString() : null,
+          ...savedBody(channel.enabled), maskIdentifiers: mask, maintenanceUntilUtc: null, quietStart: quietStart || null, quietEnd: quietEnd || null,
         }, "PUT", true); }}>
           <h3>Quiet period and privacy</h3>
           <fieldset disabled={editingDestination || busy}>
@@ -213,25 +215,24 @@ export function NotificationSettings({ onDirty }: { onDirty: (dirty: boolean) =>
             Mask hostnames, serials, and private evidence in outbound messages
           </label>
           {mask !== channel.maskIdentifiers && <p className="muted">Was {channel.maskIdentifiers ? "On" : "Off"}</p>}
-          <div className="field" style={{ marginTop: 16 }}>
-            <Label htmlFor="notification-maintenance">
-              Suppress noncritical deliveries until (browser timezone)
-            </Label>
-            <Input
-              id="notification-maintenance"
-              type="datetime-local"
-              value={maintenance}
-              aria-invalid={!!quietError}
-              aria-describedby={quietError ? "notification-maintenance-error" : undefined}
-              onChange={event => { setMaintenance(event.target.value); setQuietError(""); }}
-            />
-            {maintenance !== localTime(channel.maintenanceUntilUtc) && <p className="muted">Was {channel.maintenanceUntilUtc ? time(channel.maintenanceUntilUtc) : "Off"}</p>}
-            {quietError && <p className="error" id="notification-maintenance-error">{quietError}</p>}
+          <div className="settings-quiet-range" style={{ marginTop: 16 }}>
+            <div className="field"><Label htmlFor="notification-maintenance">Quiet period starts</Label>
+              <Input id="notification-maintenance" type="time" value={quietStart} aria-invalid={!!quietError}
+                aria-describedby={quietError ? "notification-maintenance-error" : "notification-quiet-help"}
+                onChange={event => { setQuietStart(event.target.value); setQuietError(""); }} />
+            </div>
+            <div className="field"><Label htmlFor="notification-quiet-end">Quiet period ends</Label>
+              <Input id="notification-quiet-end" type="time" value={quietEnd} aria-invalid={!!quietError}
+                aria-describedby="notification-quiet-help" onChange={event => { setQuietEnd(event.target.value); setQuietError(""); }} />
+            </div>
           </div>
-          <p className="muted">
-            Critical findings bypass maintenance suppression. Accepted means the
-            channel accepted the message, not that you read it. Failed
-            deliveries stop after five attempts.
+          <div className="settings-quiet-summary">
+            <p className="muted" id="notification-quiet-help">{quietStart || quietEnd ? "Repeats daily" : "Quiet period off"} · {timezone}</p>
+            {(quietStart || quietEnd) && <Button type="button" variant="ghost" size="sm" aria-label="Clear quiet period" onClick={() => { setQuietStart(""); setQuietEnd(""); setQuietError(""); }}>Clear</Button>}
+          </div>
+          {quietError && <p className="error" id="notification-maintenance-error">{quietError}</p>}
+          <p className="muted settings-quiet-note">
+            Critical alerts bypass quiet hours.
           </p>
           </fieldset>
           {changes > 0 && <SettingsSaveBar section="Notifications" count={changes} error={preferenceError} busy={busy || editingDestination}

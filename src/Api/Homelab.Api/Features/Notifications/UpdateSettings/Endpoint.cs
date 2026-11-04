@@ -98,6 +98,12 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, IDataProtectio
             return;
         }
 
+        if (!NotificationQuietPeriod.Valid(input.QuietStart, input.QuietEnd))
+        {
+            const string error = "Choose different start and end times in HH:mm format, or clear both to turn off the daily quiet period.";
+            await Send.ResultAsync(Results.BadRequest(new { error, errors = new Dictionary<string, string[]> { ["quietStart"] = [error] } }));
+            return;
+        }
         if (input.MaintenanceUntilUtc > DateTime.UtcNow.AddDays(7))
         {
             const string error = "Maintenance suppression is limited to seven days.";
@@ -116,6 +122,8 @@ public sealed class Endpoint(HomelabDb db, IConfiguration config, IDataProtectio
         channel.Enabled = input.Enabled;
         channel.MaskIdentifiers = input.MaskIdentifiers;
         channel.MaintenanceUntilUtc = input.MaintenanceUntilUtc;
+        channel.QuietStart = input.QuietStart;
+        channel.QuietEnd = input.QuietEnd;
         await db.SaveChangesAsync();
         await Send.ResultAsync(Results.Ok());
         return;

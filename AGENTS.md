@@ -8,6 +8,8 @@
 
 ## Local development
 
+Use shadcn UI components whenever available, including Select for dropdown selectors and Tooltip for hover/focus information. Add missing shadcn components under `src/Web/src/components/ui`; avoid native select controls and HTML title tooltips in application UI.
+
 When the local API needs a restart, restart the `api` resource through Aspire. Use `dotnet dnx --yes aspire.cli@13.6.4 -- resource api restart --apphost src/Api/Homelab.AppHost/Homelab.AppHost.csproj --non-interactive` with the running AppHost.
 
 ## Implementing a feature package

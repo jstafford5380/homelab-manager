@@ -23,6 +23,7 @@ public sealed class NotificationEngine(IDataProtectionProvider protection, IWebh
     {
         if (!channel.Enabled || channel.TestedUtc is null)
             return;
+        var timezone = (await db.Settings.AsNoTracking().SingleOrDefaultAsync(ct))?.Timezone ?? "America/Phoenix";
         var findings = await db.Findings.ToListAsync(ct);
         foreach (var finding in findings)
         {
@@ -35,7 +36,7 @@ public sealed class NotificationEngine(IDataProtectionProvider protection, IWebh
             var eventKey = $"{channel.Revision:N}:{finding.Id:N}:{kind}:{finding.Severity}:{finding.ReminderSequence}";
             if (await db.Deliveries.AnyAsync(d => d.EventKey == eventKey, ct))
                 continue;
-            if (channel.MaintenanceUntilUtc > now && finding.Severity != "critical")
+            if ((channel.MaintenanceUntilUtc > now || NotificationQuietPeriod.Active(channel, now, timezone)) && finding.Severity != "critical")
                 continue;
             var nas = await db.Connections.FindAsync([finding.ConnectionId], ct);
             var disk = finding.DiskId is { } id ? await db.Disks.FindAsync([id], ct) : null;
@@ -71,7 +72,8 @@ public sealed class NotificationEngine(IDataProtectionProvider protection, IWebh
             var finding = await db.Findings.FindAsync([item.FindingId], ct);
             if (finding is not null)
                 await db.Entry(finding).ReloadAsync(ct);
-            if ((channel.MaintenanceUntilUtc > now || finding?.SnoozedUntilUtc > now) && finding?.Severity != "critical")
+            var timezone = (await db.Settings.AsNoTracking().SingleOrDefaultAsync(ct))?.Timezone ?? "America/Phoenix";
+            if ((channel.MaintenanceUntilUtc > now || NotificationQuietPeriod.Active(channel, now, timezone) || finding?.SnoozedUntilUtc > now) && finding?.Severity != "critical")
             {
                 item.NextAttemptUtc = now.AddSeconds(30);
                 await db.SaveChangesAsync(ct);

@@ -26,6 +26,7 @@ public static class StoragePage
         var findings = await db.Findings.AsNoTracking().Where(x => x.State != "resolved").ToListAsync(ct);
         var alerts = await db.NativeAlerts.AsNoTracking().Where(x => !x.DismissedOnNas && x.AbsentSinceUtc == null).ToListAsync(ct);
         var acquisitions = await db.DriveAcquisitions.AsNoTracking().ToDictionaryAsync(x => x.DiskId, ct);
+        var replacedDiskIds = (await db.Replacements.AsNoTracking().Where(x => x.VoidedUtc == null).Select(x => x.OldDiskId).ToListAsync(ct)).ToHashSet();
         var smartReads = smartEnabled ? await db.SmartReads.AsNoTracking().ToDictionaryAsync(x => x.DiskId, ct) : new Dictionary<Guid, SmartRead>();
         var imported = smartEnabled ? await db.SmartReports.AsNoTracking().GroupBy(x => x.DiskId).Select(g => g.OrderByDescending(x => x.ImportedUtc).First()).ToDictionaryAsync(x => x.DiskId, ct) : new Dictionary<Guid, SmartReport>();
         var plans = await db.Plans.AsNoTracking().Where(x => x.Status != "complete").OrderBy(x => x.DueUtc).ToListAsync(ct);
@@ -46,6 +47,7 @@ public static class StoragePage
             var poolsCurrent = capabilities.Any(x => x.ConnectionId == c.Id && x.Name == "pools" && x.EffectiveStatus(now) == "supported");
             var localSnapshots = snapshots.Where(x => x.ConnectionId == c.Id && poolRows.Any(p => p.Guid == x.PoolGuid)).ToArray();
             var mappings = new List<(PoolSnapshot Pool, VdevNodeEvidence Member, StorageDriveGroup? Group)>();
+            var resilverTargets = new HashSet<(string PoolGuid, string MemberGuid)>();
             foreach (var snapshot in localSnapshots)
             {
                 try
@@ -53,6 +55,11 @@ public static class StoragePage
                     if (snapshot.VdevEvidenceJson is { } evidence)
                     {
                         var nodes = VdevEvidence.Read(evidence).Nodes;
+                        if (!stale && poolsCurrent && inventoryCurrent && snapshot.ScanFunction == "RESILVER" && snapshot.ScanState == "SCANNING" && snapshot.FetchedUtc <= now && now - snapshot.FetchedUtc <= TimeSpan.FromMinutes(settings.InventoryMinutes * 3L))
+                            foreach (var node in nodes.Where(n => n.Type == "DISK" && n.State == "ONLINE"))
+                                if (nodes.Any(parent => parent.Guid == node.ParentGuid && parent.Type == "REPLACING") &&
+                                    nodes.Any(sibling => sibling.ParentGuid == node.ParentGuid && sibling.Guid != node.Guid && sibling.State is "OFFLINE" or "FAULTED" or "UNAVAIL" or "REMOVED"))
+                                    resilverTargets.Add((snapshot.PoolGuid, node.Guid));
                         var driveGroups = StorageDriveGroups.Map(nodes, c.TopologyJson, snapshot.PoolGuid);
                         mappings.AddRange(nodes.Where(n => n.Type == "DISK").Select(n => (snapshot, n, driveGroups.GetValueOrDefault(n.Guid))));
                     }
@@ -64,7 +71,9 @@ public static class StoragePage
 
             var temperatures = settings.ReadCachedTemperatures ? Read<CachedTemperatureSnapshot>(c.CachedTemperaturesJson) : null;
             var temperatureFresh = !stale && capabilities.Any(x => x.ConnectionId == c.Id && x.Name == "cached_temperatures" && x.EffectiveStatus(now) == "supported");
-            var drives = localDisks.Select(d =>
+            // Preserve original records for history and identity matching, but omit
+            // confirmed replacements that are absent from the active NAS inventory.
+            var drives = localDisks.Where(d => d.Present || !replacedDiskIds.Contains(d.Id)).Select(d =>
             {
                 var matches = mappings.Where(m => m.Member.DriveMapping?.DiskId == d.Id || m.Member.DriveMapping?.DiskId is null && m.Member.DiskAlias == d.Alias && d.Present && d.MappingConfidence != "ambiguous" && d.LastSeenUtc <= m.Pool.FetchedUtc && m.Pool.FetchedUtc - d.LastSeenUtc <= TimeSpan.FromMinutes(settings.InventoryMinutes * 3L) && localDisks.Count(x => x.Present && x.Alias == d.Alias) == 1).ToArray();
                 var match = matches.Length == 1 ? matches[0] : default;
@@ -86,6 +95,11 @@ public static class StoragePage
                     status = new("Unknown", "neutral", "Inventory or pool collection is out of date or unavailable. The current drive status is unknown.");
                 if (member is null && d.Lifecycle != "spare" && mappings.Any(x => x.Member.DriveMapping?.DiskId is null) && status.Label == "Spare")
                     status = new("Unknown", "neutral", "Pool membership could not be matched to this drive's stable identity.");
+                if (d.Present && d.MappingConfidence != "ambiguous" && member is not null && resilverTargets.Contains((match.Pool.PoolGuid, member.Guid)))
+                {
+                    const string context = "ZFS reports this drive online in a replacement group with the old member offline or unavailable, while the pool is resilvering.";
+                    status = status.Label is "Healthy" or "Unknown" ? new("Resilvering", "neutral", context) : status with { Why = status.Why + " " + context };
+                }
                 var temperature = temperatureFresh && inventoryCurrent && d.Present && d.MappingConfidence != "ambiguous" && localDisks.Count(x => x.Present && x.Alias == d.Alias) == 1 ? temperatures?.Readings.SingleOrDefault(x => x.DeviceName == d.Alias)?.Celsius : null;
                 var temperatureNote = !settings.ReadCachedTemperatures ? "Collection disabled in Settings." : !temperatureFresh ? "No recent temperature cache read is available." : temperatures?.Readings.Length == 0 ? "TrueNAS returned an empty temperature cache." : temperature is null ? "No cached temperature could be matched to this drive." : null;
                 return new StorageDrive(d, d.Nickname ?? StorageInventory.SuggestedName(d.Model), status, match.Pool?.PoolGuid, match.Pool?.Name, member?.State, member?.ReadErrors, member?.WriteErrors, member?.ChecksumErrors, StorageInventory.BayConfirmed(d), temperature, temperature is null ? null : temperatures?.FetchedUtc, acquisitions.GetValueOrDefault(d.Id), plans.FirstOrDefault(p => p.DiskId == d.Id), smart, match.Group, temperatureNote, Homelab.Api.ApiPowerOnHours.ForDrive(c, d, settings.ReadApiPowerOnHours, now, apiPowerOnStates.GetValueOrDefault(c.Id)));

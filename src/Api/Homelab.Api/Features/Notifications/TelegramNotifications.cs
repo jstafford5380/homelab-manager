@@ -30,48 +30,52 @@ public static partial class TelegramNotifications
         var root = document.RootElement;
         var text = new StringBuilder("Homelab Control\n");
         if (root.TryGetProperty("type", out var type) && type.GetString() == "homelab-test")
-            text.Append("Notification test. This test does not change automatic alert settings.");
+        {
+            // Render the example through the real formatter so tests preview the
+            // same layout as automatic notifications, without exposing NAS data.
+            var preview = Payload(destination, JsonSerializer.Serialize(new
+            {
+                severity = "critical", state = "open", title = "Example: pool Main is degraded",
+                nas = "Example NAS", nextStep = "Check the pool in TrueNAS and confirm your backups are current."
+            }));
+            using var sample = JsonDocument.Parse(preview);
+            text.Clear().Append("🧪 Notification test\n\n")
+                .Append(sample.RootElement.GetProperty("text").GetString())
+                .Append("\n\nExample only — this does not report an actual NAS issue or change automatic alert settings.");
+        }
         else
         {
-            foreach (var(key, label, limit)in new[]
+            string Field(string key, int limit = 250) => root.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String
+                ? Clip(Regex.Replace(value.GetString() ?? "", @"\s+", " ").Trim(), limit) : "";
+            var resolved = Field("state") == "resolved";
+            var heading = resolved ? "✅ Resolved" : Field("severity") switch
             {
-                ("severity", "Severity", 40),
-                ("state", "State", 40),
-                ("title", "Finding", 250),
-                ("nas", "NAS", 150),
-                ("serial", "Drive serial", 150),
-                ("bay", "Bay", 150),
-                ("FirstSeenUtc", "First seen (UTC)", 50),
-                ("LastSeenUtc", "Last seen (UTC)", 50),
-                ("evidence", "Evidence", 1000),
-                ("nextStep", "Next step", 500),
-                ("evidencePath", "In-app evidence path", 150)
-            }
-
-            )
-            {
-                if (!root.TryGetProperty(key, out var field) || field.ValueKind != JsonValueKind.String)
-                    continue;
-                text.Append(label).Append(": ").Append(Clip(field.GetString()!, limit)).Append('\n');
-            }
-
-            var coverageText = new StringBuilder();
+                "critical" => "🔴 Critical · action needed",
+                "urgent" => "🟠 Needs attention",
+                _ => "🟡 Review needed"
+            };
+            text.Clear().Append(heading).Append(" · Homelab Control\n\n");
+            text.Append(Field("title") is { Length: > 0 } title ? title : "NAS finding requires review").Append('\n');
+            var nas = Field("nas", 120);
+            var serial = Field("serial", 120);
+            var bay = Field("bay", 80);
+            if (nas.Length > 0) text.Append(nas).Append('\n');
+            if (serial.Length > 0) text.Append("Drive ").Append(serial).Append('\n');
+            if (bay.Length > 0 && bay != "unverified or masked") text.Append("Bay ").Append(bay).Append('\n');
+            var next = resolved ? "This finding is marked resolved. Review its history in the app." : Field("nextStep", 400);
+            if (next.Length == 0) next = "Review this finding and its evidence in Homelab Control.";
+            text.Append("\n").Append(resolved ? "" : "Next step: ").Append(next).Append('\n');
             if (root.TryGetProperty("coverage", out var coverage) && coverage.ValueKind == JsonValueKind.Array)
-                foreach (var item in coverage.EnumerateArray().Take(12))
-                    if (item.TryGetProperty("Name", out var name) && item.TryGetProperty("status", out var status))
-                    {
-                        coverageText.Append("Coverage: ").Append(Clip(name.GetString() ?? "unknown", 50)).Append(" — ").Append(Clip(status.GetString() ?? "unknown", 40));
-                        var lastSuccess = item.TryGetProperty("LastSuccessUtc", out var last) && last.ValueKind == JsonValueKind.String ? last.GetString()! : "unknown";
-                        coverageText.Append("; last successful fetch: ").Append(Clip(lastSuccess, 50)).Append('\n');
-                    }
-
-            var coverageSummary = coverageText.ToString();
-            if (coverageSummary.Length > 600)
-                coverageSummary = Clip(coverageSummary, 550) + "\nMore coverage details in the app.\n";
-            text.Append(coverageSummary);
-            // Reserve space for the qualification even when every source field is at its bound.
-            var summary = Clip(text.ToString(), 3800);
-            text.Clear().Append(summary).Append("\nObserved condition, not a predicted failure date. Fetch time is not necessarily observation time. Acceptance does not prove this message was read.");
+            {
+                var incomplete = coverage.EnumerateArray().Count(item => !item.TryGetProperty("status", out var status) || status.GetString() is not ("supported" or "disabled" or "unsupported"));
+                if (incomplete > 0) text.Append("\nMonitoring data is incomplete or unavailable for ").Append(incomplete).Append(incomplete == 1 ? " source. Check coverage in the app.\n" : " sources. Check coverage in the app.\n");
+            }
+            var timestampKey = resolved ? "LastSeenUtc" : "FirstSeenUtc";
+            if (DateTimeOffset.TryParse(Field(timestampKey), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var at))
+                text.Append('\n').Append(resolved ? "Last observed " : "First observed ").Append(at.UtcDateTime.ToString("MMM d, yyyy 'at' HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture)).Append('\n');
+            var path = Field("evidencePath", 150);
+            text.Append("\nDetails and evidence in Homelab Control");
+            if (path.Length > 0) text.Append('\n').Append(path);
         }
 
         return JsonSerializer.Serialize(new { chat_id = destination.ChatId, text = Clip(text.ToString(), 4000), link_preview_options = new { is_disabled = true } });

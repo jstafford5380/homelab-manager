@@ -21,7 +21,7 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<EmptyRequest, Response>
 
     public override async Task HandleAsync(EmptyRequest request, CancellationToken ct)
     {
-        await Send.ResultAsync(Results.Ok(new Response(await db.NotificationChannels.Select(c => new ResponseChannel(c.Kind, c.Host, c.Enabled, c.MaskIdentifiers, c.TestedUtc, c.MaintenanceUntilUtc)).SingleOrDefaultAsync(), await db.Deliveries.OrderByDescending(d => d.CreatedUtc).Take(100).Select(d => new ResponseDeliveriesItem(d.Id, d.FindingId, d.Kind, d.Status, d.Attempts, d.CreatedUtc, d.AcceptedUtc)).ToListAsync(), await db.DeliveryAttempts.OrderByDescending(a => a.Id).Take(100).ToListAsync())));
+        await Send.ResultAsync(Results.Ok(new Response(await db.NotificationChannels.Select(c => new ResponseChannel(c.Kind, c.Host, c.Enabled, c.MaskIdentifiers, c.TestedUtc, c.MaintenanceUntilUtc, c.QuietStart, c.QuietEnd)).SingleOrDefaultAsync(), await db.Deliveries.OrderByDescending(d => d.CreatedUtc).Take(100).Select(d => new ResponseDeliveriesItem(d.Id, d.FindingId, d.Kind, d.Status, d.Attempts, d.CreatedUtc, d.AcceptedUtc)).ToListAsync(), await db.DeliveryAttempts.OrderByDescending(a => a.Id).Take(100).ToListAsync())));
         return;
     }
 }

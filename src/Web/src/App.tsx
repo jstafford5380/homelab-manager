@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { SettingsPage } from "./SettingsPage";
 import { RefreshServerButton, type ServerRefreshTarget } from "./RefreshServerButton";
 import { BrandIcon } from "./BrandIcon";
@@ -667,23 +668,23 @@ export default function App() {
                               : "No budget set"}
                           </strong>
                           <PlanEditor plan={p} onSaved={refresh} />
-                          <select
+                          <SelectField
                             aria-label={`Status for ${p.title}`}
                             value={p.status}
-                            onChange={(e) =>
+                            onValueChange={(e) =>
                               void action(() =>
                                 request(
                                   `/plans/${p.id}`,
-                                  { ...p, status: e.target.value },
+                                  { ...p, status: e },
                                   "PUT",
                                 ),
                               )
                             }
                           >
-                            <option value="planned">Planned</option>
-                            <option value="ordered">Ordered</option>
-                            <option value="complete">Complete</option>
-                          </select>
+                            <SelectOption value="planned">Planned</SelectOption>
+                            <SelectOption value="ordered">Ordered</SelectOption>
+                            <SelectOption value="complete">Complete</SelectOption>
+                          </SelectField>
                         </div>
                       ))
                     ) : (

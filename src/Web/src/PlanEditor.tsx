@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { useDisplayFormat } from "./displayPreferences";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -253,17 +254,17 @@ export function PlanEditor({
               </div>
               <div className="field">
                 <Label htmlFor={`plan-status-${plan.id}`}>Plan status</Label>
-                <select
+                <SelectField
                   id={`plan-status-${plan.id}`}
                   value={draft.status}
-                  onChange={(e) =>
-                    setDraft({ ...draft, status: e.target.value })
+                  onValueChange={(e) =>
+                    setDraft({ ...draft, status: e })
                   }
                 >
-                  <option value="planned">Planned</option>
-                  <option value="ordered">Ordered</option>
-                  <option value="complete">Complete</option>
-                </select>
+                  <SelectOption value="planned">Planned</SelectOption>
+                  <SelectOption value="ordered">Ordered</SelectOption>
+                  <SelectOption value="complete">Complete</SelectOption>
+                </SelectField>
               </div>
             </div>
             <div className="field">

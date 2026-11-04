@@ -80,7 +80,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await page.getByRole('button', { name: 'Add asset' }).click();
  await audit('New asset dialog');
  await page.getByLabel('Name', { exact: true }).fill('Cold spare shelf');
- await page.getByLabel('Type', { exact: true }).selectOption('spare');
+ await page.getByLabel('Type', { exact: true }).click(); await page.locator('[role="option"][data-value="spare"]').click();
  await page.getByLabel('Quantity / stock on hand').fill('2');
  await page.getByLabel('Spare compatibility / assumptions').fill('Verify SATA and sector format');
  await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -91,7 +91,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await page.getByRole('button', { name: 'Add protection policy' }).click();
  await audit('Protection policy dialog');
  await page.getByLabel('Dataset or service').fill('Family photos');
- await page.getByLabel('Recovery importance').selectOption('critical');
+ await page.getByLabel('Recovery importance').click(); await page.locator('[role="option"][data-value="critical"]').click();
  await page.getByLabel('Destination', { exact: true }).fill('Offsite backup');
  await page.getByLabel('Protected scope').fill('photos dataset');
  await page.getByLabel('Destination capacity notes (optional)').fill('8 TiB total, 3 TiB free; manual check 2026-01-01');
@@ -106,7 +106,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await expect(page.getByRole('heading', { name: 'Family photos' })).toBeVisible();
  await expect(page.getByText('Importance: critical', { exact: false })).toBeVisible();
  await page.getByRole('button', { name: 'Edit policy', exact: true }).click();
- await expect(page.getByLabel('Recovery importance')).toHaveValue('critical');
+ await expect(page.getByLabel('Recovery importance')).toContainText('critical');
  await page.getByLabel('Retention', { exact: true }).fill('Keep monthly copies for one year');
  await page.getByRole('button', { name: 'Save evidence' }).click();
  await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -186,7 +186,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await recoveryHistory.getByRole('button',{name:'Older evidence',exact:true}).click();
  await expect(recoveryHistory.getByText('Oldest retained evidence',{exact:true})).toBeVisible();
  await expect(recoveryHistory.getByRole('button',{name:'Older evidence',exact:true})).toHaveCount(0);
- await recoveryHistory.getByLabel('Evidence type for Family photos').selectOption('exercises');
+ await recoveryHistory.getByLabel('Evidence type for Family photos').click(); await page.locator('[role="option"][data-value="exercises"]').click();
  await expect(recoveryHistory.getByText('Restored scope: photos',{exact:true})).toBeVisible();
  await page.setViewportSize({width:390,height:844});
  await audit('Recovery retained history');
@@ -434,7 +434,7 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  });
  await page.getByRole('button',{name:'Review spare compatibility',exact:true}).click();
  await page.getByRole('button',{name:'Record compatibility review',exact:true}).click();
- await page.getByLabel('Compatibility assessment',{exact:true}).selectOption('compatible');
+ await page.getByLabel('Compatibility assessment',{exact:true}).click(); await page.locator('[role="option"][data-value="compatible"]').click();
  await page.getByLabel('Compatibility evidence',{exact:true}).fill('Capacity, interface, sector format and fit checked against fixture manufacturer and enclosure sheets.');
  await page.getByLabel('Review again by (00:00 UTC)',{exact:true}).fill(new Date(Date.now()+30*86400000).toISOString().slice(0,10));
  await page.getByLabel('Confirm drive serial or WWN',{exact:true}).fill('wrong');
@@ -671,14 +671,14 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  expect(requestedRetry).toBe(true);
  await expect(page.getByText('Receiver outcome unknown',{exact:false})).toBeVisible();
  let telegramSaved: Record<string, unknown> | null = null;
- const telegramChannel = {kind:'telegram',host:'api.telegram.org',enabled:false,maskIdentifiers:true,testedUtc:null as string|null,maintenanceUntilUtc:null};
+ const telegramChannel = {kind:'telegram',host:'api.telegram.org',enabled:false,maskIdentifiers:true,testedUtc:null as string|null,maintenanceUntilUtc:null,quietStart:null as string|null,quietEnd:null as string|null};
  await page.route('**/api/v1/notifications', route => {
-   if(route.request().method()==='PUT') { telegramSaved=route.request().postDataJSON(); telegramChannel.enabled=Boolean(telegramSaved!.enabled); return route.fulfill({json:{}}); }
+   if(route.request().method()==='PUT') { telegramSaved=route.request().postDataJSON(); telegramChannel.enabled=Boolean(telegramSaved!.enabled); telegramChannel.quietStart=telegramSaved!.quietStart as string|null; telegramChannel.quietEnd=telegramSaved!.quietEnd as string|null; return route.fulfill({json:{}}); }
    return route.fulfill({json:{channel:telegramChannel,deliveries:[],attempts:[]}});
  });
  await page.route('**/api/v1/notifications/test', route => {telegramChannel.testedUtc='2026-11-01T12:00:00Z';return route.fulfill({json:{}});});
  await page.getByRole('button', { name: 'Change', exact: true }).click();
- await page.getByLabel('Notification service',{exact:true}).selectOption('telegram');
+ await page.getByLabel('Notification service',{exact:true}).click(); await page.locator('[role="option"][data-value="telegram"]').click();
  await page.getByLabel('Telegram bot token',{exact:true}).fill('123456:abcdefghijklmnopqrstuvwxyz');
  await page.getByLabel('Telegram chat ID',{exact:true}).fill('-100123456');
  await expect(page.getByRole('button',{name:'Send a test',exact:true})).toBeDisabled();
@@ -692,6 +692,14 @@ test('owner setup, planning, inventory, recovery and settings are usable', async
  await expect(page.getByRole('button',{name:'Turn on delivery',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'Turn on delivery',exact:true}).click();
  await expect(page.getByRole('switch',{name:'Delivery enabled',exact:true})).toBeChecked();
+ await expect(page.getByText(/Accepted means/)).toHaveCount(0);
+ await page.getByLabel('Quiet period starts',{exact:true}).fill('22:00');
+ await page.getByLabel('Quiet period ends',{exact:true}).fill('07:00');
+ await page.getByRole('button',{name:'Save changes',exact:true}).click();
+ await expect.poll(()=>telegramSaved).toMatchObject({quietStart:'22:00',quietEnd:'07:00',maintenanceUntilUtc:null});
+ await expect(page.getByLabel('Quiet period starts',{exact:true})).toHaveValue('22:00');
+ await expect(page.getByLabel('Quiet period ends',{exact:true})).toHaveValue('07:00');
+ await audit('Daily quiet hours');
  await page.screenshot({path:'test-results/telegram-settings-mobile.png',animations:'disabled'});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
  let scanMode = 'active';

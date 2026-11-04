@@ -10,5 +10,7 @@ public sealed class NotificationChannel
     public bool Enabled { get; set; }
     public bool MaskIdentifiers { get; set; } = true;
     public DateTime? TestedUtc { get; set; }
+    public string? QuietStart { get; set; }
+    public string? QuietEnd { get; set; }
     public DateTime? MaintenanceUntilUtc { get; set; }
 }

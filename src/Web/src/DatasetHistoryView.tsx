@@ -1,3 +1,4 @@
+import { SelectField, SelectOption } from "@/components/SelectField";
 import { DatasetRenameView } from "./DatasetRenameView";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ function History({connectionId}:{connectionId:string}) {
  <div className="review-actions">{page?.nextBefore&&<Button variant="outline" disabled={busy} onClick={()=>void load(page)}>Older dataset samples</Button>}<Button variant="outline" disabled={busy} onClick={()=>void load(null)}>{page?'Refresh latest samples':'Retry dataset history'}</Button></div>
  {page&&<p className="muted">Retention target: {page.retentionDays} days. Expiry requires a successful backup. Inventories referenced by rename reviews remain retained. Refresh includes new samples; no older history is reconstructed.</p>}
  {page&&!page.items.length&&<p>No sampled inventories have been retained yet. Samples begin with successful collection after history support is enabled.</p>}
- {sample&&<><div className="field"><Label htmlFor={`${id}-sample`}>Saved inventory</Label><select id={`${id}-sample`} value={selected} onChange={event=>{setSelected(Number(event.target.value));setLimit(20);}}>{page!.items.map((row,index)=><option value={index} key={row.id}>{time(row.fetchedUtc)} · record {row.id}</option>)}</select></div>
+ {sample&&<><div className="field"><Label htmlFor={`${id}-sample`}>Saved inventory</Label><SelectField id={`${id}-sample`} value={selected} onValueChange={event=>{setSelected(Number(event));setLimit(20);}}>{page!.items.map((row,index)=><SelectOption value={index} key={row.id}>{time(row.fetchedUtc)} · record {row.id}</SelectOption>)}</SelectField></div>
  <details><summary>Recorded source context</summary><p>System identity: {sample.systemSerial||'Unknown'} · Version: {sample.version||'Unknown'}</p><p className="muted" style={{overflowWrap:'anywhere'}}>Connection revision: {sample.configurationRevision} · Source: {sample.snapshot.sourceSchema}. A changed source context must be reviewed before comparing inventories.</p></details>
  {!rows.length?<p>This successful sample contained no visible datasets. It does not establish that the NAS contained no data.</p>:<><div className="field"><Label htmlFor={`${id}-search`}>Find a name in this saved inventory</Label><Input id={`${id}-search`} type="search" value={search} onChange={event=>{setSearch(event.target.value);setLimit(20);}}/></div><p className="muted">Showing {Math.min(limit,matches.length)} of {matches.length} matching entries · {rows.length} saved. Parent and descendant usage overlaps.</p>
  {!matches.length&&<p>No names match. <Button variant="ghost" onClick={()=>setSearch('')}>Clear history filter</Button></p>}

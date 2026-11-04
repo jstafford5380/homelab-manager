@@ -188,6 +188,7 @@
 .storage-pool-head {
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
   gap: 16px 28px;
   padding: 18px 20px;
@@ -702,4 +703,20 @@
 @media (max-width: 700px) {
   .storage-page-heading { flex-wrap: wrap; }
   .storage-heading-actions { flex-wrap: wrap; margin-left: auto; }
+}
+
+@keyframes storage-scan-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .storage-scan-active,
+  .storage-pill-resilvering {
+    animation: storage-scan-breathe 2s ease-in-out infinite;
+  }
 }

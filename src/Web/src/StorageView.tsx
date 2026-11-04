@@ -1,3 +1,4 @@
+import { HoverTip } from "@/components/HoverTip";
 import { formatInvestment } from "./investment";
 import type { ServerRefreshTarget } from "./RefreshServerButton";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -9,6 +10,7 @@ import {
   AlertTriangle,
   CircleCheck,
   TriangleAlert,
+  OctagonAlert,
   CircleAlert,
   CircleHelp,
   type LucideIcon,
@@ -38,16 +40,20 @@ const pillIcon: Record<string, LucideIcon> = {
   bad: CircleAlert,
   neutral: CircleHelp,
 };
-export function StoragePill({ status }: { status: Status }) {
+export function StoragePill({ status, resilverEstimate }: { status: Status; resilverEstimate?: string }) {
   const Icon = pillIcon[status.tone] ?? CircleHelp;
   return (
-    <Badge
+    <HoverTip content={status.label === "Resilvering" ? resilverEstimate : undefined}><Badge
+      tabIndex={status.label === "Resilvering" && resilverEstimate ? 0 : undefined}
       variant="outline"
-      className={"storage-pill storage-tone-" + status.tone}
+      className={
+        "storage-pill storage-tone-" + status.tone +
+        (status.label === "Resilvering" ? " storage-pill-resilvering" : "")
+      }
     >
       <Icon aria-hidden="true" />
       {status.label}
-    </Badge>
+    </Badge></HoverTip>
   );
 }
 export function StorageBar({
@@ -70,6 +76,24 @@ export function StorageBar({
     </div>
   );
 }
+function remainingTime(seconds: number) {
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  if (minutes < 60) return minutes + " min";
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24)
+    return hours + " h" + (minutes % 60 ? " " + (minutes % 60) + " min" : "");
+  return (
+    Math.floor(hours / 24) +
+    " d" +
+    (hours % 24 ? " " + (hours % 24) + " h" : "")
+  );
+}
+export function resilverEstimate(pool: Pool | undefined, stale: boolean): string | undefined {
+  const scan = pool?.scan;
+  return !stale && scan?.scanFunction === "RESILVER" && scan.scanState === "SCANNING" && scan.scanRemainingSeconds != null && scan.scanRemainingSeconds > 0
+    ? "About " + remainingTime(scan.scanRemainingSeconds) + " remaining (TrueNAS estimate)"
+    : undefined;
+}
 function scanLine(pool: Pool, stale: boolean) {
   const s = pool.scan;
   const progress =
@@ -84,6 +108,12 @@ function scanLine(pool: Pool, stale: boolean) {
           : "Scrub in progress · ") +
         progress +
         (s.scanState === "PAUSED" ? " · paused" : "") +
+        (!stale &&
+        s.scanState === "SCANNING" &&
+        s.scanRemainingSeconds != null &&
+        s.scanRemainingSeconds > 0
+          ? " · about " + remainingTime(s.scanRemainingSeconds) + " remaining"
+          : "") +
         (s.scanStartedUtc ? " · started " + relative(s.scanStartedUtc) : "")
       : s.scanEndedUtc
         ? (s.scanFunction === "SCRUB" ? "Last scrub " : "Last resilver ") +
@@ -121,11 +151,34 @@ function forecastLine(pool: Pool, stale: boolean, timezone: string) {
       return "No forecast available";
   }
 }
+function serviceAgeColor(installedUtc: string | null | undefined) {
+  if (!installedUtc || !Number.isFinite(Date.parse(installedUtc))) return undefined;
+  const now = new Date();
+  const sevenYearsAgo = new Date(now);
+  sevenYearsAgo.setUTCFullYear(now.getUTCFullYear() - 7);
+  const fiveYearsAgo = new Date(now);
+  fiveYearsAgo.setUTCFullYear(now.getUTCFullYear() - 5);
+  return Date.parse(installedUtc) < sevenYearsAgo.getTime()
+    ? "var(--tone-bad)"
+    : Date.parse(installedUtc) < fiveYearsAgo.getTime()
+      ? "var(--tone-warn)"
+      : undefined;
+}
+function ServiceAgeIcon({ installedUtc }: { installedUtc?: string | null }) {
+  const color = serviceAgeColor(installedUtc);
+  if (!color) return null;
+  const older = color === "var(--tone-bad)";
+  const Icon = older ? OctagonAlert : TriangleAlert;
+  return <Icon size={14} role="img" aria-label={`Past ${older ? 7 : 5} years in service`}
+    style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 6, color }} />;
+}
 function DriveTable({
   drives,
   open,
+  estimate,
 }: {
   drives: Drive[];
+  estimate?: string;
   open: (d: Drive, edit?: boolean) => void;
 }) {
   const { bytes } = useDisplayFormat();
@@ -210,7 +263,7 @@ function DriveTable({
               {group.drives.map((d) => (
                 <tr key={d.disk.id}>
                   <td>
-                    <StoragePill status={d.status} />
+                    <StoragePill status={d.status} resilverEstimate={estimate} />
                   </td>
                   <td>
                     <button
@@ -242,7 +295,7 @@ function DriveTable({
                       </small>
                     )}
                   </td>
-                  <td>
+                  <td style={{ color: serviceAgeColor(d.acquisition?.installedUtc) }}>
                     {age(d.acquisition?.installedUtc) || (
                       <button
                         className="storage-link"
@@ -251,6 +304,7 @@ function DriveTable({
                         Add install date
                       </button>
                     )}
+                    <ServiceAgeIcon installedUtc={d.acquisition?.installedUtc} />
                   </td>
                 </tr>
               ))}
@@ -279,14 +333,17 @@ function DriveTable({
                 onClick={() => open(d)}
               >
                 <strong>{d.title}</strong>
-                <StoragePill status={d.status} />
+                <StoragePill status={d.status} resilverEstimate={estimate} />
                 <span>
                   {d.disk.bay || "Location unknown"} · {bytes(d.disk.sizeBytes)}{" "}
                   · {d.disk.serial || "Serial unknown"}
                 </span>
                 <span>
                   {d.bayConfirmed ? "Confirmed" : "Not confirmed"} ·{" "}
-                  {age(d.acquisition?.installedUtc) || "Add install date"}
+                  <span style={{ color: serviceAgeColor(d.acquisition?.installedUtc) }}>
+                    {age(d.acquisition?.installedUtc) || "Add install date"}
+                    <ServiceAgeIcon installedUtc={d.acquisition?.installedUtc} />
+                  </span>
                 </span>
               </button>
             ))}
@@ -339,7 +396,16 @@ function PoolCard({
                 (pool.toleratedFailures === 1 ? "" : "es")
               : ""}
           </p>
-          <p className="storage-scan">
+          <p
+            className={
+              "storage-scan" +
+              (!stale &&
+              pool.scan?.scanFunction === "RESILVER" &&
+              pool.scan.scanState === "SCANNING"
+                ? " storage-scan-active"
+                : "")
+            }
+          >
             <span
               className={
                 "storage-dot storage-tone-" +
@@ -364,7 +430,15 @@ function PoolCard({
           </div>
           <StorageBar
             value={percent}
-            tone={percent == null ? undefined : percent >= 95 ? "bad" : percent >= 85 ? "warn" : "ok"}
+            tone={
+              percent == null
+                ? undefined
+                : percent >= 95
+                  ? "bad"
+                  : percent >= 85
+                    ? "warn"
+                    : "ok"
+            }
             label={
               percent == null
                 ? "Pool usage unknown"
@@ -428,7 +502,7 @@ function PoolCard({
           </>
         )}
       </details>
-      <DriveTable drives={pool.drives} open={open} />
+      <DriveTable drives={pool.drives} open={open} estimate={resilverEstimate(pool, stale)} />
     </Card>
   );
 }
@@ -523,9 +597,13 @@ export function StorageView({
   const refreshServerId = server?.id;
   const refreshFreshness = server?.freshness;
   useEffect(() => {
-    onRefreshTargetChange(refreshServerId && refreshFreshness !== "Paused" && refreshFreshness !== "Not connected"
-      ? { serverId: refreshServerId, target: "storage" }
-      : null);
+    onRefreshTargetChange(
+      refreshServerId &&
+        refreshFreshness !== "Paused" &&
+        refreshFreshness !== "Not connected"
+        ? { serverId: refreshServerId, target: "storage" }
+        : null,
+    );
     return () => onRefreshTargetChange(null);
   }, [onRefreshTargetChange, refreshServerId, refreshFreshness]);
   const drive =

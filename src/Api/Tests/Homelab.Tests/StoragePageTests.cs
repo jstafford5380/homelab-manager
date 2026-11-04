@@ -140,4 +140,41 @@ public class StoragePageTests
         await SmartSshCollector.StageAsync(db,disk,result,false,Now);await db.SaveChangesAsync();
         var row=await db.SmartReads.SingleAsync();Assert.True(row.SkippedAsleep);Assert.Equal("retained",row.ReportJson);Assert.Equal(Now.AddDays(-1),row.ReadUtc);Assert.Empty(await db.Observations.ToListAsync());
     }
+
+    [Fact] public async Task ReplacementTargetUsesZfsEvidenceAndDoesNotInheritRecycledAliasAlerts()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();
+        await using var db = new HomelabDb(new DbContextOptionsBuilder<HomelabDb>().UseSqlite(connection).Options); await db.Database.MigrateAsync();
+        var nas = new NasConnection { LastSuccessUtc = Now, TopologyJson = "[{\"guid\":\"pool\",\"name\":\"tank\",\"status\":\"DEGRADED\"}]" };
+        var old = new Disk { ConnectionId = nas.Id, Serial = "OLD-6733", Alias = "sdk", Present = false };
+        var replacement = new Disk { ConnectionId = nas.Id, Serial = "NEW-EBGU", Alias = "sdk", Present = true, LastSeenUtc = Now };
+        var nodes = new VdevNodeEvidence[] {
+            new("replacing", null, "data", "REPLACING", "DEGRADED", null, null, null, 0, 0, 0),
+            new("old", "replacing", "data", "DISK", "OFFLINE", null, null, null, 0, 0, 0),
+            new("new", "replacing", "data", "DISK", "ONLINE", null, null, "sdk", 0, 0, 0, null) };
+        var snapshot = new PoolSnapshot { ConnectionId = nas.Id, PoolGuid = "pool", Name = "tank", FetchedUtc = Now, ScanFunction = "RESILVER", ScanState = "SCANNING", VdevEvidenceJson = JsonSerializer.Serialize(new VdevSnapshotEvidence(VdevEvidence.Schema, "reported", "fixture", nodes), new JsonSerializerOptions(JsonSerializerDefaults.Web)) };
+        db.Connections.Add(nas); db.Disks.AddRange(old, replacement); db.PoolSnapshots.Add(snapshot);
+        foreach (var name in new[] { "inventory", "pools", "alerts" }) db.Capabilities.Add(new() { ConnectionId = nas.Id, Name = name, Status = "supported", LastSuccessUtc = Now });
+        var alert = new NativeAlert { ConnectionId = nas.Id, SourceId = "smart", Class = "SMART", Message = "Device: /dev/sdk [SAT], 5 pending sectors." };
+        db.NativeAlerts.Add(alert); await db.SaveChangesAsync();
+        async Task<StorageDrive> Read() { var server = (await StoragePage.ReadAsync(db, Now)).Servers.Single(); return server.Pools.SelectMany(p => p.Drives).Concat(server.LooseDrives).Single(d => d.Disk.Id == replacement.Id); }
+        var replacementRecord = new DiskReplacement { OldDiskId = old.Id, NewDiskId = replacement.Id, OccurredUtc = Now };
+        db.Replacements.Add(replacementRecord); await db.SaveChangesAsync();
+        var active = (await StoragePage.ReadAsync(db, Now)).Servers.Single();
+        Assert.DoesNotContain(active.LooseDrives, d => d.Disk.Id == old.Id);
+        Assert.Equal(1, active.DriveCount);
+        Assert.True(await db.Disks.AnyAsync(d => d.Id == old.Id));
+        replacementRecord.VoidedUtc = Now; await db.SaveChangesAsync();
+        Assert.Contains((await StoragePage.ReadAsync(db, Now)).Servers.Single().LooseDrives, d => d.Disk.Id == old.Id);
+        replacementRecord.VoidedUtc = null; old.Present = true; await db.SaveChangesAsync();
+        Assert.Contains((await StoragePage.ReadAsync(db, Now)).Servers.Single().LooseDrives, d => d.Disk.Id == old.Id);
+        old.Present = false; await db.SaveChangesAsync();
+        var result = await Read(); Assert.Equal("Resilvering", result.Status.Label); Assert.Contains("replacement group", result.Status.Why); Assert.DoesNotContain("pending sectors", result.Status.Why);
+        alert.Message = "Device: NEW-EBGU, 5 pending sectors."; await db.SaveChangesAsync();
+        result = await Read(); Assert.Equal("Watch", result.Status.Label); Assert.Contains("pending sectors", result.Status.Why); Assert.Contains("resilvering", result.Status.Why);
+        alert.AbsentSinceUtc = Now; snapshot.ScanState = "FINISHED"; await db.SaveChangesAsync();
+        Assert.NotEqual("Resilvering", (await Read()).Status.Label);
+        snapshot.ScanState = "SCANNING"; snapshot.FetchedUtc = Now.AddDays(-1); await db.SaveChangesAsync();
+        Assert.NotEqual("Resilvering", (await Read()).Status.Label);
+    }
 }
