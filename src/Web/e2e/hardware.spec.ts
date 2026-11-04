@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import type { HwDetail, HwMetric, HwComponent } from "../src/hardwareModel";
+import type { HwDetail, HwMetric, HwComponent } from "../src/features/hardware/hardwareModel";
 const now = () => new Date().toISOString();
 const before = (days: number) =>
   new Date(Date.now() - days * 86400000).toISOString();
@@ -477,10 +477,10 @@ for (const width of [1440, 390])
       .click();
     await page.getByRole("button", { name: "Intel Xeon", exact: true }).click();
     await page.getByRole("link", { name: "Plan an upgrade" }).click();
-    await expect(page.getByLabel("What are you planning?")).toHaveValue(
+    await expect(page.getByRole("dialog").getByLabel("Title", {exact:true})).toHaveValue(
       "Upgrade Intel Xeon",
     );
-    await expect(page.getByLabel("Evidence or reason")).toHaveValue(
+    await expect(page.getByRole("dialog").getByLabel("Notes", {exact:true})).toHaveValue(
       /media-nas/,
     );
   });

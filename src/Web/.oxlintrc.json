@@ -3,7 +3,8 @@
   "plugins": [
     "react",
     "typescript",
-    "oxc"
+    "oxc",
+    "import"
   ],
   "rules": {
     "no-unused-vars": [
@@ -21,7 +22,8 @@
       }
     ],
     "react/set-state-in-effect": "warn",
-    "react/purity": "warn"
+    "react/purity": "warn",
+    "import/no-cycle": "error"
   },
   "categories": {
     "correctness": "error"
@@ -34,5 +36,22 @@
     "test-results/**",
     "playwright-report/**",
     "blob-report/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.tsx"
+      ],
+      "rules": {
+        "max-lines": [
+          "error",
+          {
+            "max": 500,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    }
   ]
 }

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import type { Drive, Server, StorageData } from "../src/storageModel";
+import type { Drive, Server, StorageData } from "../src/features/storage/storageModel";
 test("001 root-only dataset usage and empty temperature cache explain their results", async ({
   page,
 }) => {

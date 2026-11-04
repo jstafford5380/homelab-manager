@@ -1,8 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import fs from "node:fs";
-import type { Plan } from "../src/PlanEditor";
-import type { DriveReview } from "../src/planning";
+import type {Plan} from "../src/features/planning/planning";
+import type { DriveReview } from "../src/features/planning/planning";
 
 type Fixture = {
   review: {

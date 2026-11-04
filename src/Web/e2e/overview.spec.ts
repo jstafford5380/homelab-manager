@@ -240,3 +240,25 @@ test("Drive age icon warns at five years and turns red past seven", async ({ pag
   await page.reload();
   await expect(icon).toHaveAttribute("style", /--tone-bad/);
 });
+
+for (const failure of ["missing spares", "invalid reasons", "invalid currency", "timeout"]) {
+ test(`Dashboard keeps systems visible when planning has ${failure}`,async({page})=>{
+
+  await page.route("**/api/v1/session",r=>r.fulfill({json:{authenticated:true,setupRequired:false}}));
+  const {_mock,planning,...overview}=calm;
+  await page.clock.install({time:new Date(_mock.now)});
+  await page.route("**/api/v1/overview",r=>r.fulfill({json:{...overview,settings:{timezone:"UTC"},disks:[],plans:[],recovery:[],recoveryAssessments:[],activity:[]}}));
+  const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
+  await page.route("**/api/v1/planning/review",r=>{
+   if(failure==="timeout")return;
+   return r.fulfill({json:{...planning,...(failure==="missing spares"?{spares:null}:failure==="invalid reasons"?{reviews:[{diskId:"bad",reasons:null}]}:{budgets:[{currency:"not-a-currency",total:10,withoutEstimate:0}]})}});
+  });
+  await page.goto("/");
+  await expect(page.getByRole("region",{name:"Systems",exact:true})).toBeVisible();
+  if(failure==="timeout")await page.clock.fastForward(15001);
+  await expect(page.getByText("Drive age reminders are unavailable right now.",{exact:true})).toBeVisible();
+  await expect(page.getByText("Spares unknown",{exact:true})).toBeVisible();
+  await expect(page.getByRole("region",{name:"Readiness",exact:true})).toBeVisible();
+  expect(errors).toEqual([]);
+ });
+}

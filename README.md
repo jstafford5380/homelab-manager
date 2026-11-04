@@ -197,7 +197,7 @@ npm run check:web # frontend lint + TypeScript checks
 npm run test:web
 ```
 
-Frontend linting uses Oxlint with React, TypeScript and Hooks checks. `npm run lint:fix` applies safe automatic fixes. The frontend CI workflow runs `npm run check:web`; see [frontend code checks](src/Web/README.md#code-checks) for rules and the existing advisory warnings.
+The React application is organized by feature, with separate page composition, data hooks, panels and forms; see [frontend structure](src/Web/README.md#structure-and-ownership). Frontend linting uses Oxlint with React, TypeScript and Hooks checks. `npm run lint:fix` applies safe automatic fixes. The frontend CI workflow runs `npm run check:web`; see [frontend code checks](src/Web/README.md#code-checks) for rules and the existing advisory warnings.
 
 ## Current implementation status
 
