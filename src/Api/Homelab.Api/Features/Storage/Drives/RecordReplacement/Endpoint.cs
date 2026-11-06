@@ -36,6 +36,8 @@ public sealed class Endpoint(HomelabDb db) : Endpoint<Request, Homelab.Api.DiskR
         }
 
         var now = DateTime.UtcNow;
+        if (input.UseServerTime)
+            input = input with { OccurredUtc = now };
         if (Validate(oldDisk, newDisk, input, now)is { } error)
         {
             await Send.ResultAsync(Results.BadRequest(new { error }));

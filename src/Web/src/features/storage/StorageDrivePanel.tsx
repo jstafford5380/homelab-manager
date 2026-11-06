@@ -176,7 +176,7 @@ export function StorageDrivePanel({
         await storageRequest("/replacements", {
           oldDiskId: disk.id,
           newDiskId: newDisk,
-          occurredUtc: new Date().toISOString(),
+          useServerTime: true,
           dateConfidence: "documented",
           poolGuid: d.poolGuid || "",
           membershipEvidence: text("membershipEvidence"),

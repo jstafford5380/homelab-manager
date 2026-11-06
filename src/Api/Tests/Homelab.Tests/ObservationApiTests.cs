@@ -890,6 +890,20 @@ public sealed class ObservationApiTests
             await using(var check=new HomelabDb(options)){Assert.Equal(replacementTime,(await check.DriveAcquisitions.SingleAsync(x=>x.DiskId==storageNew.Id)).InstalledUtc);}
             var recordedReplacements = await client.GetFromJsonAsync<DiskReplacement[]>($"/api/v1/disks/{storageDisk.Id}/replacements");
             Assert.Single(recordedReplacements!, x => x.NewDiskId == storageNew.Id && x.OccurredUtc == replacementTime);
+            var beforeSave = DateTime.UtcNow;
+            var currentReplacement = await client.PostAsJsonAsync("/api/v1/replacements", new
+            {
+                oldDiskId = storageDisk.Id, newDiskId = storageNew.Id, useServerTime = true,
+                dateConfidence = "documented", poolGuid = "", membershipEvidence = "Membership unknown",
+                reason = "Owner replacement", evidence = "Physical labels compared",
+                confirmedOldIdentity = "STORAGE-ONE", confirmedNewIdentity = "STORAGE-TWO"
+            });
+            Assert.Equal(HttpStatusCode.OK, currentReplacement.StatusCode);
+            var savedReplacement = (await currentReplacement.Content.ReadFromJsonAsync<DiskReplacement>())!;
+            Assert.InRange(savedReplacement.OccurredUtc, beforeSave, DateTime.UtcNow);
+            Assert.Equal(savedReplacement.RecordedUtc, savedReplacement.OccurredUtc);
+            await using (var check = new HomelabDb(options))
+                Assert.Equal(savedReplacement.OccurredUtc, (await check.DriveAcquisitions.SingleAsync(x => x.DiskId == storageNew.Id)).InstalledUtc);
             var replacedHistory = await client.GetFromJsonAsync<StorageHistoryItem[]>(storageBase+"/history");
             Assert.Contains(replacedHistory!, x => x.Kind == "replacement" && x.Text == "Replaced by STORAGE-TWO");
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/logout", new { })).StatusCode);
